@@ -32,7 +32,7 @@ class AppRoot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeCtrl = Get.find<ThemeController>();
+    final themeCtrl = Get.put(ThemeController());
 
     return ScreenUtilInit(
       designSize: const Size(375, 812), // base iPhone 11 size
@@ -69,85 +69,6 @@ class AppRoot extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-// -----------------------------
-// UI Helpers
-// -----------------------------
-Widget _langButton(Locale locale, String label) {
-  return OutlinedButton(
-    onPressed: () => Get.updateLocale(locale),
-    child: Text(label),
-  );
-}
-
-// -----------------------------
-// Home Page
-// -----------------------------
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final themeCtrl = Get.find<ThemeController>();
-
-    // Direction is auto from locale (AR -> RTL)
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('home_title'.tr),
-        actions: [
-          // Theme toggle
-          IconButton(
-            tooltip: 'change_theme'.tr,
-            onPressed: themeCtrl.toggle,
-            icon: const Icon(Icons.brightness_6),
-          ),
-          // Language menu
-          PopupMenuButton<String>(
-            tooltip: 'change_lang'.tr,
-            icon: const Icon(Icons.language),
-            onSelected: (v) {
-              if (v == 'ar') Get.updateLocale(const Locale('ar', 'JO'));
-              if (v == 'en') Get.updateLocale(const Locale('en', 'US'));
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(value: 'en', child: const Text('English')),
-              PopupMenuItem(value: 'ar', child: const Text('العربية')),
-            ],
-          ),
-        ],
-      ),
-      body: Center(
-        child: Padding(
-          padding: EdgeInsets.all(20.w),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'hello_user'.trParams({'name': 'Ruba'}),
-                style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 24.h),
-              SizedBox(
-                width: 0.7.sw,
-                child: ElevatedButton.icon(
-                  onPressed: () => Get.toNamed(
-                    AppRoutes.details,
-                    arguments: {'id': 42, 'title': 'details_title'.tr},
-                  ),
-                  icon: const Icon(Icons.open_in_new),
-                  label: Text(
-                    'open_details'.tr,
-                    style: TextStyle(fontSize: 16.sp),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
