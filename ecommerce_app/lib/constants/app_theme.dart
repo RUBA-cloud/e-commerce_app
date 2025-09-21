@@ -46,6 +46,7 @@ class AppTheme {
       ),
       textSelectionTheme: TextSelectionThemeData(
         cursorColor: scheme.primary,
+        // ignore: deprecated_member_use
         selectionColor: scheme.primary.withOpacity(.25),
         selectionHandleColor: scheme.primary,
       ),

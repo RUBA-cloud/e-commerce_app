@@ -5,8 +5,6 @@ import 'package:ecommerce_app/views/auth/forget_password/cubit/forget_password_s
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_utils/src/extensions/internacionalization.dart';
 
 class ForgetPasswordPage extends StatelessWidget {
   const ForgetPasswordPage({super.key});
@@ -25,9 +23,11 @@ class ForgetPasswordPage extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
+              // ignore: deprecated_member_use
               scheme.primary.withOpacity(.06),
+              // ignore: deprecated_member_use
               scheme.secondary.withOpacity(.05),
-              scheme.background,
+              scheme.surface,
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -38,11 +38,13 @@ class ForgetPasswordPage extends StatelessWidget {
             Positioned(
               top: -70,
               left: -40,
+              // ignore: deprecated_member_use
               child: _blurBall(scheme.primary.withOpacity(.18), 180),
             ),
             Positioned(
               bottom: -90,
               right: -50,
+              // ignore: deprecated_member_use
               child: _blurBall(scheme.secondary.withOpacity(.16), 220),
             ),
 
@@ -55,15 +57,18 @@ class ForgetPasswordPage extends StatelessWidget {
                     horizontal: 16,
                     vertical: 12,
                   ),
+                  // ignore: deprecated_member_use
                   color: scheme.surface.withOpacity(.94),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),
+                  // ignore: deprecated_member_use
                   shadowColor: scheme.primary.withOpacity(.15),
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
+                        // ignore: deprecated_member_use
                         color: scheme.primary.withOpacity(.08),
                       ),
                     ),
@@ -111,6 +116,7 @@ class ForgetPasswordPage extends StatelessWidget {
                                           height: 56,
                                           width: 56,
                                           decoration: BoxDecoration(
+                                            // ignore: deprecated_member_use
                                             color: scheme.primary.withOpacity(
                                               .12,
                                             ),
@@ -151,13 +157,15 @@ class ForgetPasswordPage extends StatelessWidget {
                                       ),
                                       validator: (v) {
                                         final value = (v ?? '').trim();
-                                        if (value.isEmpty)
+                                        if (value.isEmpty) {
                                           return 'email_required'.tr;
+                                        }
                                         final re = RegExp(
                                           r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
                                         );
-                                        if (!re.hasMatch(value))
+                                        if (!re.hasMatch(value)) {
                                           return 'invalid_email'.tr;
+                                        }
                                         return null;
                                       },
                                     ),

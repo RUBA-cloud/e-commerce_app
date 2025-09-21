@@ -10,14 +10,14 @@ class AppTextStyles {
     fontSize: 34.sp, // big headers
     fontWeight: FontWeight.w700,
     height: 1.2,
-    color: Theme.of(context).colorScheme.onBackground,
+    color: Theme.of(context).colorScheme.onSurface,
   );
 
   static TextStyle headline(BuildContext context) => TextStyle(
-    fontSize: 24.sp,
+    fontSize: 20.sp,
     fontWeight: FontWeight.w700,
     height: 1.25,
-    color: Theme.of(context).colorScheme.onBackground,
+    color: Theme.of(context).colorScheme.onSurface,
   );
 
   static TextStyle title(BuildContext context) => TextStyle(
@@ -31,6 +31,7 @@ class AppTextStyles {
     fontSize: 16.sp,
     fontWeight: FontWeight.w500,
     height: 1.35,
+    // ignore: deprecated_member_use
     color: Theme.of(context).colorScheme.onSurface.withOpacity(.90),
   );
 
@@ -38,6 +39,7 @@ class AppTextStyles {
     fontSize: 14.sp,
     fontWeight: FontWeight.w400,
     height: 1.45,
+    // ignore: deprecated_member_use
     color: Theme.of(context).colorScheme.onSurface.withOpacity(.90),
   );
 
@@ -45,6 +47,7 @@ class AppTextStyles {
     fontSize: 14.sp,
     fontWeight: FontWeight.w400,
     height: 1.45,
+    // ignore: deprecated_member_use
     color: Theme.of(context).colorScheme.onSurface.withOpacity(.65),
   );
 
@@ -52,6 +55,7 @@ class AppTextStyles {
     fontSize: 10.sp,
     fontWeight: FontWeight.w500,
     height: 1.35,
+    // ignore: deprecated_member_use
     color: Theme.of(context).colorScheme.onSurface.withOpacity(.60),
   );
 
