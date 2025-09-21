@@ -1,7 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'dart:typed_data';
-import 'package:ecommerce_app/models/profile_model.dart';
+import 'package:ecommerce_app/views/repostery%20/profile_repoiistery.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

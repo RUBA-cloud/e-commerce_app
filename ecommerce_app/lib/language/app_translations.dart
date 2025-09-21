@@ -48,6 +48,9 @@ class AppTranslations extends Translations {
       'terms_conditions': 'Terms & Conditions',
       'privacy_policy': 'Privacy Policy',
       'about_us': 'About Us',
+      'vision': 'Vision',
+      'mission': 'Mission',
+
       'feedback': 'Feedback',
       'submit': 'Submit',
       'cancel': 'Cancel',
@@ -141,7 +144,9 @@ class AppTranslations extends Translations {
       "profile_saved": 'تم حفظ المعلومات',
       "street": "اسم الشارع",
       'take_photo': 'اخذ صورة',
-      'Cemra': 'كاميرا',
+      'camera': 'كاميرا',
+      'vision': 'الرؤية',
+      'mission': 'الرؤية والرسالة',
     },
   };
 }

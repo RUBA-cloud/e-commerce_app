@@ -39,7 +39,6 @@ class AppRootCubit extends Cubit<AppRootState> {
       emit(state.copyWith(fcmInitialized: true, fcmToken: token, error: null));
     } catch (e) {
       emit(state.copyWith(fcmInitialized: false, error: e.toString()));
-      print(e.toString());
     }
   }
 

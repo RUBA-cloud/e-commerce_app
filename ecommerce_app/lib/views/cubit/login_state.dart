@@ -11,6 +11,7 @@ class LoginState {
       success: success ?? this.success,
       error: error,
     );
+
     // Note: `error` not null -> new error; pass `null` explicitly to clear
   }
 }

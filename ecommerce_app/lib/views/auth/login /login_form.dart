@@ -1,4 +1,5 @@
 import 'package:ecommerce_app/components/basic_input.dart';
+import 'package:ecommerce_app/constants/app_routes.dart';
 import 'package:ecommerce_app/constants/text_styles.dart';
 import 'package:ecommerce_app/views/cubit/login_cubit.dart';
 import 'package:ecommerce_app/views/cubit/login_state.dart';
@@ -18,15 +19,9 @@ class LoginForm extends StatelessWidget {
       child: BlocConsumer<LoginCubit, LoginState>(
         listener: (context, state) {
           if (state.success) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text('login_success'.tr)));
+            Get.toNamed(AppRoutes.home);
             // Navigator.pushReplacementNamed(context, '/home');
-          } else if (state.error != null) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.error!)));
-          }
+          } else if (state.error != null) {}
         },
         builder: (context, state) {
           final cubit = context.read<LoginCubit>();

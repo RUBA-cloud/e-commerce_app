@@ -247,7 +247,7 @@ class BasicAuth extends StatelessWidget {
                                     ),
                                   ),
 
-                                  Text("-" + "Or".tr + "-"),
+                                  Text("-${"or".tr}"),
                                   SizedBox(height: 8.h),
                                   Expanded(
                                     flex:
