@@ -10,14 +10,10 @@ class AboutUsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isAr = (Get.locale?.languageCode ?? 'en') == 'ar';
-
     return Scaffold(
       appBar: AppBar(title: Text('about_us'.tr), centerTitle: true),
       body: BlocProvider(
-        // Ensure initial data is fetched
         create: (context) => AboutCubit()..load(),
-        // If your cubit needs a repo: AboutCubit(MockAboutRepository())..load(),
         child: BlocBuilder<AboutCubit, AboutState>(
           builder: (context, state) {
             switch (state.status) {
@@ -25,13 +21,12 @@ class AboutUsPage extends StatelessWidget {
                 return const Center(child: CircularProgressIndicator());
               case AboutStatus.error:
                 return AboutUsPage.errorView(
-                  message: state.error ?? 'Error',
+                  message: state.error ?? 'error'.tr,
                   onRetry: () => context.read<AboutCubit>().load(),
-                  isAr: isAr,
                 );
               case AboutStatus.loaded:
                 final info = state.info!;
-                return content(info: info, isAr: isAr, context: context);
+                return content(info: info, context: context);
             }
           },
         ),
@@ -41,16 +36,12 @@ class AboutUsPage extends StatelessWidget {
 
   Widget content({
     required AboutUsInfoModel info,
-    required bool isAr,
     required BuildContext context,
   }) {
-    String t(String en, String ar) => isAr ? ar : en;
-    const spacing = 12.0;
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
-        crossAxisAlignment: isAr
+        crossAxisAlignment: (Get.locale?.languageCode ?? 'en') == 'ar'
             ? CrossAxisAlignment.end
             : CrossAxisAlignment.start,
         children: [
@@ -63,7 +54,7 @@ class AboutUsPage extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
-                crossAxisAlignment: isAr
+                crossAxisAlignment: (Get.locale?.languageCode ?? 'en') == 'ar'
                     ? CrossAxisAlignment.end
                     : CrossAxisAlignment.start,
                 children: [
@@ -82,23 +73,23 @@ class AboutUsPage extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(height: 16),
-
           infoCard(
-            title: t('Mission', 'الرسالة'),
-            body: t(info.missionEn, info.missionAr),
+            title: 'mission'.tr,
+            body: (Get.locale?.languageCode ?? 'en') == 'ar'
+                ? info.missionAr
+                : info.missionEn,
           ),
           const SizedBox(height: 12),
-
           infoCard(
-            title: t('Vision', 'الرؤية'),
-            body: t(info.visionEn, info.visionAr),
+            title: 'vision'.tr,
+            body: (Get.locale?.languageCode ?? 'en') == 'ar'
+                ? info.visionAr
+                : info.visionEn,
           ),
           const SizedBox(height: 12),
-
           infoCard(
-            title: t('Values', 'القيم'),
+            title: 'values'.tr,
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -115,55 +106,53 @@ class AboutUsPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-
           infoCard(
-            title: t('Who we are', 'من نحن'),
-            body: t(info.descriptionEn, info.descriptionAr),
+            title: 'who_we_are'.tr,
+            body: (Get.locale?.languageCode ?? 'en') == 'ar'
+                ? info.descriptionAr
+                : info.descriptionEn,
           ),
           const SizedBox(height: 12),
-
           infoCard(
-            title: t('Contact', 'التواصل'),
+            title: 'contact'.tr,
             child: Column(
-              crossAxisAlignment: isAr
+              crossAxisAlignment: (Get.locale?.languageCode ?? 'en') == 'ar'
                   ? CrossAxisAlignment.end
                   : CrossAxisAlignment.start,
               children: [
-                kv(context, t('Email', 'البريد الإلكتروني'), info.email),
+                kv(context, 'email'.tr, info.email),
                 const SizedBox(height: 6),
-                kv(context, t('Phone', 'الهاتف'), info.phone),
+                kv(context, 'phone'.tr, info.phone),
                 const SizedBox(height: 6),
-                kv(context, t('Address', 'العنوان'), info.address),
+                kv(context, 'address'.tr, info.address),
                 const SizedBox(height: 6),
-                kv(context, t('Website', 'الموقع'), info.website),
+                kv(context, 'website'.tr, info.website),
               ],
             ),
           ),
           const SizedBox(height: 12),
-
           infoCard(
-            title: t('Social', 'روابط التواصل'),
+            title: 'social'.tr,
             child: Column(
-              crossAxisAlignment: isAr
+              crossAxisAlignment: (Get.locale?.languageCode ?? 'en') == 'ar'
                   ? CrossAxisAlignment.end
                   : CrossAxisAlignment.start,
               children: [
                 AboutUsPage.socialRow(
                   Icons.camera_alt_outlined,
-                  'Instagram',
+                  'instagram'.tr,
                   info.social['instagram'] ?? '',
                 ),
                 const SizedBox(height: 8),
                 AboutUsPage.socialRow(
                   Icons.alternate_email,
-                  'X / Twitter',
+                  'twitter'.tr,
                   info.social['twitter'] ?? '',
                 ),
               ],
             ),
           ),
-
-          const SizedBox(height: spacing),
+          const SizedBox(height: 12),
         ],
       ),
     );
@@ -191,7 +180,7 @@ class AboutUsPage extends StatelessWidget {
   }
 
   Widget infoCard({required String title, String? body, Widget? child}) {
-    assert(body != null || child != null, 'Provide body or child');
+    assert(body != null || child != null, 'provide_body'.tr);
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -216,7 +205,6 @@ class AboutUsPage extends StatelessWidget {
   static Widget errorView({
     required String message,
     required VoidCallback onRetry,
-    required bool isAr,
   }) {
     return Center(
       child: Padding(
@@ -224,7 +212,7 @@ class AboutUsPage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(isAr ? 'فشل التحميل' : 'Failed to load'),
+            Text('failed_to_load'.tr),
             const SizedBox(height: 8),
             Text(
               message,
@@ -235,7 +223,7 @@ class AboutUsPage extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: Text(isAr ? 'إعادة المحاولة' : 'Retry'),
+              label: Text('retry'.tr),
             ),
           ],
         ),

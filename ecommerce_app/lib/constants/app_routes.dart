@@ -1,21 +1,27 @@
+import 'package:ecommerce_app/pages/app_root.dart';
 import 'package:ecommerce_app/views/aboutUs/about_us.dart';
-import 'package:ecommerce_app/views/repostery%20/profile_repoiistery.dart';
+import 'package:ecommerce_app/views/branches/branches.dart';
+import 'package:ecommerce_app/repostery%20/profile_repoiistery.dart';
 import 'package:ecommerce_app/models/user_model.dart';
 import 'package:ecommerce_app/views/auth/basic_auth.dart';
 import 'package:ecommerce_app/views/auth/forget_password/forget_password_page.dart';
 import 'package:ecommerce_app/views/auth/profile/profile.dart';
 import 'package:ecommerce_app/views/home/home.dart';
+import 'package:ecommerce_app/views/settings/settings.dart';
 import 'package:get/get_navigation/src/routes/get_route.dart';
 import 'package:get/get_navigation/src/routes/transitions_type.dart';
 
 class AppRoutes {
   static const home = '/';
+  static const root = '/roots';
   static const details = '/details';
   static const forgetPassword = '/forget-password';
   static const login = '/login';
   static const register = '/register';
   static const profile = '/profile';
   static const aboutUs = '/aboutUs';
+  static const branch = '/branches';
+  static const settings = '/settings';
 }
 
 class AppPages {
@@ -38,6 +44,21 @@ class AppPages {
     GetPage(
       name: AppRoutes.forgetPassword,
       page: () => ForgetPasswordPage(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.root,
+      page: () => AppRoot(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.branch,
+      page: () => BranchesPage(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.settings,
+      page: () => SettingsPage(),
       transition: Transition.fadeIn,
     ),
     GetPage(

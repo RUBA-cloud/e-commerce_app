@@ -45,6 +45,7 @@ class BasicInput extends StatelessWidget {
       readOnly: readOnly,
       decoration: InputDecoration(
         labelStyle: AppTextStyles.caption(context),
+        hintStyle: AppTextStyles.caption(context),
         labelText: label,
         hintText: hintText,
         prefixIcon: prefixIcon,

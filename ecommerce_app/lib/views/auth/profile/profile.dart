@@ -1,7 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'dart:typed_data';
-import 'package:ecommerce_app/views/repostery%20/profile_repoiistery.dart';
+import 'package:ecommerce_app/repostery%20/profile_repoiistery.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -434,11 +434,7 @@ class CustomProfileView extends StatelessWidget {
                             Opacity(
                               opacity: .72,
                               child: Text(
-                                'Your info stays private. You can change it anytime.'
-                                    .trParams({
-                                      'default':
-                                          'Your info stays private. You can change it anytime.',
-                                    }),
+                                ''.tr,
                                 textAlign: TextAlign.center,
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
