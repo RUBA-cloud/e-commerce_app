@@ -15,7 +15,7 @@ class MoreTab extends StatelessWidget {
       children: [
         MoreTab.headerCard(context),
         const SizedBox(height: 16),
-        MoreTab.actionCard(
+        actionCard(
           icon: Icons.settings_outlined,
           title: 'settings'.tr,
           subtitle: 'app_settings_description'.trParams({'app': 'app_name'.tr}),
@@ -23,7 +23,7 @@ class MoreTab extends StatelessWidget {
           context: context,
         ),
         const SizedBox(height: 12),
-        MoreTab.actionCard(
+        actionCard(
           icon: Icons.info_outline,
           title: 'about_us'.tr,
           subtitle: 'about_us_descripation'.tr,
@@ -31,14 +31,21 @@ class MoreTab extends StatelessWidget {
           context: context,
         ),
         const SizedBox(height: 12),
-        MoreTab.actionCard(
+        actionCard(
           icon: Icons.info_outline,
           title: 'branches'.tr,
           subtitle: 'about_us_descripation'.tr,
           onTap: () => Get.toNamed(AppRoutes.branch),
           context: context,
         ),
-        MoreTab.actionCard(
+        actionCard(
+          icon: Icons.ac_unit,
+          title: 'my_orders'.tr,
+          subtitle: 'my_orders_descripation'.tr,
+          onTap: () => Get.toNamed(AppRoutes.orders),
+          context: context,
+        ),
+        actionCard(
           icon: Icons.logout,
           title: 'logout'.tr,
           subtitle: 'logout_subtitle'.tr,
@@ -89,13 +96,12 @@ class MoreTab extends StatelessWidget {
           'logged_out_success'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
-        // TODO: navigate to your login/splash route if needed
-        // Get.offAllNamed(AppRoutes.login);
       } catch (e) {
         Get.snackbar(
           'error'.tr,
           e.toString(),
           snackPosition: SnackPosition.BOTTOM,
+          // ignore: deprecated_member_use
           backgroundColor: Colors.red.withOpacity(.08),
           colorText: Colors.red.shade800,
         );
@@ -145,7 +151,7 @@ class MoreTab extends StatelessWidget {
     );
   }
 
-  static Widget actionCard({
+  Widget actionCard({
     required IconData icon,
     required String title,
     required String subtitle,
@@ -174,6 +180,7 @@ class MoreTab extends StatelessWidget {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
+                  // ignore: deprecated_member_use
                   color: (iconColor ?? theme.colorScheme.primary).withOpacity(
                     0.12,
                   ),
@@ -218,7 +225,7 @@ class MoreTab extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: Text(
-        '${'version'.tr ?? 'Version'} 1.0.0',
+        '${'version'.tr} 1.0.0',
         style: theme.textTheme.bodySmall?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),

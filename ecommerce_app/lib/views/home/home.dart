@@ -1,9 +1,10 @@
 // lib/features/shell/home_shell.dart
 import 'package:ecommerce_app/constants/app_routes.dart';
+import 'package:ecommerce_app/views/cartItemPage/cart_items.dart';
 import 'package:ecommerce_app/views/home/cart_tab.dart';
 
-import 'package:ecommerce_app/views/home/cubit/home_cubit.dart';
-import 'package:ecommerce_app/views/home/faviorate_tab.dart';
+import 'package:ecommerce_app/views/faviorate/cubit/home_cubit.dart';
+import 'package:ecommerce_app/views/faviorate/faviorate_tab.dart';
 import 'package:ecommerce_app/views/home/home_tab.dart';
 import 'package:ecommerce_app/views/home/more_tab.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +23,7 @@ class HomePage extends StatelessWidget {
         builder: (context, index) {
           final cubit = context.read<HomeCubit>();
 
+          // ignore: deprecated_member_use
           return WillPopScope(
             onWillPop: () async {
               if (index != 0) {
@@ -34,24 +36,23 @@ class HomePage extends StatelessWidget {
               appBar: AppBar(
                 title: Row(
                   children: [
-                    TextButton(
-                      onPressed: () => Get.toNamed(AppRoutes.aboutUs),
-                      child: Text('notification'.tr),
-                    ),
+                    IconButton(
+                        onPressed: () => Get.toNamed(AppRoutes.notifications),
+                        icon: Icon(
+                          Icons.notification_add,
+                        )),
                   ],
                 ),
               ),
-
               body: IndexedStack(
                 index: index,
                 children: const [
                   HomeTabe(),
-                  FaviorateTab(),
-                  CartTab(),
+                  FavoritePage(),
+                  CartPage(),
                   MoreTab(),
                 ],
               ),
-
               bottomNavigationBar: NavigationBar(
                 selectedIndex: index,
                 onDestinationSelected: cubit.setTab,

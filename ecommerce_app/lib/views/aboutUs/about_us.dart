@@ -61,8 +61,8 @@ class AboutUsPage extends StatelessWidget {
                   Text(
                     info.companyName,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -138,13 +138,18 @@ class AboutUsPage extends StatelessWidget {
                   ? CrossAxisAlignment.end
                   : CrossAxisAlignment.start,
               children: [
-                AboutUsPage.socialRow(
+                socialRow(
                   Icons.camera_alt_outlined,
                   'instagram'.tr,
                   info.social['instagram'] ?? '',
                 ),
+                socialRow(
+                  Icons.camera_alt_outlined,
+                  'facebook'.tr,
+                  info.social['facebook'] ?? '',
+                ),
                 const SizedBox(height: 8),
-                AboutUsPage.socialRow(
+                socialRow(
                   Icons.alternate_email,
                   'twitter'.tr,
                   info.social['twitter'] ?? '',
@@ -168,7 +173,7 @@ class AboutUsPage extends StatelessWidget {
     );
   }
 
-  static Widget socialRow(IconData icon, String label, String url) {
+  Widget socialRow(IconData icon, String label, String url) {
     if (url.isEmpty) return const SizedBox.shrink();
     return Row(
       children: [

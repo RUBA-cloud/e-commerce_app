@@ -14,7 +14,6 @@ class AppRoot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeCtrl = Get.put(ThemeController());
-
     return BlocProvider<AppRootCubit>(
       create: (_) => AppRootCubit(), // ..initIfYouHaveOne()
       child: ScreenUtilInit(

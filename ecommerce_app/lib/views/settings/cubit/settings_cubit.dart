@@ -64,6 +64,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('lang', code);
 
+    // ignore: use_build_context_synchronously
     final appRootCubit = BlocProvider.of<AppRootCubit>(context);
     appRootCubit.updateLanguage(locale);
   }

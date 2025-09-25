@@ -78,19 +78,13 @@ class AppRootCubit extends Cubit<AppRootState> {
 
     // Foreground messages
     _onMessageSub?.cancel();
-    _onMessageSub = FirebaseMessaging.onMessage.listen((RemoteMessage m) {
-      // TODO: show an in-app banner/snackbar/overlay, update state, etc.
-      // print('Foreground message: ${m.notification?.title}');
-    });
+    _onMessageSub = FirebaseMessaging.onMessage.listen((RemoteMessage m) {});
 
     // App opened via notification tap
     _onOpenedAppSub?.cancel();
     _onOpenedAppSub = FirebaseMessaging.onMessageOpenedApp.listen((
       RemoteMessage m,
-    ) {
-      // TODO: deep link / navigate using Get.toNamed(...)
-      // final route = m.data['route'];
-    });
+    ) {});
 
     // Optionally handle the case where the app is launched from a terminated
     // state via a notification tap:
