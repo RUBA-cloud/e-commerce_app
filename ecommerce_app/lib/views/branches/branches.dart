@@ -79,104 +79,93 @@ class BranchesPage extends StatelessWidget {
     final to = (branch.hoursTo ?? '').trim();
     final showHours = from.isNotEmpty && to.isNotEmpty;
 
-    return SizedBox(
-      width: MediaQuery.of(context).size.width,
-      height: 200,
-      child: Card(
-        elevation: 0,
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: InkWell(
-          onTap: onOpenMap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment:
-                  isAr ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 1,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          branch.displayName(isAr: isAr),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: isAr ? TextAlign.right : TextAlign.left,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _statusPill(
-                          open ? 'open_now'.tr : 'closed'.tr, statusColor),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.place_outlined, size: 18),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        branch.address,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium,
+    return Card(
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: onOpenMap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: ListView(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      branch.displayName(isAr: isAr),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: isAr ? TextAlign.right : TextAlign.left,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Icon(Icons.access_time, size: 18),
-                    const SizedBox(width: 6),
-                    Text(
-                      showHours ? '$from - $to' : '—',
+                  ),
+                  const SizedBox(width: 8),
+                  _statusPill(open ? 'open_now'.tr : 'closed'.tr, statusColor),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.place_outlined, size: 18),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      branch.address,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyMedium,
                     ),
-                    const Spacer(),
-                    Text('working_days'.tr, style: theme.textTheme.labelMedium),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: (branch.workingDays.isEmpty
-                          ? <int>[]
-                          : branch.workingDays)
-                      .map((d) {
-                    final idx = (d - 1).clamp(0, 6);
-                    return _dayChip(context, days[idx]);
-                  }).toList(),
-                ),
-                const Spacer(),
-                Row(
-                  children: [
-                    TextButton.icon(
-                      onPressed: onOpenMap,
-                      icon: const Icon(Icons.map_outlined),
-                      label: Text('open_map'.tr),
-                    ),
-                    const SizedBox(width: 8),
-                    if (branch.lat != null && branch.lng != null)
-                      Flexible(
-                        child: Text(
-                          '${branch.lat!.toStringAsFixed(4)}, ${branch.lng!.toStringAsFixed(4)}',
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelSmall,
-                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Icon(Icons.access_time, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    showHours ? '$from - $to' : '—',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const Spacer(),
+                  Text('working_days'.tr, style: theme.textTheme.labelMedium),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children:
+                    (branch.workingDays.isEmpty ? <int>[] : branch.workingDays)
+                        .map((d) {
+                  final idx = (d - 1).clamp(0, 6);
+                  return _dayChip(context, days[idx]);
+                }).toList(),
+              ),
+              const Spacer(),
+              Row(
+                children: [
+                  TextButton.icon(
+                    onPressed: onOpenMap,
+                    icon: const Icon(Icons.map_outlined),
+                    label: Text('open_map'.tr),
+                  ),
+                  const SizedBox(width: 8),
+                  if (branch.lat != null && branch.lng != null)
+                    Flexible(
+                      child: Text(
+                        '${branch.lat!.toStringAsFixed(4)}, ${branch.lng!.toStringAsFixed(4)}',
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall,
                       ),
-                  ],
-                ),
-              ],
-            ),
+                    ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
