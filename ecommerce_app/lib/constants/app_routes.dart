@@ -8,7 +8,6 @@ import 'package:ecommerce_app/views/auth/forget_password/forget_password_page.da
 import 'package:ecommerce_app/views/auth/profile/profile.dart';
 import 'package:ecommerce_app/views/home/home.dart';
 import 'package:ecommerce_app/views/notification/notification.dart';
-import 'package:ecommerce_app/views/orders/order_details.dart';
 import 'package:ecommerce_app/views/orders/orders_page.dart';
 import 'package:ecommerce_app/views/productDetails/product_details.dart';
 import 'package:ecommerce_app/views/settings/settings.dart';

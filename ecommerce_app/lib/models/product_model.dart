@@ -1,5 +1,4 @@
 // lib/models/product_model.dart
-import 'package:flutter/material.dart';
 
 class ProductModel {
   final String id;
@@ -68,7 +67,7 @@ class ProductModel {
     );
   }
 
-  /// Demo fallback (replace by repo)
+  // Demo fallback (replace by repo)
   static ProductModel demo(String id) => ProductModel(
         id: id,
         name: "Classic Hoodie",
