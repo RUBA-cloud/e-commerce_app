@@ -1,35 +1,64 @@
+// ...existing code...
 import 'package:flutter/material.dart';
 
 class BasicFormWidget extends StatelessWidget {
-  const BasicFormWidget({super.key});
+  final Widget form;
+  const BasicFormWidget({super.key, required this.form});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final scheme = Theme.of(context).colorScheme;
+    return Stack(
       children: [
-        const Text(
-          'Basic Form',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          decoration: const InputDecoration(
-            labelText: 'Username',
-            border: OutlineInputBorder(),
+        // Gradient background
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                scheme.primaryContainer.withOpacity(.45),
+                scheme.surfaceVariant.withOpacity(.35),
+                scheme.surface,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
         ),
-        const SizedBox(height: 16),
-        TextFormField(
-          decoration: const InputDecoration(
-            labelText: 'Password',
-            border: OutlineInputBorder(),
-          ),
-          obscureText: true,
+
+        // Decorative blobs
+        Positioned(
+          top: -80,
+          left: -50,
+          child: _blurBall(scheme.primary.withOpacity(.18), 200),
         ),
-        const SizedBox(height: 16),
-        ElevatedButton(onPressed: () {}, child: const Text('Submit')),
+        Positioned(
+          bottom: -100,
+          right: -60,
+          child: _blurBall(scheme.secondary.withOpacity(.16), 240),
+        ),
+
+        // Foreground form
+        Center(child: form),
       ],
     );
   }
+
+  Widget _blurBall(Color color, double size) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.9),
+            blurRadius: size * 0.35,
+            spreadRadius: size * 0.12,
+          ),
+        ],
+      ),
+    );
+  }
 }
+// ...existing code...

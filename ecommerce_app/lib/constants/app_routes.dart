@@ -1,5 +1,7 @@
+import 'package:ecommerce_app/constants/api_routes.dart';
 import 'package:ecommerce_app/pages/app_root.dart';
 import 'package:ecommerce_app/views/aboutUs/about_us.dart';
+import 'package:ecommerce_app/views/auth/verify_email/verfiy_email.dart';
 import 'package:ecommerce_app/views/branches/branches.dart';
 import 'package:ecommerce_app/repostery%20/profile_repoiistery.dart';
 import 'package:ecommerce_app/models/user_model.dart';
@@ -13,6 +15,7 @@ import 'package:ecommerce_app/views/productDetails/product_details.dart';
 import 'package:ecommerce_app/views/settings/settings.dart';
 import 'package:get/get_navigation/src/routes/get_route.dart';
 import 'package:get/get_navigation/src/routes/transitions_type.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 
 class AppRoutes {
   static const home = '/';
@@ -21,6 +24,8 @@ class AppRoutes {
   static const forgetPassword = '/forget-password';
   static const login = '/login';
   static const register = '/register';
+  static const verifyEmail = '/verifyEmail';
+
   static const profile = '/profile';
   static const aboutUs = '/aboutUs';
   static const branch = '/branches';
@@ -28,6 +33,8 @@ class AppRoutes {
   static const notifications = '/notifications';
   static const orders = '/orders';
   static const ordersDetails = '/ordersDetails';
+  static const resendEmail = '/resendEmail';
+  static const resendPasswordEmail = '/resendEmailPassword';
 }
 
 class AppPages {
@@ -83,16 +90,26 @@ class AppPages {
       transition: Transition.fadeIn,
     ),
     GetPage(
+      name: AppRoutes.verifyEmail,
+      page: () => VerifyEmailAndResendEmailPage(
+        title: "verfiy_email".tr,
+        headlineText: "verify_headline".tr,
+        appRoute: resendVerifyEmail,
+        subTitle: "verify_subtitle".tr,
+      ),
+    ),
+    GetPage(
+        name: AppRoutes.resendPasswordEmail,
+        page: () => VerifyEmailAndResendEmailPage(
+              title: "reset_password_email".tr,
+              headlineText: "reset_password_email".tr,
+              appRoute: resenForgetPasswordEmail,
+              subTitle: "reset_email_subtite",
+            )),
+    GetPage(
       name: AppRoutes.profile,
       page: () => CustomProfileView(
-        userModel: UserModel(
-          name: 'runa',
-          email: 'rubaahmedhammad@gmail.com',
-          address: 'addredd',
-          streetName: 'strre',
-          phone: '07979797979',
-          imageProfile: '',
-        ),
+        userModel: UserModel.currentUser!,
         repo: ProfileRepository(),
       ),
       transition: Transition.fadeIn,

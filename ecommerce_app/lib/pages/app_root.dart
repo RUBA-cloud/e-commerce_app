@@ -1,6 +1,7 @@
 import 'package:ecommerce_app/constants/app_routes.dart';
 import 'package:ecommerce_app/controllers/theme_controller.dart';
 import 'package:ecommerce_app/language/app_translations.dart';
+import 'package:ecommerce_app/models/user_model.dart';
 import 'package:ecommerce_app/pages/cubit/app_root_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -53,7 +54,9 @@ class AppRoot extends StatelessWidget {
                 useMaterial3: true,
               ),
 
-              initialRoute: AppRoutes.home,
+              initialRoute: UserModel.currentUser != null
+                  ? AppRoutes.home
+                  : AppRoutes.login,
               getPages: AppPages.pages,
 
               // Attach your BlocListener safely via builder so MaterialApp exists

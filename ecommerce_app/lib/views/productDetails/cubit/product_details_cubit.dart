@@ -11,7 +11,6 @@ class ProductDetailsCubit extends Cubit<ProductDetailsState> {
   Future<void> load() async {
     emit(state.copyWith(status: ProductDetailsStatus.loading, error: null));
     try {
-      // TODO: Replace with repository fetch by productId
       await Future.delayed(const Duration(milliseconds: 350));
       final p = ProductModel.demo(productId);
       emit(state.copyWith(
@@ -48,7 +47,6 @@ class ProductDetailsCubit extends Cubit<ProductDetailsState> {
     if (state.product == null) return;
     emit(state.copyWith(status: ProductDetailsStatus.addingToCart));
     try {
-      // TODO: integrate with your CartCubit/Repository
       await Future.delayed(const Duration(milliseconds: 300));
       emit(state.copyWith(status: ProductDetailsStatus.loaded));
     } catch (e) {

@@ -186,7 +186,6 @@ class ProductDetailsPage extends StatelessWidget {
                     }
                   },
                   onBuy: () {
-                    // TODO: Navigate to checkout flow
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('proceed_checkout'.tr)),
                     );
@@ -283,6 +282,7 @@ class _GalleryAppBarState extends State<_GalleryAppBar> {
               child: Center(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
+                    // ignore: deprecated_member_use
                     color: theme.colorScheme.surface.withOpacity(.7),
                     borderRadius: BorderRadius.circular(999),
                   ),
@@ -438,7 +438,8 @@ class _QtyStepper extends StatelessWidget {
     final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(.5),
+        // ignore: deprecated_member_use
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -525,7 +526,8 @@ class _SpecsGrid extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceVariant.withOpacity(.4),
+            // ignore: deprecated_member_use
+            color: theme.colorScheme.surfaceContainerHighest.withOpacity(.4),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -570,6 +572,7 @@ class _BottomBar extends StatelessWidget {
           color: theme.colorScheme.surface,
           boxShadow: [
             BoxShadow(
+              // ignore: deprecated_member_use
               color: Colors.black.withOpacity(.06),
               blurRadius: 12,
               offset: const Offset(0, -4),

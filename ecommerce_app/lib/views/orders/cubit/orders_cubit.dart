@@ -11,7 +11,6 @@ class OrdersCubit extends Cubit<OrdersState> {
   Future<void> load() async {
     emit(state.copyWith(status: OrderStatus.loading, error: null));
     try {
-      // TODO: Replace with repository call
       await Future.delayed(const Duration(milliseconds: 400));
 
       final demoOrders = <OrderModel>[

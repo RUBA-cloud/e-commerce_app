@@ -183,7 +183,25 @@ class AppTranslations extends Translations {
           "extras": "Extras",
           "line_total": "Line total",
           "invoice": "Invoice",
-          "invoice_not_implemented": "Invoice generation not implemented"
+          "verify_email": "Verify Email",
+          "invoice_not_implemented": "Invoice generation not implemented",
+          "email_already_exist": "Email Already Exist",
+          "verify_email_title": "Verify Email Title",
+          // Verify Email Page
+          'verify_headline': 'Check your inbox',
+          'verify_subtitle':
+              "We've sent a verification link to your email. Tap the link, then come back and press 'I verified'.",
+          'i_verified': 'I verified',
+          'resend_email': 'Resend email',
+          'resend_in_seconds': 'Resend in @s seconds',
+          'email_verified': 'Email verified',
+          'verification_email_sent': 'Verification email sent',
+          'open_email_app': 'Open email app',
+          'wrong_email_hint': 'Used the wrong email? Go back and change it.',
+          "reset_password_email": "Reset Password Email",
+          "reset_email_subtite":
+              "We have Send an email please check your email inbox and  please follow the link  so you can update the password",
+          'enter_valid_email': "enter valid email"
         },
         'ar_JO': {
           'app_title': 'تأجير المنازل',
@@ -208,6 +226,7 @@ class AppTranslations extends Translations {
           'invalid_credentials': 'اسم المستخدم أو كلمة المرور غير صحيحة',
           'phone_number': 'رقم الهاتف',
           'enter_phone_number': 'يرجى إدخال رقم الهاتف',
+          'enter_valid_email': 'يرجى ادخال الايميل بطريقة صحيحة',
           'password_confirmation': 'تأكيد كلمة المرور',
           'enter_password_confirmation': 'يرجى تأكيد كلمة المرور',
           'password_is_required': 'كلمة المرور مطلوبة',
@@ -366,7 +385,21 @@ class AppTranslations extends Translations {
           "extras": "إضافات",
           "line_total": "إجمالي السطر",
           "invoice": "فاتورة",
-          "invoice_not_implemented": "لم يتم إنشاء الفاتورة بعد"
+          "invoice_not_implemented": "لم يتم إنشاء الفاتورة بعد",
+          "email_already_exist": 'هذا البريد الالكتروني  مستخدم',
+          'verify_email_title': 'تحقق من بريدك الإلكتروني',
+          'verify_headline': 'تحقق من صندوق الوارد',
+          'verify_subtitle':
+              'لقد أرسلنا رابط التحقق إلى بريدك الإلكتروني. انقر على الرابط، ثم ارجع واضغط على "تم التحقق".',
+          'i_verified': 'تم التحقق',
+          'resend_email': 'إعادة إرسال',
+          'resend_in_seconds': 'إعادة الإرسال خلال @s ثانية',
+          'email_verified': 'تم التحقق من البريد الإلكتروني',
+          'verification_email_sent': 'تم إرسال رسالة التحقق',
+          'open_email_app': 'فتح تطبيق البريد',
+          'wrong_email_hint':
+              'هل استخدمت بريدًا إلكترونيًا خاطئًا؟ ارجع وقم بتغييره.',
+          "reset_email_subtite": ""
         },
       };
 }

@@ -95,7 +95,6 @@ class CartPage extends StatelessWidget {
                     total: state.total,
                     canCheckout: state.lines.any((e) => e.selected),
                     onCheckout: () {
-                      // TODO: navigate to checkout
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('proceed_checkout'.tr)),
                       );
@@ -215,7 +214,7 @@ class _CartItemCard extends StatelessWidget {
                 height: 72,
                 child: image == null
                     ? Container(
-                        color: theme.colorScheme.surfaceVariant,
+                        color: theme.colorScheme.surfaceContainerHighest,
                         child: const Icon(Icons.image_outlined),
                       )
                     : Image.network(image, fit: BoxFit.cover),
@@ -299,7 +298,8 @@ class _QtyStepper extends StatelessWidget {
     return Container(
       decoration: ShapeDecoration(
         shape: shape,
-        color: theme.colorScheme.surfaceVariant.withOpacity(.5),
+        // ignore: deprecated_member_use
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

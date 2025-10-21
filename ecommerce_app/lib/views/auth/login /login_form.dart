@@ -5,6 +5,7 @@ import 'package:ecommerce_app/views/cubit/login_cubit.dart';
 import 'package:ecommerce_app/views/cubit/login_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 
 /// LOGIN (STATELESS WIDGET)
@@ -21,7 +22,9 @@ class LoginForm extends StatelessWidget {
           if (state.success) {
             Get.toNamed(AppRoutes.home);
             // Navigator.pushReplacementNamed(context, '/home');
-          } else if (state.error != null) {}
+          } else if (state.error != null) {
+            Fluttertoast.showToast(msg: state.error ?? "");
+          }
         },
         builder: (context, state) {
           final cubit = context.read<LoginCubit>();
@@ -38,7 +41,6 @@ class LoginForm extends StatelessWidget {
                   Text(
                     "email".tr,
                     style: AppTextStyles.caption(context),
-
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(height: 8),
@@ -64,7 +66,6 @@ class LoginForm extends StatelessWidget {
                   Text(
                     "password".tr,
                     style: AppTextStyles.caption(context),
-
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(height: 8),
@@ -77,13 +78,13 @@ class LoginForm extends StatelessWidget {
                     radius: 40,
                     prefixIcon: const Icon(Icons.lock),
                     validator: (v) => (v == null || v.isEmpty)
-                        ? 'password_required'.tr
+                        ? 'password_is_required'.tr
                         : null,
                   ),
                   const SizedBox(height: 24),
 
                   state.loading
-                      ? const CircularProgressIndicator()
+                      ? Center(child: const CircularProgressIndicator())
                       : SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(

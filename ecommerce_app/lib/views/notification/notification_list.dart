@@ -69,12 +69,14 @@ class NotificationList extends StatelessWidget {
       elevation: isRead ? 0 : 2,
       color: isRead
           ? theme.colorScheme.surface
+          // ignore: deprecated_member_use
           : theme.colorScheme.primary.withOpacity(0.06),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: ListTile(
         onTap: () => onTapNotification?.call(n),
         leading: n.imageUrl == null
             ? CircleAvatar(
+                // ignore: deprecated_member_use
                 backgroundColor: theme.colorScheme.primary.withOpacity(0.15),
                 child: Icon(
                   isRead
@@ -123,6 +125,7 @@ class NotificationList extends StatelessWidget {
     return Container(
       alignment: align,
       padding: const EdgeInsets.symmetric(horizontal: 16),
+      // ignore: deprecated_member_use
       color: color.withOpacity(0.15),
       child: Row(
         mainAxisAlignment: align == Alignment.centerLeft

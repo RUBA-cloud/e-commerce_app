@@ -74,7 +74,6 @@ class CustomProfileView extends StatelessWidget {
                   right: isRTL ? -40 : null,
                   child: CustomProfileView.bubble(
                     120,
-
                     Colors.white.withOpacity(.06),
                   ),
                 ),
@@ -146,8 +145,8 @@ class CustomProfileView extends StatelessWidget {
                                                 onPressed: () async {
                                                   final bytes =
                                                       await _pickBytes(
-                                                        ImageSource.camera,
-                                                      );
+                                                    ImageSource.camera,
+                                                  );
                                                   if (bytes != null) {
                                                     cubit.setImageBytes(bytes);
                                                   }
@@ -314,8 +313,8 @@ class CustomProfileView extends StatelessWidget {
                                             ),
                                             child:
                                                 CustomProfileView.errorBanner(
-                                                  state.error,
-                                                ),
+                                              state.error,
+                                            ),
                                           )
                                         : const SizedBox.shrink();
 
@@ -324,46 +323,36 @@ class CustomProfileView extends StatelessWidget {
                                       child: SizedBox(
                                         width: double.infinity,
                                         child: ElevatedButton.icon(
-                                          onPressed:
-                                              state.status ==
+                                          onPressed: state.status ==
                                                   ProfileStatus.loading
                                               ? null
                                               : () async {
                                                   await context
                                                       .read<ProfileCubit>()
                                                       .saveProfile((s) async {
-                                                        String? avatarUrl =
-                                                            s.imageUrl;
-                                                        if (s.imageBytes !=
-                                                            null) {
-                                                          avatarUrl = await repo
-                                                              .uploadAvatar(
-                                                                s.imageBytes!,
-                                                              );
-                                                        }
-                                                        await repo
-                                                            .saveProfileData(
-                                                              name: s.name
-                                                                  .trim(),
-                                                              email: s.email
-                                                                  .trim(),
-                                                              phone: s.phone
-                                                                  .trim(),
-                                                              address: s.address
-                                                                  .trim(),
-                                                              street: s.street
-                                                                  .trim(),
-                                                              avatarUrl:
-                                                                  avatarUrl,
-                                                            );
-                                                      });
+                                                    String? avatarUrl =
+                                                        s.imageUrl;
+                                                    if (s.imageBytes != null) {
+                                                      avatarUrl = await repo
+                                                          .uploadAvatar(
+                                                        s.imageBytes!,
+                                                      );
+                                                    }
+                                                    await repo.saveProfileData(
+                                                      id: "1",
+                                                      name: s.name.trim(),
+                                                      email: s.email.trim(),
+                                                      phone: s.phone.trim(),
+                                                      address: s.address.trim(),
+                                                      street: s.street.trim(),
+                                                      avatarUrl: avatarUrl,
+                                                    );
+                                                  });
 
                                                   if (!context.mounted) return;
-                                                  final ok =
-                                                      context
+                                                  final ok = context
                                                               .read<
-                                                                ProfileCubit
-                                                              >()
+                                                                  ProfileCubit>()
                                                               .state
                                                               .status ==
                                                           ProfileStatus.idle &&
@@ -384,16 +373,15 @@ class CustomProfileView extends StatelessWidget {
                                                     );
                                                   }
                                                 },
-                                          icon:
-                                              state.status ==
+                                          icon: state.status ==
                                                   ProfileStatus.loading
                                               ? const SizedBox(
                                                   width: 18,
                                                   height: 18,
                                                   child:
                                                       CircularProgressIndicator(
-                                                        strokeWidth: 2,
-                                                      ),
+                                                    strokeWidth: 2,
+                                                  ),
                                                 )
                                               : const Icon(Icons.save_outlined),
                                           label: Text(

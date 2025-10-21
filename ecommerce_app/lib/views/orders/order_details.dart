@@ -15,7 +15,7 @@ class OrderDetailsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAr = (Get.locale?.languageCode ?? 'en') == 'ar';
-    final theme = Theme.of(context);
+    Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(title: Text('order_details'.tr), centerTitle: true),
@@ -221,7 +221,7 @@ class _ProductTile extends StatelessWidget {
                   height: 64,
                   child: p.imageUrl == null
                       ? Container(
-                          color: theme.colorScheme.surfaceVariant,
+                          color: theme.colorScheme.surfaceContainerHighest,
                           child: const Icon(Icons.image_outlined),
                         )
                       : Image.network(p.imageUrl!, fit: BoxFit.cover),
@@ -317,7 +317,8 @@ class _MetaChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(.5),
+        // ignore: deprecated_member_use
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(.5),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
@@ -379,7 +380,7 @@ class _TotalsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    Theme.of(context);
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -443,6 +444,7 @@ class _BottomActions extends StatelessWidget {
           color: theme.colorScheme.surface,
           boxShadow: [
             BoxShadow(
+              // ignore: deprecated_member_use
               color: Colors.black.withOpacity(.06),
               blurRadius: 12,
               offset: const Offset(0, -4),
@@ -502,6 +504,7 @@ class _StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: color.withOpacity(.12),
         border: Border.all(color: color),
         borderRadius: BorderRadius.circular(999),

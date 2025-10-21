@@ -75,8 +75,8 @@ class BranchesPage extends StatelessWidget {
       'saturday'.tr,
       'sunday'.tr,
     ];
-    final from = (branch.hoursFrom ?? '').trim();
-    final to = (branch.hoursTo ?? '').trim();
+    final from = (branch.hoursFrom).trim();
+    final to = (branch.hoursTo).trim();
     final showHours = from.isNotEmpty && to.isNotEmpty;
 
     return Card(
@@ -176,6 +176,7 @@ class BranchesPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: color.withOpacity(.10),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: color),

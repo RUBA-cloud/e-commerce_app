@@ -1,11 +1,13 @@
-// lib/pages/cubit/app_root_cubit.dart
+// ...existing code...
 import 'dart:async';
+import 'package:ecommerce_app/repostery%20/profile_repoiistery.dart';
 import 'package:flutter/foundation.dart' show immutable, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
+// ...existing code...
 @immutable
 class AppRootState {
   final bool fcmInitialized;
@@ -14,7 +16,10 @@ class AppRootState {
 
   const AppRootState({required this.fcmInitialized, this.fcmToken, this.error});
 
-  factory AppRootState.initial() => const AppRootState(fcmInitialized: false);
+  // Return the initial state (don't perform side-effects here).
+  factory AppRootState.initial() {
+    return const AppRootState(fcmInitialized: false);
+  }
 
   AppRootState copyWith({
     bool? fcmInitialized,
@@ -24,7 +29,7 @@ class AppRootState {
     return AppRootState(
       fcmInitialized: fcmInitialized ?? this.fcmInitialized,
       fcmToken: fcmToken ?? this.fcmToken,
-      error: error,
+      error: error ?? this.error,
     );
   }
 }
@@ -40,6 +45,7 @@ class AppRootCubit extends Cubit<AppRootState> {
     try {
       final token = await _initFcmImpl();
       emit(state.copyWith(fcmInitialized: true, fcmToken: token, error: null));
+      ProfileRepository().getUserData();
     } catch (e) {
       emit(state.copyWith(fcmInitialized: false, error: e.toString()));
     }
@@ -78,13 +84,16 @@ class AppRootCubit extends Cubit<AppRootState> {
 
     // Foreground messages
     _onMessageSub?.cancel();
-    _onMessageSub = FirebaseMessaging.onMessage.listen((RemoteMessage m) {});
+    _onMessageSub = FirebaseMessaging.onMessage.listen((RemoteMessage m) {
+      // handle foreground message if needed
+    });
 
     // App opened via notification tap
     _onOpenedAppSub?.cancel();
-    _onOpenedAppSub = FirebaseMessaging.onMessageOpenedApp.listen((
-      RemoteMessage m,
-    ) {});
+    _onOpenedAppSub =
+        FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage m) {
+      // handle notification tap if needed
+    });
 
     // Optionally handle the case where the app is launched from a terminated
     // state via a notification tap:
@@ -103,3 +112,4 @@ class AppRootCubit extends Cubit<AppRootState> {
     return super.close();
   }
 }
+// ...existing code...

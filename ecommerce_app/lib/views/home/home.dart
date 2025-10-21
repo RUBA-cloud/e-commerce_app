@@ -1,7 +1,6 @@
 // lib/features/shell/home_shell.dart
 import 'package:ecommerce_app/constants/app_routes.dart';
 import 'package:ecommerce_app/views/cartItemPage/cart_items.dart';
-import 'package:ecommerce_app/views/home/cart_tab.dart';
 
 import 'package:ecommerce_app/views/faviorate/cubit/home_cubit.dart';
 import 'package:ecommerce_app/views/faviorate/faviorate_tab.dart';

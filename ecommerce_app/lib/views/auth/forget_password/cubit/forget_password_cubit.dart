@@ -1,3 +1,4 @@
+import 'package:ecommerce_app/services/auth_services.dart';
 import 'package:ecommerce_app/views/auth/forget_password/cubit/forget_password_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get_utils/get_utils.dart';
@@ -13,7 +14,12 @@ class ForgetPasswordCubit extends Cubit<ForgetPasswordState> {
     } else if (!email.contains('@')) {
       emit(ForgetPasswordFailure('invalid_email'.tr));
     } else {
-      emit(ForgetPasswordSuccess());
+      var result = await AuthServices.I.forgetPassword(email: email);
+      if (result.statusCode == 200) {
+        emit(ForgetPasswordSuccess());
+      } else {
+        emit(ForgetPasswordFailure(result.error ?? ""));
+      }
     }
   }
 }

@@ -39,9 +39,8 @@ class SettingsCubit extends Cubit<SettingsState> {
   }
 
   Future<void> toggleTheme() async {
-    final next = state.themeMode == ThemeMode.dark
-        ? ThemeMode.light
-        : ThemeMode.dark;
+    final next =
+        state.themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
     await setTheme(next);
     Get.changeThemeMode(next);
   }
@@ -70,7 +69,7 @@ class SettingsCubit extends Cubit<SettingsState> {
   }
 
   Future<void> logout() async {
-    await Future<void>.delayed(const Duration(milliseconds: 200));
+    // await Future<void>.delayed(const Duration(milliseconds: 200));
     Get.toNamed(AppRoutes.login);
   }
 

@@ -35,6 +35,11 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.0
+  dio: ^5.9.0
+  sqlite3_flutter_libs: ^0.5.40
+  connectivity_plus: ^7.0.0
+  fluttertoast: ^9.0.0
+  equatable: ^2.0.7
 
 dev_dependencies:
   flutter_test:

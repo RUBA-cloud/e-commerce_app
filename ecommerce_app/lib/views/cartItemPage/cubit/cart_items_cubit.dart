@@ -8,7 +8,6 @@ class CartCubit extends Cubit<CartState> {
   Future<void> load() async {
     emit(state.copyWith(status: CartStatus.loading, error: null));
     try {
-      // TODO: replace with real repo fetch
       await Future.delayed(const Duration(milliseconds: 400));
       final demo = <CartLine>[
         CartLine(

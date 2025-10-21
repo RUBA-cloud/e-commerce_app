@@ -286,6 +286,7 @@ class _StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: color.withOpacity(.12),
         border: Border.all(color: color),
         borderRadius: BorderRadius.circular(999),
@@ -342,7 +343,8 @@ class _MoreThumb extends StatelessWidget {
           height: 54,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceVariant.withOpacity(.5),
+            // ignore: deprecated_member_use
+            color: theme.colorScheme.surfaceContainerHighest.withOpacity(.5),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text('+$count',

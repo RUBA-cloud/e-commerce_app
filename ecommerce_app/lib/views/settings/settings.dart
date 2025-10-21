@@ -16,100 +16,70 @@ class SettingsPage extends StatelessWidget {
         child: BlocBuilder<SettingsCubit, SettingsState>(
           builder: (context, state) {
             final cubit = context.read<SettingsCubit>();
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                const SizedBox(height: 12),
-                Card(
-                  child: SwitchListTile.adaptive(
-                    value: state.themeMode == ThemeMode.dark,
-                    onChanged: (_) => cubit.toggleTheme(),
-                    title: Text('dark_mode'.tr),
-                    secondary: const Icon(Icons.dark_mode_outlined),
-                  ),
+            return ListView(padding: const EdgeInsets.all(16), children: [
+              const SizedBox(height: 12),
+              Card(
+                child: SwitchListTile.adaptive(
+                  value: state.themeMode == ThemeMode.dark,
+                  onChanged: (_) => cubit.toggleTheme(),
+                  title: Text('dark_mode'.tr),
+                  secondary: const Icon(Icons.dark_mode_outlined),
                 ),
-                const SizedBox(height: 12),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Card(
-                          child: SwitchListTile.adaptive(
-                            value: state.notificationsEnabled ?? true,
-                            onChanged: (val) => cubit.toggleNotifications(val),
-                            title: Text('notifications'.tr),
-                            subtitle: Text('notifications_desc'.tr),
-                            secondary: const Icon(
-                              Icons.notifications_active_outlined,
-                            ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Card(
+                        child: SwitchListTile.adaptive(
+                          value: state.notificationsEnabled ?? true,
+                          onChanged: (val) => cubit.toggleNotifications(val),
+                          title: Text('notifications'.tr),
+                          subtitle: Text('notifications_desc'.tr),
+                          secondary: const Icon(
+                            Icons.notifications_active_outlined,
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            const Icon(Icons.language),
-                            const SizedBox(width: 12),
-
-                            Text(
-                              'language'.tr,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 8),
-                        SegmentedButton<String>(
-                          segments: <ButtonSegment<String>>[
-                            ButtonSegment<String>(
-                              value: 'en',
-                              label: Text('english'.tr),
-                            ),
-                            ButtonSegment<String>(
-                              value: 'ar',
-                              label: Text('arabic'.tr),
-                            ),
-                          ],
-                          selected: {state.locale.languageCode},
-                          onSelectionChanged: (s) =>
-                              cubit.setLanguage(s.first, context),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                FilledButton.tonalIcon(
-                  onPressed: () async {
-                    final ok = await Get.dialog<bool>(
-                      AlertDialog(
-                        title: Text('are_you_sure'.tr),
-                        content: Text('confirm_logout'.tr),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Get.back(result: false),
-                            child: Text('cancel'.tr),
-                          ),
-                          FilledButton(
-                            onPressed: () => Get.back(result: true),
-                            child: Text('ok'.tr),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Icon(Icons.language),
+                          const SizedBox(width: 12),
+                          Text(
+                            'language'.tr,
+                            style: Theme.of(context).textTheme.titleMedium,
                           ),
                         ],
                       ),
-                    );
-                    if (ok == true) {
-                      await cubit.logout();
-                    }
-                  },
-                  icon: const Icon(Icons.logout),
-                  label: Text('logout'.tr),
+                      const SizedBox(height: 8),
+                      SegmentedButton<String>(
+                        segments: <ButtonSegment<String>>[
+                          ButtonSegment<String>(
+                            value: 'en',
+                            label: Text('english'.tr),
+                          ),
+                          ButtonSegment<String>(
+                            value: 'ar',
+                            label: Text('arabic'.tr),
+                          ),
+                        ],
+                        selected: {state.locale.languageCode},
+                        onSelectionChanged: (s) =>
+                            cubit.setLanguage(s.first, context),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            );
+              ),
+              const SizedBox(height: 24),
+            ]);
           },
         ),
       ),
