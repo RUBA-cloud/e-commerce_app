@@ -10,7 +10,7 @@ class AboutState {
   const AboutState._(this.status, {this.info, this.error});
 
   const AboutState.loading() : this._(AboutStatus.loading);
-  const AboutState.loaded(AboutUsInfoModel info)
-    : this._(AboutStatus.loaded, info: info);
+  const AboutState.loaded(AboutUsInfoModel? info)
+      : this._(AboutStatus.loaded, info: info);
   const AboutState.error(String e) : this._(AboutStatus.error, error: e);
 }

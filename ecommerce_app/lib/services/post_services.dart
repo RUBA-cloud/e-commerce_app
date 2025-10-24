@@ -1,7 +1,6 @@
 // lib/core/network/post_services.dart
 import 'dart:async';
 import 'package:dio/dio.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:ecommerce_app/constants/api_routes.dart'; // nsure this exists
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
@@ -105,17 +104,17 @@ class PostServices {
   }
 
   /// Returns true if device has any connection (wifi/cellular/ethernet/vpn).
-  Future<bool> _hasConnection() async {
-    final result = await Connectivity().checkConnectivity();
-    // ignore: unrelated_type_equality_checks
-    return result == ConnectivityResult.mobile ||
-        // ignore: unrelated_type_equality_checks
-        result == ConnectivityResult.wifi ||
-        // ignore: unrelated_type_equality_checks
-        result == ConnectivityResult.ethernet ||
-        // ignore: unrelated_type_equality_checks
-        result == ConnectivityResult.vpn;
-  }
+  // Future<bool> _hasConnection() async {
+  //   final result = await Connectivity().checkConnectivity();
+  //   // ignore: unrelated_type_equality_checks
+  //   return result == ConnectivityResult.mobile ||
+  //       // ignore: unrelated_type_equality_checks
+  //       result == ConnectivityResult.wifi ||
+  //       // ignore: unrelated_type_equality_checks
+  //       result == ConnectivityResult.ethernet ||
+  //       // ignore: unrelated_type_equality_checks
+  //       result == ConnectivityResult.vpn;
+  // }
 
   /// Safe POST with connectivity check + friendly toasts.
   Future<Response<T>> post<T>(
@@ -128,9 +127,9 @@ class PostServices {
     ProgressCallback? noInternetConnection,
     ProgressCallback? onReceiveProgress,
   }) async {
-    if (await _hasConnection()) {
-      throw NoConnectionException();
-    }
+    // if (await _hasConnection()) {
+    //   throw NoConnectionException();
+    // }
 
     try {
       final response = await _dio.post<T>(

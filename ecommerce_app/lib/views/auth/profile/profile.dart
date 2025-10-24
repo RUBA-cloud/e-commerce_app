@@ -2,6 +2,7 @@
 
 import 'dart:typed_data';
 import 'package:ecommerce_app/repostery%20/profile_repoiistery.dart';
+import 'package:ecommerce_app/views/auth/profile/cubit/profile_state.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

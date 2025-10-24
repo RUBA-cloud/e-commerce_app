@@ -10,6 +10,7 @@ class AboutCubit extends Cubit<AboutState> {
     emit(const AboutState.loading());
     try {
       var repo = MockAboutRepository();
+      print("AboutUs");
       final info = await repo.fetch();
       emit(AboutState.loaded(info));
     } catch (e) {
