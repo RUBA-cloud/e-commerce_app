@@ -19,8 +19,10 @@ class RegisterForm extends StatelessWidget {
           final cubit = context.read<RegisterCubit>();
 
           if (state.isSuccess) {
-            // Navigate to verify and reset state so we don't re-trigger toasts on pop
-            Get.toNamed(AppRoutes.verifyEmail, arguments: cubit.emailCtrl.text);
+            Get.toNamed(
+              AppRoutes.verifyEmail,
+              arguments: cubit.emailCtrl.text,
+            );
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('registered_successfully'.tr)),
             );
@@ -39,7 +41,7 @@ class RegisterForm extends StatelessWidget {
           final cubit = context.read<RegisterCubit>();
           final scheme = Theme.of(context).colorScheme;
 
-          // When any field changes, clear error/emailFound and return to idle
+          // لما أي فيلد يتغير نرجّع الستيت عادي ونلغي الأخطاء
           void onAnyChanged(String _) => cubit.reset();
 
           return Column(
@@ -56,16 +58,12 @@ class RegisterForm extends StatelessWidget {
                       const SizedBox(height: 12),
 
                       // Full name
-                      Text('full_name'.tr,
-                          style: AppTextStyles.caption(context)),
-                      const SizedBox(height: 6),
-                      BasicInput(
+                      labeledBasicInput(
+                        context: context,
+                        labelKey: 'full_name',
+                        hintKey: 'enter_full_name',
                         controller: cubit.nameCtrl,
-                        label: 'full_name'.tr,
-                        hintText: 'enter_full_name'.tr,
-                        isBorder: true,
-                        radius: 30,
-                        prefixIcon: const Icon(Icons.person),
+                        icon: Icons.person,
                         onChanged: onAnyChanged,
                         validator: (v) => (v == null || v.trim().isEmpty)
                             ? 'name_required'.tr
@@ -74,28 +72,26 @@ class RegisterForm extends StatelessWidget {
                       const SizedBox(height: 12),
 
                       // Email
-                      Text('email'.tr, style: AppTextStyles.caption(context)),
-                      const SizedBox(height: 6),
-                      BasicInput(
+                      labeledBasicInput(
+                        context: context,
+                        labelKey: 'email',
+                        hintKey: 'enter_email',
                         controller: cubit.emailCtrl,
-                        label: 'email'.tr,
-                        hintText: 'enter_email'.tr,
+                        icon: Icons.email,
                         keyboardType: TextInputType.emailAddress,
-                        isBorder: true,
-                        radius: 30,
-                        prefixIcon: const Icon(Icons.email),
                         onChanged: onAnyChanged,
                         validator: (v) {
                           final value = (v ?? '').trim();
                           if (value.isEmpty) return 'email_required'.tr;
-                          final re = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                          final re =
+                              RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
                           if (!re.hasMatch(value)) {
                             return 'enter_valid_email'.tr;
                           }
                           return null;
                         },
                       ),
-                      // Inline hint if backend said this email already exists
+
                       if (state.isEmailFound) ...[
                         const SizedBox(height: 6),
                         Text(
@@ -108,64 +104,58 @@ class RegisterForm extends StatelessWidget {
                       const SizedBox(height: 12),
 
                       // Phone
-                      Text('phone'.tr, style: AppTextStyles.caption(context)),
-                      const SizedBox(height: 6),
-                      BasicInput(
+                      labeledBasicInput(
+                        context: context,
+                        labelKey: 'phone',
+                        hintKey: 'enter_phone',
                         controller: cubit.phoneCtrl,
-                        label: 'phone'.tr,
-                        hintText: 'enter_phone'.tr,
+                        icon: Icons.phone,
                         keyboardType: TextInputType.phone,
-                        isBorder: true,
-                        radius: 30,
-                        prefixIcon: const Icon(Icons.phone),
                         onChanged: onAnyChanged,
                         validator: (v) {
                           final value = (v ?? '').trim();
-                          if (value.isEmpty)
+                          if (value.isEmpty) {
                             return 'phone_number_is_required'.tr;
+                          }
                           final re = RegExp(r'^\+?[0-9]{7,15}$');
-                          if (!re.hasMatch(value))
+                          if (!re.hasMatch(value)) {
                             return 'enter_valid_phone'.tr;
+                          }
                           return null;
                         },
                       ),
                       const SizedBox(height: 12),
 
                       // Password
-                      Text('password'.tr,
-                          style: AppTextStyles.caption(context)),
-                      const SizedBox(height: 6),
-                      BasicInput(
+                      labeledBasicInput(
+                        context: context,
+                        labelKey: 'password',
+                        hintKey: 'enter_password',
                         controller: cubit.passwordCtrl,
-                        label: 'password'.tr,
-                        hintText: 'enter_password'.tr,
+                        icon: Icons.lock,
                         isPassword: true,
-                        isBorder: true,
-                        radius: 30,
-                        prefixIcon: const Icon(Icons.lock),
                         onChanged: onAnyChanged,
-                        validator: (v) => (v == null || v.isEmpty)
-                            ? 'password_is_required'.tr
-                            : null,
+                        validator: (v) =>
+                            (v == null || v.isEmpty)
+                                ? 'password_is_required'.tr
+                                : null,
                       ),
                       const SizedBox(height: 12),
 
                       // Confirm password
-                      Text('renter_password'.tr,
-                          style: AppTextStyles.caption(context)),
-                      const SizedBox(height: 6),
-                      BasicInput(
+                      labeledBasicInput(
+                        context: context,
+                        labelKey: 'renter_password',
+                        hintKey: 'renter_password',
                         controller: cubit.renterPasswordCtrl,
-                        label: 'renter_password'.tr,
-                        hintText: 'renter_password'.tr,
+                        icon: Icons.lock,
                         isPassword: true,
-                        isBorder: true,
-                        radius: 30,
-                        prefixIcon: const Icon(Icons.lock),
                         onChanged: onAnyChanged,
                         validator: (v) {
                           final value = (v ?? '');
-                          if (value.isEmpty) return 'password_is_required'.tr;
+                          if (value.isEmpty) {
+                            return 'password_is_required'.tr;
+                          }
                           if (value != cubit.passwordCtrl.text) {
                             return 'passwords_do_not_match'.tr;
                           }
@@ -199,8 +189,10 @@ class RegisterForm extends StatelessWidget {
                           width: 22,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Text('register'.tr,
-                          style: AppTextStyles.button(context)),
+                      : Text(
+                          'register'.tr,
+                          style: AppTextStyles.button(context),
+                        ),
                 ),
               ),
               const SizedBox(height: 10),
@@ -210,4 +202,43 @@ class RegisterForm extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 🔹 دالة shared widget بدل StatelessWidget مستقل
+Widget labeledBasicInput({
+  required BuildContext context,
+  required String labelKey, // 'full_name' / 'email'...
+  String? hintKey,          // 'enter_full_name' ...
+  required TextEditingController controller,
+  required IconData icon,
+  bool isPassword = false,
+  TextInputType? keyboardType,
+  String? Function(String?)? validator,
+  void Function(String)? onChanged,
+}) {
+  final labelText = labelKey.tr;
+  final hintText = (hintKey ?? labelKey).tr;
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        labelText,
+        style: AppTextStyles.caption(context),
+      ),
+      const SizedBox(height: 6),
+      BasicInput(
+        controller: controller,
+        label: labelText,
+        hintText: hintText,
+        isPassword: isPassword,
+        keyboardType: keyboardType,
+        isBorder: true,
+        radius: 30,
+        prefixIcon: Icon(icon),
+        onChanged: onChanged,
+        validator: validator,
+      ),
+    ],
+  );
 }

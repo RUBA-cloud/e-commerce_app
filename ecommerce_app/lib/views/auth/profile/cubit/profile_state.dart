@@ -1,8 +1,8 @@
 // lib/views/auth/profile/cubit/profile_cubit.dart
-import 'dart:typed_data';
+import 'dart:io';
 import 'package:equatable/equatable.dart';
 
-enum ProfileStatus { idle, loading }
+enum ProfileStatus { idle, loading,success,failure }
 
 class ProfileState extends Equatable {
   final String name;
@@ -10,14 +10,18 @@ class ProfileState extends Equatable {
   final String phone;
   final String address;
   final String street;
+final String city;
+  final String country;
 
-  final Uint8List? imageBytes; // picked but not uploaded
+
+
+  final File? imageBytes; // picked but not uploaded
   final String? imageUrl; // existing avatar url
 
   final ProfileStatus status;
   final String error;
 
-  const ProfileState({
+  const ProfileState( {
     this.name = '',
     this.email = '',
     this.phone = '',
@@ -27,6 +31,7 @@ class ProfileState extends Equatable {
     this.imageUrl,
     this.status = ProfileStatus.idle,
     this.error = '',
+    this.city='', this.country='',
   });
 
   ProfileState copyWith({
@@ -35,10 +40,13 @@ class ProfileState extends Equatable {
     String? phone,
     String? address,
     String? street,
-    Uint8List? imageBytes, // pass null explicitly to clear
+        String? country,
+    String? city,
+    File? imageBytes, // pass null explicitly to clear
     String? imageUrl, // pass '' to clear
     ProfileStatus? status,
     String? error,
+
   }) {
     return ProfileState(
       name: name ?? this.name,
@@ -46,10 +54,13 @@ class ProfileState extends Equatable {
       phone: phone ?? this.phone,
       address: address ?? this.address,
       street: street ?? this.street,
-      imageBytes: imageBytes == null ? null : imageBytes,
+      imageBytes:imageBytes?? this.imageBytes,
       imageUrl: imageUrl ?? this.imageUrl,
       status: status ?? this.status,
       error: error ?? this.error,
+      country: country??this.country,
+      city:  city??this.city
+
     );
   }
 

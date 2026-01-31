@@ -1,6 +1,4 @@
-# ios/Podfile
-source 'https://cdn.cocoapods.org/'
-platform :ios, '13.0'     # explicit .0
+platform :ios, '13.0'
 
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
@@ -11,44 +9,74 @@ project 'Runner', {
 }
 
 def flutter_root
-  generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+  generated_xcode_build_settings_path = File.expand_path(
+    File.join('..', 'Flutter', 'Generated.xcconfig'),
+    __FILE__
+  )
   unless File.exist?(generated_xcode_build_settings_path)
-    raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
+    raise "#{generated_xcode_build_settings_path} must exist. Run flutter pub get first."
   end
+
   File.foreach(generated_xcode_build_settings_path) do |line|
     matches = line.match(/FLUTTER_ROOT\=(.*)/)
     return matches[1].strip if matches
   end
-  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run flutter pub get"
+
+  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}"
 end
 
-require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
-
-flutter_ios_podfile_setup
+require File.expand_path(
+  File.join('packages', 'flutter_tools', 'bin', 'podhelper'),
+  flutter_root
+)
 
 target 'Runner' do
-  # If you don't need dynamic frameworks, prefer static linkage:
   use_frameworks! :linkage => :static
+  use_modular_headers!
 
-  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  flutter_install_all_ios_pods(File.dirname(File.realpath(__FILE__)))
+
+  # ✅ Add TweetNacl once
+  pod 'TweetNacl', :modular_headers => true
 
   target 'RunnerTests' do
     inherit! :search_paths
   end
 end
 
+# ✅ ONE post_install ONLY (merged)
 post_install do |installer|
+  require 'fileutils'
+
   installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+
     target.build_configurations.each do |config|
-      # Force all pods to iOS 13 to satisfy firebase_auth requirements
+      # keep iOS 13
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
-      # Optional but can help with Swift interface stability:
-      # config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
+
+      # Disable explicit modules only for these pods (if needed)
+      if ['PusherSwift', 'PusherSwiftWithEncryption', 'TweetNacl'].include?(target.name)
+        config.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
+      end
     end
   end
 
-  # Keep Flutter’s additional settings
-  installer.pods_project.targets.each do |target|
-    flutter_additional_ios_build_settings(target)
+  # ✅ Auto-fix: create ctweetnacl.h in the expected folder if it exists elsewhere
+  pods_root   = File.join(__dir__, 'Pods')
+  c_dir       = File.join(pods_root, 'TweetNacl', 'Sources', 'CTweetNacl')
+  expected_h  = File.join(c_dir, 'ctweetnacl.h')
+
+  unless File.exist?(expected_h)
+    candidates = Dir[File.join(pods_root, 'TweetNacl', '**', '*tweetnacl*.h')]
+    src = candidates.first
+
+    if src && File.exist?(src)
+      FileUtils.mkdir_p(c_dir)
+      FileUtils.ln_sf(src, expected_h)
+      puts "✅ Created symlink: #{expected_h} -> #{src}"
+    else
+      puts "⚠️ Could not find any tweetnacl header to link."
+    end
   end
 end

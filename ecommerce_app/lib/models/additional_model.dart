@@ -1,71 +1,53 @@
-// lib/views/orders/cubit/orders_state.dart
-import 'package:flutter/foundation.dart';
 
-// NEW: Additional item per product (e.g., "Gift wrap", "Extra cheese")
-@immutable
-class AdditionalItem {
-  final String name;
-  final String? value; // optional, e.g., "Large", "No sugar"
-  final double? price; // optional
+class AdditionalModel {
+  final int? id;
+  final int?productId;
+  
+  final String? nameEn;
+  final String? nameAr;
 
-  const AdditionalItem({required this.name, this.value, this.price});
-}
+  AdditionalModel({this.id, this.nameEn, this.nameAr,this.productId});
 
-@immutable
-class ProductSummary {
-  final String id;
-  final String name;
-  final String? imageUrl;
-  final double price;
-  final int qty;
+  factory AdditionalModel.fromJson(Map<String, dynamic> json) {
+    int? parseInt(dynamic v) {
+      if (v == null) return null;
+      if (v is int) return v;
+      return int.tryParse(v.toString());
+    }
 
-  // NEW:
-  final String? size;
-  final int? colorHex; // ARGB (e.g., 0xFF1D5D9B). Nullable.
-  final List<AdditionalItem> additionals;
+    return AdditionalModel(
+      id: parseInt(json['id'] ?? json['id']),
+      nameEn: (json['name_en'] ?? json['nameEn'] ?? json['name'])?.toString(),
+      nameAr: (json['name_ar'] ?? json['nameAr'] ?? json['name_ar'])?.toString(),
+    );
+  }
 
-  const ProductSummary({
-    required this.id,
-    required this.name,
-    required this.price,
-    required this.qty,
-    this.imageUrl,
-    this.size,
-    this.colorHex,
-    this.additionals = const [],
-  });
-}
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name_en': nameEn,
+        'name_ar': nameAr,
+      };
 
-enum OrderProgress { pending, processing, shipped, delivered, cancelled }
+  AdditionalModel copyWith({int? id, String? nameEn, String? nameAr}) {
+    return AdditionalModel(
+      id: id ?? this.id,
+      nameEn: nameEn ?? this.nameEn,
+      nameAr: nameAr ?? this.nameAr,
+    );
+  }
 
-@immutable
-class OrderModel {
-  final String id;
-  final DateTime createdAt;
-  final List<ProductSummary> items;
-  final OrderProgress progress;
-  final double subtotal;
-  final double shipping;
-  final double total;
-  final String? code;
+  @override
+  String toString() => 'CountryModel(id: $id, nameEn: $nameEn, nameAr: $nameAr)';
 
-  // NEW:
-  final String userName; // customer name
-  final String addressName; // shipping address label / name
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AdditionalModel &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          nameEn == other.nameEn &&
+          nameAr == other.nameAr;
 
-  const OrderModel({
-    required this.id,
-    required this.createdAt,
-    required this.items,
-    required this.progress,
-    required this.subtotal,
-    required this.shipping,
-    required this.total,
-    required this.userName,
-    required this.addressName,
-    this.code,
-  });
-
-  // Handy count across quantities
-  int get itemsCount => items.fold(0, (p, e) => p + e.qty);
+  @override
+  int get hashCode => Object.hash(id, nameEn, nameAr);
 }

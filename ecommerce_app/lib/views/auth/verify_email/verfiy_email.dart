@@ -81,15 +81,18 @@ class VerifyEmailAndResendEmailPage extends StatelessWidget {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
+                              // ignore: deprecated_member_use
                               color: scheme.outlineVariant.withOpacity(.3),
                             ),
                             boxShadow: [
                               BoxShadow(
+                                // ignore: deprecated_member_use
                                 color: Colors.black.withOpacity(.06),
                                 blurRadius: 24,
                                 offset: const Offset(0, 12),
                               ),
                             ],
+                            // ignore: deprecated_member_use
                             color: scheme.surface.withOpacity(.75),
                           ),
                           child: Padding(
@@ -107,12 +110,15 @@ class VerifyEmailAndResendEmailPage extends StatelessWidget {
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                       colors: [
+                                        // ignore: deprecated_member_use
                                         scheme.primary.withOpacity(.12),
+                                        // ignore: deprecated_member_use
                                         scheme.secondary.withOpacity(.10),
                                       ],
                                     ),
                                     boxShadow: [
                                       BoxShadow(
+                                        // ignore: deprecated_member_use
                                         color: scheme.primary.withOpacity(.15),
                                         blurRadius: 18,
                                         offset: const Offset(0, 8),
@@ -141,6 +147,7 @@ class VerifyEmailAndResendEmailPage extends StatelessWidget {
                                 Text(
                                   subTitle,
                                   style: textTheme.bodyMedium?.copyWith(
+                                    // ignore: deprecated_member_use
                                     color: scheme.onSurface.withOpacity(0.72),
                                     height: 1.35,
                                   ),
@@ -156,9 +163,11 @@ class VerifyEmailAndResendEmailPage extends StatelessWidget {
                                         horizontal: 12, vertical: 8),
                                     decoration: BoxDecoration(
                                       color: scheme.primaryContainer
+                                          // ignore: deprecated_member_use
                                           .withOpacity(.35),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
+                                        // ignore: deprecated_member_use
                                         color: scheme.primary.withOpacity(.20),
                                       ),
                                     ),
@@ -275,6 +284,7 @@ class VerifyEmailAndResendEmailPage extends StatelessWidget {
                                         "Used the wrong email? Go back and change it."
                                   }),
                                   style: textTheme.bodySmall?.copyWith(
+                                    // ignore: deprecated_member_use
                                     color: scheme.onSurface.withOpacity(0.64),
                                   ),
                                   textAlign: TextAlign.center,
@@ -292,10 +302,12 @@ class VerifyEmailAndResendEmailPage extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(12),
                                     color: _statusColor(
                                             scheme: scheme, state: state)
+                                        // ignore: deprecated_member_use
                                         .withOpacity(.12),
                                     border: Border.all(
                                       color: _statusColor(
                                               scheme: scheme, state: state)
+                                          // ignore: deprecated_member_use
                                           .withOpacity(.22),
                                     ),
                                   ),

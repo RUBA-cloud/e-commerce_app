@@ -1,26 +1,31 @@
-// OrdersStatus + OrdersState stay the same as you already have
-import 'package:ecommerce_app/models/additional_model.dart';
-import 'package:flutter/material.dart';
+import 'package:ecommerce_app/models/order_model.dart';
 
-enum OrderStatus { idle, loading, error }
+enum OrderStatus { initial, loading, success, error }
 
-@immutable
 class OrdersState {
   final OrderStatus status;
   final List<OrderModel> orders;
   final String? error;
+  final int filterIndex; // 0 = all
 
-  const OrdersState({required this.status, required this.orders, this.error});
+  const OrdersState({
+    this.status = OrderStatus.initial,
+    this.orders = const [],
+    this.error,
+    this.filterIndex = 0,
+  });
 
-  factory OrdersState.initial() =>
-      const OrdersState(status: OrderStatus.idle, orders: [], error: null);
-
-  OrdersState copyWith(
-      {OrderStatus? status, List<OrderModel>? orders, String? error}) {
+  OrdersState copyWith({
+    OrderStatus? status,
+    List<OrderModel>? orders,
+    String? error,
+    int? filterIndex,
+  }) {
     return OrdersState(
       status: status ?? this.status,
       orders: orders ?? this.orders,
       error: error,
+      filterIndex: filterIndex ?? this.filterIndex,
     );
   }
 }

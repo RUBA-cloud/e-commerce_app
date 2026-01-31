@@ -10,8 +10,8 @@ class BranchesCubit extends Cubit<BranchesState> {
   Future<void> load() async {
     emit(const BranchesState.loading());
     try {
-      var repo = MockBranchesRepository();
-      final data = await repo.fetchAll();
+    
+      final data = await ApiBranchesRepository().fetchAll();
       emit(BranchesState.loaded(data));
     } catch (e) {
       emit(BranchesState.error(e.toString()));

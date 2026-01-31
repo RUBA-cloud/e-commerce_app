@@ -1,640 +1,587 @@
-// lib/views/product_details/product_details_page.dart
+// lib/views/product/product_details_view.dart
 
+import 'package:ecommerce_app/components/color_section.dart';
+import 'package:ecommerce_app/constants/colors.dart';
+import 'package:ecommerce_app/constants/shared_decorations.dart';
+import 'package:ecommerce_app/models/additional_model.dart';
+import 'package:ecommerce_app/models/product_model.dart';
+import 'package:ecommerce_app/models/product_size.dart';
+import 'package:ecommerce_app/views/home/cubit%20/home_state.dart';
 import 'package:ecommerce_app/views/productDetails/cubit/product_details_cubit.dart';
-import 'package:ecommerce_app/views/productDetails/cubit/product_details_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 
-class ProductDetailsPage extends StatelessWidget {
-  final String productId;
-  const ProductDetailsPage({super.key, required this.productId});
+class ProductDetailsView extends StatelessWidget {
+  const ProductDetailsView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isAr = (Get.locale?.languageCode ?? 'en') == 'ar';
+    final args = Get.arguments;
 
-    return BlocProvider(
-      create: (_) => ProductDetailsCubit(productId: productId)..load(),
-      child: BlocConsumer<ProductDetailsCubit, ProductDetailsState>(
-        listenWhen: (p, n) =>
-            p.status != n.status && n.status == ProductDetailsStatus.loaded,
-        listener: (ctx, _) {},
+    // ✅ Safety: ensure we actually got a ProductModel
+    if (args is! ProductModel) {
+      return Scaffold(
+        appBar: AppBar(title: Text('product_details_title'.tr)),
+        body: Center(child: Text('product_details_missing_product'.tr)),
+      );
+    }
+
+    final ProductModel product = args;
+    final bool isArabic = Get.locale?.languageCode == 'ar';
+
+    return BlocProvider<ProductDetailsCubit>(
+      create: (_) => ProductDetailsCubit(product: product, isArabic: isArabic),
+      child: BlocConsumer<ProductDetailsCubit, HomeState>(
+        listenWhen: (prev, curr) =>prev.message != curr.message && curr.additonals !=prev.additonals,
+        listener: (context, state) {
+          Fluttertoast.showToast(msg: state.additonals!.toString());
+        debugPrint(state.additonals.toString());
+        
+          // optional: show toast/snackbar for messages
+          
+          
+        },
         builder: (context, state) {
-          switch (state.status) {
-            case ProductDetailsStatus.loading:
-              return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()));
-            case ProductDetailsStatus.error:
-              return Scaffold(
-                appBar: AppBar(title: Text('product_details'.tr)),
-                body: _ErrorView(
-                  message: state.error ?? 'error'.tr,
-                  onRetry: () => context.read<ProductDetailsCubit>().load(),
+          final currentProduct = product;
+          final isArabic = state.isArabic;
+
+          final title = isArabic ? currentProduct.nameAr : currentProduct.nameEn;
+          final description = isArabic
+              ? currentProduct.descriptionAr
+              : currentProduct.descriptionEn;
+
+          final additionals = currentProduct.productsAdditonal ?? const <AdditionalModel>[];
+
+          return Directionality(
+            textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+            child: Scaffold(
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              appBar: AppBar(
+                elevation: 0,
+                centerTitle: true,
+                title: Text(
+                  'product_details_title'.tr,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-              );
-            case ProductDetailsStatus.loaded:
-            case ProductDetailsStatus.addingToCart:
-              final p = state.product!;
-              final theme = Theme.of(context);
-
-              return Scaffold(
-                body: CustomScrollView(
-                  slivers: [
-                    _GalleryAppBar(
-                      images: p.images,
-                      heroPrefix: p.id,
-                      selected: state.selectedImage,
-                      onSelect: (i) =>
-                          context.read<ProductDetailsCubit>().selectImage(i),
-                      isFavorite: state.isFavorite,
-                      onToggleFavorite: () =>
-                          context.read<ProductDetailsCubit>().toggleFavorite(),
-                    ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
-                        child: Column(
-                          crossAxisAlignment: isAr
-                              ? CrossAxisAlignment.end
-                              : CrossAxisAlignment.start,
-                          children: [
-                            // Title + brand
-                            Text(
-                              p.name,
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w800,
-                              ),
-                              textAlign:
-                                  isAr ? TextAlign.right : TextAlign.left,
-                            ),
-                            if (p.brand != null) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                p.brand!,
-                                style: theme.textTheme.labelLarge
-                                    ?.copyWith(color: theme.hintColor),
-                              ),
-                            ],
-                            const SizedBox(height: 8),
-
-                            // Rating + reviews
-                            Row(
-                              children: [
-                                _Stars(rating: p.rating),
-                                const SizedBox(width: 8),
-                                Text('${p.rating.toStringAsFixed(1)} '
-                                    '(${p.reviewsCount})'),
-                                const Spacer(),
-                                _PriceTag(price: p.price, oldPrice: p.oldPrice),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Color picker
-                            if (p.colors.isNotEmpty) ...[
-                              _SectionLabel('color'.tr),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                children: p.colors.map((hex) {
-                                  final selected = state.selectedColor == hex;
-                                  return _ColorDot(
-                                    color: Color(hex),
-                                    selected: selected,
-                                    onTap: () => context
-                                        .read<ProductDetailsCubit>()
-                                        .selectColor(hex),
-                                  );
-                                }).toList(),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-
-                            // Size picker
-                            if (p.sizes.isNotEmpty) ...[
-                              _SectionLabel('size'.tr),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: p.sizes.map((s) {
-                                  final selected = state.selectedSize == s;
-                                  return ChoiceChip(
-                                    label: Text(s),
-                                    selected: selected,
-                                    onSelected: (_) => context
-                                        .read<ProductDetailsCubit>()
-                                        .selectSize(s),
-                                  );
-                                }).toList(),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-
-                            // Qty
-                            _SectionLabel('quantity'.tr),
-                            const SizedBox(height: 8),
-                            _QtyStepper(
-                              qty: state.qty,
-                              onMinus:
-                                  context.read<ProductDetailsCubit>().decQty,
-                              onPlus:
-                                  context.read<ProductDetailsCubit>().incQty,
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Description
-                            _SectionLabel('description'.tr),
-                            const SizedBox(height: 6),
-                            _ExpandableText(
-                              text: p.description,
-                              expanded: state.expandedDesc,
-                              onToggle: () => context
+              ),
+              body: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          productImagesSection(
+                            context: context,
+                            mainImage: currentProduct.mainImage,
+                            images: currentProduct.productImages,
+                            isFavorite: state.isFavorite,
+                            onToggleFavorite: () {
+                              context
                                   .read<ProductDetailsCubit>()
-                                  .toggleDesc(),
+                                  .toggleFavorite(currentProduct, context);
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          productHeaderSection(
+                            context: context,
+                            title: title,
+                            price: currentProduct.price,
+                            isActive: currentProduct.isActive,
+                          ),
+                          const SizedBox(height: 12),
+
+                          // COLORS (with selection)
+                          if (currentProduct.colors.isNotEmpty) ...[
+                            ColorSection(
+                              colors: currentProduct.colors,
+                              selectedColor: state.selectedColor,
+                              onSelect: (c) => context.read<ProductDetailsCubit>().selectColor(c),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+
+                          // SIZES (with selection)
+                          if (currentProduct.sizes.isNotEmpty) ...[
+                            productSizesSection(
+                              context: context,
+                              sizes: currentProduct.sizes.toList(),
+                              selectedSize: state.selectedSize,
+                              onSelect: (s) => context.read<ProductDetailsCubit>().selectSize(s),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+
+                          // ADDITIONALS (with selection)
+                          if (additionals.isNotEmpty) ...[
+                            productAdditionalsSection(
+                              context: context,
+                              additionals: additionals,
+                              onSelect: (id) => context.read<ProductDetailsCubit>().selectAdditonal(id),
                             ),
                             const SizedBox(height: 16),
-
-                            // Specs
-                            if (p.specs.isNotEmpty) ...[
-                              _SectionLabel('specs'.tr),
-                              const SizedBox(height: 8),
-                              _SpecsGrid(specs: p.specs),
-                            ],
-
-                            // (Optional) Recommendations / Reviews entry points can go here
                           ],
-                        ),
+
+                          productDescriptionSection(
+                            context: context,
+                            description: description,
+                          ),
+                          const SizedBox(height: 16),
+
+                          metaInfoSection(
+                            context: context,
+                            product: currentProduct,
+                          ),
+                          const SizedBox(height: 80),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
 
-                // Sticky bottom
-                bottomNavigationBar: _BottomBar(
-                  price: p.price,
-                  inStock: p.inStock,
-                  adding: state.status == ProductDetailsStatus.addingToCart,
-                  onAdd: () async {
-                    await context.read<ProductDetailsCubit>().addToCart();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('added_to_cart'.tr)),
-                      );
-                    }
-                  },
-                  onBuy: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('proceed_checkout'.tr)),
-                    );
-                  },
-                ),
-              );
-          }
+                  bottomActionBar(
+                    context: context,
+                    price: currentProduct.price,
+                    onAddToCart: () => context.read<ProductDetailsCubit>().addToCart(context),
+                  ),
+                ],
+              ),
+            ),
+          );
         },
       ),
     );
   }
 }
 
-// ---------- AppBar with gallery ----------
-class _GalleryAppBar extends StatefulWidget {
-  final List<String> images;
-  final String heroPrefix;
-  final int selected;
-  final ValueChanged<int> onSelect;
-  final bool isFavorite;
-  final VoidCallback onToggleFavorite;
+// =======================
+// Functions instead of widgets
+// =======================
 
-  const _GalleryAppBar({
-    required this.images,
-    required this.heroPrefix,
-    required this.selected,
-    required this.onSelect,
-    required this.isFavorite,
-    required this.onToggleFavorite,
-  });
+Widget productImagesSection({
+  required BuildContext context,
+  required String? mainImage,
+  required List<String> images,
+  required bool isFavorite,
+  required VoidCallback onToggleFavorite,
+}) {
+  final hasImages = (mainImage != null && mainImage.isNotEmpty) || images.isNotEmpty;
 
-  @override
-  State<_GalleryAppBar> createState() => _GalleryAppBarState();
+  if (!hasImages) {
+    return Container(
+      height: 220,
+      decoration: setBoxDecoration(color: Colors.white),
+      child: Center(
+        child: Icon(
+          Icons.image_not_supported_outlined,
+          size: 48,
+          color: Colors.grey.shade500,
+        ),
+      ),
+    );
+  }
+
+  final List<String> allImages = [];
+  if (mainImage != null && mainImage.isNotEmpty) {
+    allImages.add(mainImage);
+  }
+  allImages.addAll(images);
+
+  return Container(
+    height: 260,
+    decoration: setBoxDecoration(color: redColor),
+    clipBehavior: Clip.antiAlias,
+    child: Stack(
+      children: [
+        PageView.builder(
+          itemCount: allImages.length,
+          itemBuilder: (context, index) {
+            final url = allImages[index];
+            return InkWell(
+              onTap: () {},
+              child: Hero(
+                tag: 'product_image_${url}_$index',
+                child: Image.network(
+                  url,
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.broken_image_outlined,
+                    color: grayColor,
+                    size: 40,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        Positioned(
+          bottom: 12,
+          right: 12,
+          left: 12,
+          child: imageOverlayBar(
+            context: context,
+            count: allImages.length,
+            isFavorite: isFavorite,
+            onToggleFavorite: onToggleFavorite,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
-class _GalleryAppBarState extends State<_GalleryAppBar> {
-  late final PageController _pc;
-
-  @override
-  void initState() {
-    super.initState();
-    _pc = PageController(initialPage: widget.selected);
-  }
-
-  @override
-  void dispose() {
-    _pc.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return SliverAppBar(
-      pinned: true,
-      floating: false,
-      expandedHeight: 360,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () => Navigator.of(context).maybePop(),
-      ),
-      actions: [
-        IconButton(
-          onPressed: widget.onToggleFavorite,
-          icon: Icon(
-            widget.isFavorite ? Icons.favorite : Icons.favorite_border,
-            color: widget.isFavorite ? Colors.red : null,
-          ),
-          tooltip: 'wishlist'.tr,
+Widget imageOverlayBar({
+  required BuildContext context,
+  required int count,
+  required bool isFavorite,
+  required VoidCallback onToggleFavorite,
+}) {
+  return Row(
+    children: [
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: blackColor,
+          borderRadius: BorderRadius.circular(20),
         ),
-        const SizedBox(width: 8),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            PageView.builder(
-              controller: _pc,
-              onPageChanged: widget.onSelect,
-              itemCount: widget.images.length,
-              itemBuilder: (_, i) => Hero(
-                tag: '${widget.heroPrefix}_img_$i',
-                child: Image.network(
-                  widget.images[i],
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 12,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    // ignore: deprecated_member_use
-                    color: theme.colorScheme.surface.withOpacity(.7),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    child: _Dots(
-                      count: widget.images.length,
-                      index: widget.selected,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            const Icon(Icons.photo_library_outlined, size: 16, color: whiteColor),
+            const SizedBox(width: 4),
+            Text('$count', style: setTextStyle(fontSize: 12, color: whiteColor)),
           ],
         ),
       ),
-    );
-  }
+      const Spacer(),
+      InkWell(
+        onTap: onToggleFavorite,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 34,
+          height: 34,
+          // ignore: deprecated_member_use
+          decoration: setBoxDecoration(color: blackColor.withOpacity(0.55), radius: 12),
+          child: Icon(
+            isFavorite ? Icons.favorite : Icons.favorite_border,
+            color: isFavorite ? Colors.redAccent : Colors.white,
+            size: 20,
+          ),
+        ),
+      ),
+    ],
+  );
 }
 
-// ---------- Widgets ----------
-class _Dots extends StatelessWidget {
-  final int count;
-  final int index;
-  const _Dots({required this.count, required this.index});
+Widget productHeaderSection({
+  required BuildContext context,
+  required String title,
+  required String price,
+  required bool isActive,
+}) {
+  final theme = Theme.of(context);
+  final priceText = '$price ${'currency_symbol'.tr}';
 
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(count, (i) {
-        final active = i == index;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          width: active ? 10 : 6,
-          height: 6,
-          decoration: BoxDecoration(
-            color:
-                active ? Theme.of(context).colorScheme.primary : Colors.black26,
-            borderRadius: BorderRadius.circular(999),
-          ),
-        );
-      }),
-    );
-  }
-}
-
-class _Stars extends StatelessWidget {
-  final double rating;
-  const _Stars({required this.rating});
-
-  @override
-  Widget build(BuildContext context) {
-    final full = rating.floor();
-    final half = (rating - full) >= 0.5;
-    return Row(
-      children: List.generate(5, (i) {
-        if (i < full) return const Icon(Icons.star, size: 18);
-        if (i == full && half) return const Icon(Icons.star_half, size: 18);
-        return const Icon(Icons.star_border, size: 18);
-      }),
-    );
-  }
-}
-
-class _PriceTag extends StatelessWidget {
-  final double price;
-  final double? oldPrice;
-  const _PriceTag({required this.price, this.oldPrice});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (oldPrice != null) ...[
-          Text(
-            _money(oldPrice!),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.hintColor,
-              decoration: TextDecoration.lineThrough,
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
-        Text(
-          _money(price),
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
+  return Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: theme.cardColor,
+      borderRadius: BorderRadius.circular(18),
+      boxShadow: [
+        BoxShadow(
+          blurRadius: 12,
+          offset: const Offset(0, 6),
+          // ignore: deprecated_member_use
+          color: blackColor.withOpacity(0.04),
         ),
       ],
-    );
-  }
-
-  String _money(double v) => v.toStringAsFixed(2);
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel(this.text);
-  @override
-  Widget build(BuildContext context) => Text(
-        text,
-        style: Theme.of(context)
-            .textTheme
-            .titleMedium
-            ?.copyWith(fontWeight: FontWeight.w700),
-      );
-}
-
-class _ColorDot extends StatelessWidget {
-  final Color color;
-  final bool selected;
-  final VoidCallback onTap;
-  const _ColorDot(
-      {required this.color, required this.selected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final border = Border.all(
-      color: selected ? Theme.of(context).colorScheme.primary : Colors.black12,
-      width: selected ? 2 : 1,
-    );
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        width: 28,
-        height: 28,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: border,
-        ),
-      ),
-    );
-  }
-}
-
-class _QtyStepper extends StatelessWidget {
-  final int qty;
-  final VoidCallback onMinus;
-  final VoidCallback onPlus;
-  const _QtyStepper(
-      {required this.qty, required this.onMinus, required this.onPlus});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        // ignore: deprecated_member_use
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(.5),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _StepBtn(icon: Icons.remove, onTap: onMinus),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Text('$qty', style: theme.textTheme.titleSmall),
-          ),
-          _StepBtn(icon: Icons.add, onTap: onPlus),
-        ],
-      ),
-    );
-  }
-}
-
-class _StepBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _StepBtn({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) => InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Icon(icon, size: 18),
-        ),
-      );
-}
-
-class _ExpandableText extends StatelessWidget {
-  final String text;
-  final bool expanded;
-  final VoidCallback onToggle;
-  const _ExpandableText(
-      {required this.text, required this.expanded, required this.onToggle});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final maxLines = expanded ? 100 : 3;
-    return Column(
+    ),
+    child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          text,
-          maxLines: maxLines,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 6),
-        TextButton(
-          onPressed: onToggle,
-          child: Text(expanded ? 'show_less'.tr : 'show_more'.tr),
-        ),
-      ],
-    );
-  }
-}
-
-class _SpecsGrid extends StatelessWidget {
-  final Map<String, String> specs;
-  const _SpecsGrid({required this.specs});
-
-  @override
-  Widget build(BuildContext context) {
-    final entries = specs.entries.toList();
-    final theme = Theme.of(context);
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: entries.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisExtent: 64,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemBuilder: (_, i) {
-        final e = entries[i];
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            // ignore: deprecated_member_use
-            color: theme.colorScheme.surfaceContainerHighest.withOpacity(.4),
-            borderRadius: BorderRadius.circular(12),
-          ),
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(e.key,
-                  style: theme.textTheme.labelLarge
-                      ?.copyWith(color: theme.hintColor)),
+              Text(
+                title.isEmpty ? 'product_no_name'.tr : title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 6),
-              Text(e.value, style: theme.textTheme.bodyMedium),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _BottomBar extends StatelessWidget {
-  final double price;
-  final bool inStock;
-  final bool adding;
-  final VoidCallback onAdd;
-  final VoidCallback onBuy;
-
-  const _BottomBar({
-    required this.price,
-    required this.inStock,
-    required this.adding,
-    required this.onAdd,
-    required this.onBuy,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return SafeArea(
-      top: false,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          boxShadow: [
-            BoxShadow(
-              // ignore: deprecated_member_use
-              color: Colors.black.withOpacity(.06),
-              blurRadius: 12,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('price'.tr, style: theme.textTheme.labelSmall),
-                Text(price.toStringAsFixed(2),
-                    style: theme.textTheme.titleLarge
-                        ?.copyWith(fontWeight: FontWeight.w800)),
-              ],
-            ),
-            const Spacer(),
-            OutlinedButton(
-              onPressed: inStock && !adding ? onAdd : null,
-              child: adding
-                  ? const SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : Text('add_to_cart'.tr),
-            ),
-            const SizedBox(width: 8),
-            FilledButton(
-              onPressed: inStock ? onBuy : null,
-              child: Text('buy_now'.tr),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-  const _ErrorView({required this.message, required this.onRetry});
-  @override
-  Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('failed_to_load'.tr,
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Text(message, textAlign: TextAlign.center),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: Text('retry'.tr),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
+                  color: isActive ? Colors.green.withOpacity(0.12) : Colors.red.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  isActive ? 'product_status_active'.tr : 'product_status_inactive'.tr,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isActive ? Colors.green : Colors.red,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),
         ),
-      );
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              priceText,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'price_label_per_unit'.tr,
+              style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+Widget productSizesSection({
+  required BuildContext context,
+  required List<ProductSize> sizes,
+  required int? selectedSize,
+  required ValueChanged<int> onSelect,
+}) {
+  final isArabic = Get.locale?.languageCode == 'ar';
+
+  return sectionCard(
+    context: context,
+    title: 'product_sizes_title'.tr,
+    child: Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: sizes.map((s) {
+        final bool isSelected = selectedSize == s.id;
+
+        return ChoiceChip(
+          label: Text(isArabic ? s.nameAr : s.nameEn),
+          selected: isSelected,
+          onSelected: (_) => onSelect(s.id),
+          // ignore: deprecated_member_use
+          selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.18),
+          labelStyle: TextStyle(
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).textTheme.bodyMedium?.color,
+          ),
+        );
+      }).toList(),
+    ),
+  );
+}
+
+Widget productAdditionalsSection({
+  required BuildContext context,
+  required List<AdditionalModel> additionals,
+  required ValueChanged<int> onSelect,
+}) {
+  final isArabic = Get.locale?.languageCode == 'ar';
+          final cubit = context.watch<ProductDetailsCubit>();
+
+  return sectionCard(
+    context: context,
+    title: 'product_additionals_title'.tr,
+    child: Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: additionals.map((a) {
+        final id = a.id;
+        final bool isSelected = cubit.state.additonals?.contains(id) ?? false;
+
+    return ChoiceChip(
+          label: Text(isArabic ? (a.nameAr ?? '-') : (a.nameEn ?? '-')),
+          selected: isSelected,
+          onSelected: (_) {
+            if (id != null) onSelect(id);
+          },
+          // ignore: deprecated_member_use
+          selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.18),
+          labelStyle: TextStyle(
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).textTheme.bodyMedium?.color,
+          ),
+        );
+      }).toList(),
+    ),
+  );
+}
+
+Widget productDescriptionSection({
+  required BuildContext context,
+  required String description,
+}) {
+  return sectionCard(
+    context: context,
+    title: 'product_description_title'.tr,
+    child: Text(
+      description.isEmpty ? 'product_no_description'.tr : description,
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.4),
+    ),
+  );
+}
+
+Widget metaInfoSection({
+  required BuildContext context,
+  required ProductModel product,
+}) {
+  final created = product.createdAt;
+  final updated = product.updatedAt;
+
+  String formatDate(DateTime? dt) {
+    if (dt == null) return '--';
+    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+  }
+
+  return sectionCard(
+    context: context,
+    title: 'product_meta_title'.tr,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        metaRow(context: context, label: 'product_created_at'.tr, value: formatDate(created)),
+        const SizedBox(height: 4),
+        metaRow(context: context, label: 'product_updated_at'.tr, value: formatDate(updated)),
+        const SizedBox(height: 4),
+        metaRow(context: context, label: 'product_category_id'.tr, value: product.categoryId.toString()),
+        if (product.typeId != null) ...[
+          const SizedBox(height: 4),
+          metaRow(context: context, label: 'product_type_id'.tr, value: product.typeId.toString()),
+        ],
+      ],
+    ),
+  );
+}
+
+Widget metaRow({
+  required BuildContext context,
+  required String label,
+  required String value,
+}) {
+  return Row(
+    children: [
+      Text(
+        '$label: ',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+      ),
+      Expanded(
+        child: Text(value, style: Theme.of(context).textTheme.bodySmall),
+      ),
+    ],
+  );
+}
+
+Widget sectionCard({
+  required BuildContext context,
+  required String title,
+  required Widget child,
+}) {
+  final theme = Theme.of(context);
+  return Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: theme.cardColor,
+      borderRadius: BorderRadius.circular(18),
+      boxShadow: [
+        BoxShadow(
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+          // ignore: deprecated_member_use
+          color: Colors.black.withOpacity(0.03),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        child,
+      ],
+    ),
+  );
+}
+
+Widget bottomActionBar({
+  required BuildContext context,
+  required String price,
+  required VoidCallback onAddToCart,
+}) {
+  final theme = Theme.of(context);
+  final priceText = '$price ${'currency_symbol'.tr}';
+
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    decoration: BoxDecoration(
+      color: theme.cardColor,
+      boxShadow: [
+        BoxShadow(
+          blurRadius: 12,
+          offset: const Offset(0, -4),
+          // ignore: deprecated_member_use
+          color: blackColor.withOpacity(0.06),
+        ),
+      ],
+    ),
+    child: SafeArea(
+      top: false,
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('total_label'.tr, style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey.shade600)),
+              const SizedBox(height: 2),
+              Text(
+                priceText,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          ElevatedButton.icon(
+            onPressed: onAddToCart,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+            ),
+            icon: const Icon(Icons.add_shopping_cart_outlined),
+            label: Text('add_to_cart_button'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    ),
+  );
 }

@@ -4,7 +4,8 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   file_selector_linux
-  sqlite3_flutter_libs
+  flutter_localization
+  syncfusion_pdfviewer_linux
   url_launcher_linux
 )
 

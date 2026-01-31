@@ -1,5 +1,6 @@
 // lib/views/auth/register/cubit/register_cubit.dart
 import 'package:ecommerce_app/services/auth_services.dart';
+import 'package:ecommerce_app/services/check_connecctivity.dart';
 import 'package:ecommerce_app/views/auth/register/cubit/register_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -31,7 +32,7 @@ class RegisterCubit extends Cubit<RegisterState> {
       final confirm = renterPasswordCtrl.text; // confirm password
       final phone =
           phoneCtrl.text.trim().isEmpty ? null : phoneCtrl.text.trim();
-
+if( await checkConnectivity()){
       final res = await AuthServices.I.register(
         name: name,
         email: email,
@@ -52,7 +53,7 @@ class RegisterCubit extends Cubit<RegisterState> {
         emit(RegisterState.emailFound(email));
         Fluttertoast.showToast(msg: " email  Founs");
 
-        return;
+        return;}
       }
       // Generic failure
     } catch (e) {

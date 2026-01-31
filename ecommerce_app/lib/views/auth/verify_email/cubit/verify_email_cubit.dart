@@ -18,12 +18,18 @@ class VerifyEmailCubit extends Cubit<VerifyEmailState> {
   }
 
   Future<void> sendEmail(String apiRoute, String email) async {
+    if(email.isNotEmpty){
     emit(VerifyEmailState().copyWith(sending: true));
 
     var result = await AuthServices.I.sendEmail(email: email, api: apiRoute);
 
     if (result.statusCode == 200) {
-      emit(VerifyEmailState().copyWith(sent: true));
+      emit(VerifyEmailState().copyWith(sent: true,sending: false,checking: false));
+    }
+    else{
+      
+      emit(VerifyEmailState().copyWith(sending: false,sent: false));
+    }
     }
   }
 

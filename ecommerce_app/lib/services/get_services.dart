@@ -1,6 +1,9 @@
 // lib/core/network/post_services.dart
 import 'package:dio/dio.dart';
 import 'package:ecommerce_app/constants/api_routes.dart';
+import 'package:ecommerce_app/models/user_model.dart';
+import 'package:ecommerce_app/services/check_connecctivity.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class NoConnectionException implements Exception {
   final String message;
@@ -39,6 +42,22 @@ class GetService {
         error: true,
       ),
     );
+
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          final token = UserModel.currentUser!.accessToken!;
+          if ( token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+          handler.next(options);
+        },
+        onError: (e, handler) {
+          // Handle errors if desired
+          handler.next(e);
+        },
+      ),
+    );
   }
 
   static final GetService I = GetService._internal(baseUrl: basicRoute);
@@ -64,66 +83,69 @@ class GetService {
     return merged.copyWith(headers: h.isEmpty ? null : h);
   }
 
-  Future<void> _ensureOnline() async {
-    // final result = await Connectivity().checkConnectivity();
-    // // ignore: unrelated_type_equality_checks
-    // if (result == ConnectivityResult.none) {
-    //   throw NoConnectionException();
-    // }
-  }
 
-  // ---------- Generic GET that returns *data* ----------
-  /// Makes a GET request and returns the parsed body as `T`.
-  ///
-  /// - If you pass `parser`, it will be used to convert the raw `response.data`
-  ///   (e.g., Map/List) into your model type `T`.
-  /// - If you don't pass `parser`, it will return `response.data as T`.
-  ///
-  /// Example:
-  /// ```dart
-  /// final user = await GetService.I.get<UserModel>(
-  ///   '/user',
-  ///   parser: (json) => UserModel.fromJson(json as Map<String, dynamic>),
-  /// );
-  /// ```
   Future<T> get<T>(
     String endpoint, {
     Map<String, dynamic>? query,
     Options? options,
     Map<String, dynamic>? headers,
     T Function(Object? json)? parser,
+       Duration connectTimeout = const Duration(seconds: 10),
+           CancelToken? cancelToken,
+           ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+
+    Duration receiveTimeout = const Duration(seconds: 20),
   }) async {
-    await _ensureOnline();
     final merged = _mergeOptions(options, headers);
 
-    final response = await _dio.get<Object?>(
-      endpoint,
-      queryParameters: query,
-      options: merged,
-    );
+    try {
+      Response<Object?> response = await _dio.get<Object?>(
+        endpoint,
+        queryParameters: query,
+        options: merged,
+      );
+      final body = response.data;
 
-    final body = response.data;
+      if (parser != null) {
+        return parser(body);
+      }
+      if(response.statusCode ==401){
+            refreshToken(sendFilterApi,data: {},query: query,cancelToken: cancelToken,onSendProgress: onSendProgress,onReceiveProgress: onReceiveProgress);
+      }
+      
+      return body as T;
+      
+    } on DioException catch (e) {
+      
+      switch (e.type) {
+        case DioExceptionType.connectionTimeout:
+                          refreshToken(sendFilterApi,data: {},query: query,cancelToken: cancelToken,onSendProgress: onSendProgress,onReceiveProgress: onReceiveProgress);
 
-    if (parser != null) {
-      return parser(body);
+        case DioExceptionType.receiveTimeout:
+                  refreshToken(sendFilterApi,data: {},query: query,cancelToken: cancelToken,onSendProgress: onSendProgress,onReceiveProgress: onReceiveProgress);
+
+        
+          break;
+        case DioExceptionType.connectionError:
+                 Fluttertoast.showToast(msg: "check_your_connection");
+
+          break;
+        default:
+      }
+      rethrow;
+    } 
     }
-
-    // If no parser is provided, try to cast directly.
-    // Common cases:
-    //   - Map<String, dynamic> -> T
-    //   - List<dynamic> -> T
-    //   - primitive (String/int/bool/num) -> T
-    return body as T;
-  }
+  
 
   // ---------- Convenience helpers (optional) ----------
-  Future<Response<Map<String, dynamic>>> getJson(
+  Future<Map<String, dynamic>> getJson(
     String endpoint, {
     Map<String, dynamic>? query,
     Options? options,
     Map<String, dynamic>? headers,
   }) {
-    return get<Response<Map<String, dynamic>>>(
+    return get<Map<String, dynamic>>(
       endpoint,
       query: query,
       options: options,
@@ -131,13 +153,14 @@ class GetService {
     );
   }
 
-  Future<List<dynamic>> getList(
+  Future<Map<String,dynamic>> getList(
     String endpoint, {
     Map<String, dynamic>? query,
     Options? options,
     Map<String, dynamic>? headers,
+    
   }) {
-    return get<List<dynamic>>(
+    return get<Map<String,dynamic>>(
       endpoint,
       query: query,
       options: options,

@@ -1,13 +1,16 @@
 // lib/core/network/post_services.dart
 import 'dart:async';
 import 'package:dio/dio.dart';
-import 'package:ecommerce_app/constants/api_routes.dart'; // nsure this exists
-import 'package:fluttertoast/fluttertoast.dart';
+import 'package:ecommerce_app/constants/api_routes.dart'; // تأكدي فيه basicRoute & refreshToken
+import 'package:ecommerce_app/services/check_connecctivity.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 
 class NoConnectionException implements Exception {
   final String message;
   NoConnectionException([this.message = 'No internet connection']);
+
   @override
   String toString() => message;
 }
@@ -32,14 +35,16 @@ class PostServices {
     );
 
     if (kDebugMode) {
-      _dio.interceptors.add(LogInterceptor(
-        request: true,
-        requestHeader: false,
-        requestBody: true,
-        responseHeader: false,
-        responseBody: true,
-        error: true,
-      ));
+      _dio.interceptors.add(
+        LogInterceptor(
+          request: true,
+          requestHeader: false,
+          requestBody: true,
+          responseHeader: false,
+          responseBody: true,
+          error: true,
+        ),
+      );
     }
 
     _dio.interceptors.add(
@@ -52,8 +57,9 @@ class PostServices {
           handler.next(options);
         },
         onError: (e, handler) {
-          // Handle errors if desired
-          handler.next(e);
+          // هنا لو حبيتي مستقبلاً تعملي auto-refresh للـ token لما يطلع 401
+          // تقدري تستدعي refreshTokenRequest() ثم تعيدي الطلب
+        //  handler.next(e);
         },
       ),
     );
@@ -77,6 +83,7 @@ class PostServices {
     if (_initialized && _instance != null) {
       return; // Avoid re-initialization
     }
+
     _instance = PostServices._internal(
       baseUrl: baseUrl,
       defaultHeaders: defaultHeaders,
@@ -87,36 +94,13 @@ class PostServices {
     _initialized = true;
   }
 
-  /// Get the singleton instance. If not initialized, try to auto-init using apiBaseUrl.
   static PostServices get I {
     if (_instance == null) {
+      // auto init بحد أدنى
       init(baseUrl: basicRoute);
-    } else {
-      throw StateError(
-        'PostServices not initialized. Call PostServices.init(baseUrl: ...) first.',
-      );
     }
     return _instance!;
   }
-
-  void _toast(String msg) {
-    Fluttertoast.showToast(msg: msg);
-  }
-
-  /// Returns true if device has any connection (wifi/cellular/ethernet/vpn).
-  // Future<bool> _hasConnection() async {
-  //   final result = await Connectivity().checkConnectivity();
-  //   // ignore: unrelated_type_equality_checks
-  //   return result == ConnectivityResult.mobile ||
-  //       // ignore: unrelated_type_equality_checks
-  //       result == ConnectivityResult.wifi ||
-  //       // ignore: unrelated_type_equality_checks
-  //       result == ConnectivityResult.ethernet ||
-  //       // ignore: unrelated_type_equality_checks
-  //       result == ConnectivityResult.vpn;
-  // }
-
-  /// Safe POST with connectivity check + friendly toasts.
   Future<Response<T>> post<T>(
     String path, {
     Map<String, dynamic>? query,
@@ -124,12 +108,9 @@ class PostServices {
     Options? options,
     CancelToken? cancelToken,
     ProgressCallback? onSendProgress,
-    ProgressCallback? noInternetConnection,
     ProgressCallback? onReceiveProgress,
   }) async {
-    // if (await _hasConnection()) {
-    //   throw NoConnectionException();
-    // }
+    
 
     try {
       final response = await _dio.post<T>(
@@ -141,31 +122,50 @@ class PostServices {
         onSendProgress: onSendProgress,
         onReceiveProgress: onReceiveProgress,
       );
-      return response;
+      return response; 
+
     } on DioException catch (e) {
-      String errorMessage;
       switch (e.type) {
         case DioExceptionType.connectionTimeout:
-        case DioExceptionType.receiveTimeout:
-          errorMessage = 'Request timed out';
-          break;
-        case DioExceptionType.badResponse:
-          errorMessage = 'Server error: ${e.response?.statusCode ?? 'Unknown'}';
-          break;
-        case DioExceptionType.connectionError:
-          errorMessage = 'Connection error';
-          break;
-        default:
-          errorMessage = 'Unexpected error';
-      }
-      _toast(errorMessage);
-      rethrow;
-    } catch (e) {
-      _toast('Unexpected error');
-      rethrow;
-    }
-  }
+          refreshToken(path,data: data,query: query,cancelToken: cancelToken,onSendProgress: onSendProgress,onReceiveProgress: onReceiveProgress);
 
+        case DioExceptionType.receiveTimeout:
+           refreshToken(path,data: data,query: query,cancelToken: cancelToken,onSendProgress: onSendProgress,onReceiveProgress: onReceiveProgress);
+
+          break;
+          
+        case DioExceptionType.badResponse:
+        if(e.response!.statusCode==403) {
+          Fluttertoast.showToast(msg: "already_added".tr);
+        }
+        else if(e.response!.statusCode==404){
+                    Fluttertoast.showToast(msg: "does not exist");
+
+        }
+          else if(e.response!.statusCode==404){
+                    Fluttertoast.showToast(msg: "does not exist");
+
+        }
+           else if(e.response!.statusCode==401){
+          refreshToken(path,data: data,query: query,cancelToken: cancelToken,onSendProgress: onSendProgress,onReceiveProgress: onReceiveProgress);
+          
+
+        }
+            
+        break;
+        
+       case DioExceptionType.connectionError:
+         Fluttertoast.showToast(msg: "check_your_connection");
+          break;
+        
+        default:
+      }
+      rethrow;
+    } catch (_) {
+      rethrow;
+    }}
+      
+  
   /// JSON body posts
   Future<Response<T>> postJson<T>(
     String path, {
@@ -194,15 +194,12 @@ class PostServices {
 
   /// multipart/form-data
   Future<Response<T>> postMultipart<T>(
-    String path, {
-    Map<String, dynamic>? query,
-    required Map<String, dynamic> fields,
-    Options? options,
-  }) {
-    final form = FormData.fromMap(fields);
-    final opt = (options ?? Options()).copyWith(
-      contentType: 'multipart/form-data',
-    );
-    return post<T>(path, query: query, data: form, options: opt);
-  }
+  String url, {
+  required FormData formData,
+  Options? options,
+}) {
+  return _dio.post<T>(url, data: formData, options: options);
+}
+
+
 }

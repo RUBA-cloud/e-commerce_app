@@ -1,5 +1,9 @@
+import 'package:ecommerce_app/constants/api_routes.dart';
 import 'package:ecommerce_app/constants/app_routes.dart';
+import 'package:ecommerce_app/models/user_model.dart';
 import 'package:ecommerce_app/pages/cubit/app_root_cubit.dart';
+import 'package:ecommerce_app/services/check_connecctivity.dart';
+import 'package:ecommerce_app/services/post_services.dart';
 import 'package:ecommerce_app/views/settings/cubit/settings_cubit_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -47,6 +51,9 @@ class SettingsCubit extends Cubit<SettingsState> {
 
   Future<void> setTheme(ThemeMode mode) async {
     emit(state.copyWith(themeMode: mode));
+    var sendJson ={'theme':Get.isDarkMode? "dark":'light',       };
+    var result = await PostServices.I.postJson(updateSettings, options:authOptions,query: sendJson);
+   if(result.statusCode==200){
     final prefs = await SharedPreferences.getInstance();
     final key = switch (mode) {
       ThemeMode.light => 'light',
@@ -56,17 +63,20 @@ class SettingsCubit extends Cubit<SettingsState> {
     await prefs.setString('theme', key);
     Get.changeThemeMode(mode);
   }
-
+  }
   Future<void> setLanguage(String code, BuildContext context) async {
     final locale = Locale(code);
     emit(state.copyWith(locale: locale));
+    var sendJson ={'language':state.locale.countryCode};
+    var result = await PostServices.I.postJson(updateSettings, options:authOptions,query: sendJson);
+   if(result.statusCode==200){
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('lang', code);
 
     // ignore: use_build_context_synchronously
     final appRootCubit = BlocProvider.of<AppRootCubit>(context);
     appRootCubit.updateLanguage(locale);
-  }
+  }}
 
   Future<void> logout() async {
     // await Future<void>.delayed(const Duration(milliseconds: 200));
@@ -75,7 +85,22 @@ class SettingsCubit extends Cubit<SettingsState> {
 
   Future<void> toggleNotifications(bool val) async {
     emit(state.copyWith(notificationsEnabled: val));
+    var sendJson ={'notification_on':state.notificationsEnabled};
+    var result = await PostServices.I.postJson(updateSettings, options:authOptions,query: sendJson);
+   if(result.statusCode==200){
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('notifications', val);
   }
-}
+  }
+  loadSettings() {
+    final isDark = UserModel.currentUser?.themee == 'dark';
+    final locale = UserModel.currentUser?.language =="ar"? Locale('ar'):Locale('en');
+emit(
+  state.copyWith(
+    themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+    notificationsEnabled: UserModel.currentUser!.notificationEnabled,
+    locale: locale));
+  
+
+
+}}

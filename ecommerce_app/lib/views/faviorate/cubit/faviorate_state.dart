@@ -1,78 +1,69 @@
-// lib/favorites/favorite_state.dart
-import 'package:ecommerce_app/models/faviorate.dart';
-import 'package:flutter/foundation.dart';
+// lib/views/faviorate/cubit/faviorate_state.dart
 
-enum FavoriteStatus { idle, loading, success, failure }
+import 'package:equatable/equatable.dart';
+import 'package:ecommerce_app/models/faviorate.dart';
+
+enum FavoriteStatus {
+  initial,
+  loading,
+  success,
+  itemsListChange,
+  failure,
+  itemAdded,
+  itemRemoved,
+  cleared,
+}
 
 enum FavoriteSort { newest, priceAsc, priceDesc }
 
 enum FavoriteViewMode { grid, list }
 
-@immutable
-class FavoriteState {
+class FavoriteState extends Equatable {
+  final List<FavoriteItem> ?items;
   final FavoriteStatus status;
-  final List<FavoriteItem> items;
-  final String query;
   final FavoriteSort sort;
   final FavoriteViewMode viewMode;
-  final String error;
+  final String query;
+  final String? error;
 
   const FavoriteState({
-    required this.status,
     required this.items,
-    required this.query,
+    required this.status,
     required this.sort,
     required this.viewMode,
-    required this.error,
+    required this.query,
+    this.error,
   });
 
-  factory FavoriteState.initial() => const FavoriteState(
-        status: FavoriteStatus.idle,
-        items: [],
-        query: '',
-        sort: FavoriteSort.newest,
-        viewMode: FavoriteViewMode.grid,
-        error: '',
-      );
-
-  List<FavoriteItem> get visible {
-    var list = items.where((e) {
-      if (query.isEmpty) return true;
-      final q = query.toLowerCase();
-      return e.nameEn.toLowerCase().contains(q) ||
-          e.nameAr.toLowerCase().contains(q);
-    }).toList();
-
-    switch (sort) {
-      case FavoriteSort.priceAsc:
-        list.sort((a, b) => a.price.compareTo(b.price));
-        break;
-      case FavoriteSort.priceDesc:
-        list.sort((a, b) => b.price.compareTo(a.price));
-        break;
-      case FavoriteSort.newest:
-
-        // assuming input order newest first
-        break;
-    }
-    return list;
+  factory FavoriteState.initial() {
+    return const FavoriteState(
+      items: [],
+      status: FavoriteStatus.initial,
+      sort: FavoriteSort.newest,
+      viewMode: FavoriteViewMode.grid,
+      query: '',
+      error: null,
+    );
   }
 
   FavoriteState copyWith({
-    FavoriteStatus? status,
     List<FavoriteItem>? items,
-    String? query,
+    FavoriteStatus? status,
     FavoriteSort? sort,
     FavoriteViewMode? viewMode,
+    String? query,
     String? error,
   }) {
     return FavoriteState(
-      status: status ?? this.status,
       items: items ?? this.items,
-      query: query ?? this.query,
+      status: status ?? this.status,
       sort: sort ?? this.sort,
       viewMode: viewMode ?? this.viewMode,
-      error: error ?? this.error,
+      query: query ?? this.query,
+      error: error,
     );
   }
+
+  @override
+  List<Object?> get props => [items, status, sort, viewMode, query, error];
 }

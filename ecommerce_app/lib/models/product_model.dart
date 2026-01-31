@@ -1,96 +1,111 @@
-// lib/models/product_model.dart
+import 'package:ecommerce_app/models/additional_model.dart';
+import 'package:ecommerce_app/models/category_model.dart';
+import 'package:ecommerce_app/models/product_size.dart';
+import 'package:ecommerce_app/models/product_type.dart';
 
 class ProductModel {
-  final String id;
-  final String name;
-  final String? brand;
-  final List<String> images;
-  final double price;
-  final double? oldPrice;
-  final double rating; // 0..5
-  final int reviewsCount;
-  final List<int> colors; // ARGB hex ints (e.g., 0xFF1D5D9B)
-  final List<String> sizes; // e.g., ["S","M","L"]
-  final String description;
-  final Map<String, String> specs; // e.g., {"Material":"Cotton","SKU":"X-22"}
-  final bool inStock;
-  final bool isFavorite;
+  final int id;
+  final String nameEn;
+  final String nameAr;
+  final String descriptionEn;
+  final String descriptionAr;
+  final String price;
+  final bool isActive;
+  final int? userId;
+  final int categoryId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final int? typeId;
+  final List<String> colors;
+  final List<String> productImages;
+  final List<ProductSize> sizes;
+  final CategoryModel? category;
+  final ProductType? type;
+  final String?mainImage;
+  final List<AdditionalModel>?productsAdditonal;
 
-  const ProductModel({
+  ProductModel({
     required this.id,
-    required this.name,
-    required this.images,
+    required this.nameEn,
+    required this.nameAr,
+    required this.descriptionEn,
+    required this.descriptionAr,
+    required this.mainImage,
     required this.price,
-    required this.rating,
-    required this.reviewsCount,
+    required this.isActive,
+    required this.userId,
+    required this.categoryId,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.typeId,
     required this.colors,
+
     required this.sizes,
-    required this.description,
-    required this.specs,
-    required this.inStock,
-    this.brand,
-    this.oldPrice,
-    this.isFavorite = false,
+    required this.category,
+    required this.type,
+    required this.productsAdditonal,
+    required this.productImages
   });
 
-  ProductModel copyWith({
-    String? id,
-    String? name,
-    String? brand,
-    List<String>? images,
-    double? price,
-    double? oldPrice,
-    double? rating,
-    int? reviewsCount,
-    List<int>? colors,
-    List<String>? sizes,
-    String? description,
-    Map<String, String>? specs,
-    bool? inStock,
-    bool? isFavorite,
-  }) {
+  factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      brand: brand ?? this.brand,
-      images: images ?? this.images,
-      price: price ?? this.price,
-      oldPrice: oldPrice ?? this.oldPrice,
-      rating: rating ?? this.rating,
-      reviewsCount: reviewsCount ?? this.reviewsCount,
-      colors: colors ?? this.colors,
-      sizes: sizes ?? this.sizes,
-      description: description ?? this.description,
-      specs: specs ?? this.specs,
-      inStock: inStock ?? this.inStock,
-      isFavorite: isFavorite ?? this.isFavorite,
+      
+      id: json['id'] ?? 0,
+      nameEn: json['name_en']?.toString() ?? '',
+      nameAr: json['name_ar']?.toString() ?? '',
+      descriptionEn: json['description_en']?.toString() ?? '',
+      descriptionAr: json['description_ar']?.toString() ?? '',
+      price: json['price']?.toString() ?? '0',
+      isActive: json['is_active'] == 1 || json['is_active'] == true,
+      userId: json['user_id'] as int?,
+      categoryId: json['category_id'] ?? 0,
+      mainImage: json['main_image']?.toString(),
+
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'].toString())
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at'].toString())
+          : null,
+          typeId: null,
+          
+     // typeId: json['type_id'] as int?,
+      colors: (json['colors'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toList(),
+      productImages: (json['images'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toList(),
+          type: null,category: null,
+      sizes: (json['sizes'] as List<dynamic>? ?? [])
+          .map((e) => ProductSize.fromJson(e))
+          .toList(),
+    productsAdditonal: (json['additionals'] as List<dynamic>? ?? [])
+          .map((e) => AdditionalModel.fromJson(e))
+          .toList(),
     );
   }
 
-  // Demo fallback (replace by repo)
-  static ProductModel demo(String id) => ProductModel(
-        id: id,
-        name: "Classic Hoodie",
-        brand: "AIP",
-        images: [
-          "https://placehold.co/800x800?text=Hoodie+Front",
-          "https://placehold.co/800x800?text=Hoodie+Back",
-          "https://placehold.co/800x800?text=Detail",
-        ],
-        price: 22.50,
-        oldPrice: 29.90,
-        rating: 4.4,
-        reviewsCount: 124,
-        colors: [0xFF1D5D9B, 0xFFA53860, 0xFF432E54],
-        sizes: ["S", "M", "L", "XL"],
-        description:
-            "Soft cotton hoodie with ribbed cuffs, kangaroo pocket, and adjustable drawstring.",
-        specs: {
-          "Material": "100% Cotton",
-          "Fit": "Regular",
-          "SKU": "HD-CL-001",
-          "Care": "Machine wash",
-        },
-        inStock: true,
-      );
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name_en': nameEn,
+      'name_ar': nameAr,
+      'description_en': descriptionEn,
+      'description_ar': descriptionAr,
+      'price': price,
+      'is_active': isActive,
+      'user_id': userId,
+      'category_id': categoryId,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+      'type_id': typeId,
+      'colors': colors,
+      'images': productImages,
+      'sizes': sizes.map((e) => e.toJson()).toList(),
+      'additionals':productsAdditonal,
+      'category': category,
+      'type': type?.toJson(),
+    };
+  }
 }

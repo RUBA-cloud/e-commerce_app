@@ -1,64 +1,24 @@
 // lib/views/cart/cubit/cart_state.dart
+import 'package:ecommerce_app/models/cart_model.dart';
 import 'package:flutter/foundation.dart';
 
-enum CartStatus { idle, loading, success, error }
-
-@immutable
-class CartLine {
-  final String id;
-  final String name;
-  final String? variant; // e.g., "Red / M"
-  final String? imageUrl;
-  final double unitPrice;
-  final int qty;
-  final bool selected;
-
-  const CartLine({
-    required this.id,
-    required this.name,
-    required this.unitPrice,
-    required this.qty,
-    this.variant,
-    this.imageUrl,
-    this.selected = true,
-  });
-
-  CartLine copyWith({
-    String? id,
-    String? name,
-    String? variant,
-    String? imageUrl,
-    double? unitPrice,
-    int? qty,
-    bool? selected,
-  }) {
-    return CartLine(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      variant: variant ?? this.variant,
-      imageUrl: imageUrl ?? this.imageUrl,
-      unitPrice: unitPrice ?? this.unitPrice,
-      qty: qty ?? this.qty,
-      selected: selected ?? this.selected,
-    );
-  }
-
-  double get lineTotal => unitPrice * qty;
-}
+enum CartStatus { idle, loading, loaded, success, error, newItemAdded, removeItem }
 
 @immutable
 class CartState {
-  final List<CartLine> lines;
+  final List<CartModel> items;
   final double subtotal;
   final double discount; // after coupon, etc.
   final double shipping;
   final double total;
+  final int? cartQuantity;
+
   final bool allSelected;
   final CartStatus status;
   final String? error;
 
   const CartState({
-    required this.lines,
+    required this.items,
     required this.subtotal,
     required this.discount,
     required this.shipping,
@@ -66,10 +26,11 @@ class CartState {
     required this.allSelected,
     required this.status,
     this.error,
+    this.cartQuantity,
   });
 
   factory CartState.initial() => const CartState(
-        lines: [],
+        items: [],
         subtotal: 0,
         discount: 0,
         shipping: 0,
@@ -80,7 +41,7 @@ class CartState {
       );
 
   CartState copyWith({
-    List<CartLine>? lines,
+    List<CartModel>? items,
     double? subtotal,
     double? discount,
     double? shipping,
@@ -88,9 +49,10 @@ class CartState {
     bool? allSelected,
     CartStatus? status,
     String? error,
+    int? cartQuantity,
   }) {
     return CartState(
-      lines: lines ?? this.lines,
+      items: items ?? this.items,
       subtotal: subtotal ?? this.subtotal,
       discount: discount ?? this.discount,
       shipping: shipping ?? this.shipping,
@@ -98,6 +60,7 @@ class CartState {
       allSelected: allSelected ?? this.allSelected,
       status: status ?? this.status,
       error: error,
+      cartQuantity: cartQuantity ?? this.cartQuantity,
     );
   }
 }

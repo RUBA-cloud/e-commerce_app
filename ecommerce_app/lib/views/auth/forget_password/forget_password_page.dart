@@ -142,12 +142,14 @@ class ForgetPasswordPage extends StatelessWidget {
                                         const Icon(Icons.email_outlined),
                                     validator: (v) {
                                       final value = (v ?? '').trim();
-                                      if (value.isEmpty)
+                                      if (value.isEmpty) {
                                         return 'email_required'.tr;
+                                      }
                                       final re =
                                           RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-                                      if (!re.hasMatch(value))
+                                      if (!re.hasMatch(value)) {
                                         return 'invalid_email'.tr;
+                                      }
                                       return null;
                                     },
                                   ),

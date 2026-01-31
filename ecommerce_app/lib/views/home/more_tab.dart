@@ -1,4 +1,5 @@
 import 'package:ecommerce_app/constants/app_routes.dart';
+import 'package:ecommerce_app/repostery%20/profile_repoiistery.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -10,54 +11,68 @@ class MoreTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        MoreTab.headerCard(context),
-        const SizedBox(height: 16),
-        actionCard(
-          icon: Icons.settings_outlined,
-          title: 'settings'.tr,
-          subtitle: 'app_settings_description'.trParams({'app': 'app_name'.tr}),
-          onTap: () => Get.toNamed(AppRoutes.settings),
-          context: context,
-        ),
-        const SizedBox(height: 12),
-        actionCard(
-          icon: Icons.info_outline,
-          title: 'about_us'.tr,
-          subtitle: 'about_us_descripation'.tr,
-          onTap: () => Get.toNamed(AppRoutes.aboutUs),
-          context: context,
-        ),
-        const SizedBox(height: 12),
-        actionCard(
-          icon: Icons.info_outline,
-          title: 'branches'.tr,
-          subtitle: 'about_us_descripation'.tr,
-          onTap: () => Get.toNamed(AppRoutes.branch),
-          context: context,
-        ),
-        actionCard(
-          icon: Icons.ac_unit,
-          title: 'my_orders'.tr,
-          subtitle: 'my_orders_descripation'.tr,
-          onTap: () => Get.toNamed(AppRoutes.orders),
-          context: context,
-        ),
-        actionCard(
-          icon: Icons.logout,
-          title: 'logout'.tr,
-          subtitle: 'logout_subtitle'.tr,
-          onTap: () => _confirmLogout(context, onLogout),
-          color: theme.colorScheme.errorContainer,
-          iconColor: theme.colorScheme.error,
-          titleColor: theme.colorScheme.error,
-          context: context,
-        ),
-        const SizedBox(height: 24),
-        MoreTab.footerVersion(context),
-      ],
+    return Scaffold(
+      appBar: AppBar(title: Text("more".tr),),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          MoreTab.headerCard(context),
+          const SizedBox(height: 16),
+          actionCard(
+            icon: Icons.settings_outlined,
+            title: 'settings'.tr,
+            subtitle: 'app_settings_description'.trParams({'app': 'app_name'.tr}),
+            onTap: () => Get.toNamed(AppRoutes.settings),
+            context: context,
+          ),
+          const SizedBox(height: 12),
+          actionCard(
+            icon: Icons.info_outline,
+            title: 'about_us'.tr,
+            subtitle: 'about_us_descripation'.tr,
+            onTap: () => Get.toNamed(AppRoutes.aboutUs),
+            context: context,
+          ),
+          const SizedBox(height: 12),
+          actionCard(
+            icon: Icons.info_outline,
+            title: 'branches'.tr,
+            subtitle: 'about_us_descripation'.tr,
+            onTap: () => Get.toNamed(AppRoutes.branch),
+            context: context,
+          ),
+          actionCard(
+            icon: Icons.ac_unit,
+            title: 'my_orders'.tr,
+            subtitle: 'my_orders_descripation'.tr,
+            onTap: () => Get.toNamed(AppRoutes.orders),
+            context: context,
+          ),
+         
+          actionCard(
+            icon: Icons.logout,
+            title: 'change_password'.tr,
+            subtitle: 'change_password_subtitle'.tr,
+            onTap: () => Get.toNamed(AppRoutes.changePassword),
+            color: theme.colorScheme.secondaryContainer,
+            iconColor: theme.colorScheme.error,
+            titleColor: theme.colorScheme.error,
+            context: context,
+          ),
+           actionCard(
+            icon: Icons.logout,
+            title: 'logout'.tr,
+            subtitle: 'logout_subtitle'.tr,
+            onTap: () => _confirmLogout(context, onLogout),
+            color: theme.colorScheme.errorContainer,
+            iconColor: theme.colorScheme.error,
+            titleColor: theme.colorScheme.error,
+            context: context,
+          ),
+          const SizedBox(height: 24),
+          MoreTab.footerVersion(context),
+        ],
+      ),
     );
   }
 
@@ -73,7 +88,7 @@ class MoreTab extends StatelessWidget {
         content: Text('are_you_sure_logout'.tr),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
+            onPressed: () => Get.toNamed(AppRoutes.login,),
             child: Text('cancel'.tr),
           ),
           FilledButton(
@@ -89,22 +104,11 @@ class MoreTab extends StatelessWidget {
     );
 
     if (confirmed == true) {
-      try {
-        if (onLogout != null) await Future.sync(onLogout);
-        Get.snackbar(
-          'logout'.tr,
-          'logged_out_success'.tr,
-          snackPosition: SnackPosition.BOTTOM,
-        );
-      } catch (e) {
-        Get.snackbar(
-          'error'.tr,
-          e.toString(),
-          snackPosition: SnackPosition.BOTTOM,
-          // ignore: deprecated_member_use
-          backgroundColor: Colors.red.withOpacity(.08),
-          colorText: Colors.red.shade800,
-        );
+     await ProfileRepository().logout();
+      if (onLogout != null) {
+        onLogout();
+      } else {
+        Get.offAllNamed(AppRoutes.login);
       }
     }
   }

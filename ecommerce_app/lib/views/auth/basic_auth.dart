@@ -1,15 +1,14 @@
 // ignore_for_file: deprecated_member_use
 import 'package:ecommerce_app/components/basic_form.dart';
 import 'package:ecommerce_app/constants/app_routes.dart';
+import 'package:ecommerce_app/constants/colors.dart';
 import 'package:ecommerce_app/constants/text_styles.dart';
-import 'package:ecommerce_app/services/socail_media_services.dart'; // fix typo if needed
 import 'package:ecommerce_app/views/auth/login%20/login_form.dart';
 import 'package:ecommerce_app/views/auth/register/register_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'cubit/basic_auth_cubit.dart';
 
 class BasicAuth extends StatelessWidget {
@@ -34,9 +33,9 @@ class BasicAuth extends StatelessWidget {
 
           final currentIndex = _indexFromState(state);
 
-          return SafeArea(
-            child: Scaffold(
-              body: Container(
+          return Scaffold(
+            body: SafeArea(
+              child: Container(
                 width: double.infinity,
                 height: double.infinity,
                 decoration: BoxDecoration(
@@ -73,7 +72,7 @@ class BasicAuth extends StatelessWidget {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(.05),
+                                color:blackColor.withOpacity(.05),
                                 blurRadius: 20,
                                 offset: const Offset(0, 10),
                               ),
@@ -89,7 +88,7 @@ class BasicAuth extends StatelessWidget {
                             child: Column(
                               children: [
                                 SizedBox(height: 20.h),
-
+                        
                                 Align(
                                   alignment: isAr
                                       ? Alignment.topLeft
@@ -100,7 +99,7 @@ class BasicAuth extends StatelessWidget {
                                         Get.toNamed(AppRoutes.forgetPassword),
                                   ),
                                 ),
-
+                        
                                 // Brand mark
                                 Container(
                                   height: 56.r,
@@ -116,7 +115,7 @@ class BasicAuth extends StatelessWidget {
                                   ),
                                 ),
                                 SizedBox(height: 14.h),
-
+                        
                                 Text(
                                   'welcome'.tr,
                                   style: AppTextStyles.headline(context),
@@ -127,9 +126,9 @@ class BasicAuth extends StatelessWidget {
                                   style: AppTextStyles.bodyMuted(context),
                                   textAlign: TextAlign.center,
                                 ),
-
+                        
                                 SizedBox(height: 18.h),
-
+                        
                                 // TabBar (controlled by Cubit onTap)
                                 Container(
                                   height: 48.h,
@@ -203,9 +202,9 @@ class BasicAuth extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-
+                        
                                 SizedBox(height: 16.h),
-
+                        
                                 // TabBarView
                                 Expanded(
                                   flex: context.read<BasicAuthCubit>().state
@@ -221,7 +220,7 @@ class BasicAuth extends StatelessWidget {
                                     ],
                                   ),
                                 ),
-
+                        
                                 Text("-${"or".tr}"),
                                 SizedBox(height: 8.h),
                                 Expanded(
@@ -239,16 +238,14 @@ class BasicAuth extends StatelessWidget {
                                       ),
                                       IconButton(
                                         color: Colors.red,
-                                        onPressed: () => SocialAuthService
-                                            .instance
-                                            .signInWithGoogle(),
+                                        onPressed: () => {},
+                                  
                                         icon: const Icon(Icons.g_mobiledata),
                                       ),
                                       IconButton(
                                         color: Colors.black,
-                                        onPressed: () => SocialAuthService
-                                            .instance
-                                            .signInWithAppleWeb(),
+                                        onPressed: () => {},
+                                           
                                         icon: const Icon(Icons.apple),
                                       ),
                                     ],

@@ -61,24 +61,22 @@ class BranchesPage extends StatelessWidget {
     );
   }
 
-  Widget _branchCard(BuildContext context, BranchModel branch, bool isAr,
-      VoidCallback onOpenMap) {
+  Widget _branchCard(
+    BuildContext context,
+    BranchModel branch,
+    bool isAr,
+    VoidCallback onOpenMap,
+  ) {
     final theme = Theme.of(context);
     final open = branch.isOpenNow(DateTime.now());
     final statusColor = open ? greenColor : theme.colorScheme.error;
-    final days = <String>[
-      'monday'.tr,
-      'tuesday'.tr,
-      'wednesday'.tr,
-      'thursday'.tr,
-      'friday'.tr,
-      'saturday'.tr,
-      'sunday'.tr,
-    ];
-    final from = (branch.hoursFrom).trim();
-    final to = (branch.hoursTo).trim();
+
+    final from = branch.hoursFrom.trim();
+    final to = branch.hoursTo.trim();
     final showHours = from.isNotEmpty && to.isNotEmpty;
 
+    final workingDays = branch.workingDays; // List<int>
+debugPrint('Branch "${branch.nameEn}" working days: $workingDays');
     return Card(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
@@ -87,8 +85,10 @@ class BranchesPage extends StatelessWidget {
         onTap: onOpenMap,
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: ListView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Title + status
               Row(
                 children: [
                   Expanded(
@@ -107,6 +107,8 @@ class BranchesPage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 10),
+
+              // Address
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -123,6 +125,8 @@ class BranchesPage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 10),
+
+              // Hours + label
               Row(
                 children: [
                   const Icon(Icons.access_time, size: 18),
@@ -136,17 +140,24 @@ class BranchesPage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 10),
+
+              // ✅ Working days chips
               Wrap(
                 spacing: 6,
                 runSpacing: 6,
-                children:
-                    (branch.workingDays.isEmpty ? <int>[] : branch.workingDays)
-                        .map((d) {
-                  final idx = (d - 1).clamp(0, 6);
-                  return _dayChip(context, days[idx]);
-                }).toList(),
+                children: workingDays.isEmpty
+                    ? <Widget>[
+                        _dayChip(context, isAr ? 'لا توجد أيام' : 'No days'),
+                      ]
+                    : workingDays.map((d) {
+                        final label = _weekdayLabel(d, isAr);
+                        return _dayChip(context, label);
+                      }).toList(),
               ),
+
               const Spacer(),
+
+              // Map + coords
               Row(
                 children: [
                   TextButton.icon(
@@ -172,6 +183,16 @@ class BranchesPage extends StatelessWidget {
     );
   }
 
+  /// ✅ Map ISO weekday (1=Mon..7=Sun) to label
+  String _weekdayLabel(int isoDay, bool isAr) {
+    // 1=Mon..7=Sun
+    const en = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const ar = ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
+
+    if (isoDay < 1 || isoDay > 7) return isAr ? 'غير معروف' : 'Unknown';
+    return isAr ? ar[isoDay - 1] : en[isoDay - 1];
+  }
+
   Widget _statusPill(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -183,10 +204,7 @@ class BranchesPage extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
+        style: TextStyle(color: color, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -202,7 +220,10 @@ class BranchesPage extends StatelessWidget {
   }
 
   Widget _errorView(
-      BuildContext context, String message, VoidCallback onRetry) {
+    BuildContext context,
+    String message,
+    VoidCallback onRetry,
+  ) {
     final theme = Theme.of(context);
     return Center(
       child: Padding(

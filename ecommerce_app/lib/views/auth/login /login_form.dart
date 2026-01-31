@@ -1,11 +1,10 @@
-import 'package:ecommerce_app/components/basic_input.dart';
+import 'package:ecommerce_app/components/basic_input.dart' show BasicInput;
 import 'package:ecommerce_app/constants/app_routes.dart';
 import 'package:ecommerce_app/constants/text_styles.dart';
 import 'package:ecommerce_app/views/cubit/login_cubit.dart';
 import 'package:ecommerce_app/views/cubit/login_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 
 /// LOGIN (STATELESS WIDGET)
@@ -19,11 +18,11 @@ class LoginForm extends StatelessWidget {
       create: (_) => LoginCubit(),
       child: BlocConsumer<LoginCubit, LoginState>(
         listener: (context, state) {
+          if (state.verifyEmail == false) {
+            Get.toNamed(AppRoutes.verifyEmail);
+          }
           if (state.success) {
-            Get.toNamed(AppRoutes.home);
-            // Navigator.pushReplacementNamed(context, '/home');
-          } else if (state.error != null) {
-            Fluttertoast.showToast(msg: state.error ?? "");
+            Get.offAllNamed(AppRoutes.home);
           }
         },
         builder: (context, state) {
@@ -35,71 +34,62 @@ class LoginForm extends StatelessWidget {
               autovalidateMode: AutovalidateMode.onUserInteraction,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   // Email
-                  Text(
-                    "email".tr,
-                    style: AppTextStyles.caption(context),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 8),
-                  BasicInput(
+                  labeledBasicInput(
+                    context: context,
+                    labelKey: 'email',
+                    hintKey: 'enter_email',
                     controller: cubit.emailCtrl,
-                    label: 'email'.tr,
-                    hintText: 'enter_email'.tr,
-                    keyboardType: TextInputType.emailAddress,
-                    isBorder: true,
+                    icon: Icons.email,
                     radius: 40,
-                    prefixIcon: const Icon(Icons.email),
+                    keyboardType: TextInputType.emailAddress,
                     validator: (v) {
                       final value = (v ?? '').trim();
                       if (value.isEmpty) return 'email_required'.tr;
-                      final re = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-                      if (!re.hasMatch(value)) return 'enter_valid_email'.tr;
+                      final re =
+                          RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                      if (!re.hasMatch(value)) {
+                        return 'enter_valid_email'.tr;
+                      }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
 
                   // Password
-                  Text(
-                    "password".tr,
-                    style: AppTextStyles.caption(context),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 8),
-                  BasicInput(
+                  labeledBasicInput(
+                    context: context,
+                    labelKey: 'password',
+                    hintKey: 'enter_password',
                     controller: cubit.passwordCtrl,
-                    label: 'password'.tr,
-                    hintText: 'enter_password'.tr,
-                    isPassword: true,
-                    isBorder: true,
+                    icon: Icons.lock,
                     radius: 40,
-                    prefixIcon: const Icon(Icons.lock),
-                    validator: (v) => (v == null || v.isEmpty)
-                        ? 'password_is_required'.tr
-                        : null,
+                    isPassword: true,
+                    validator: (v) =>
+                        (v == null || v.isEmpty)
+                            ? 'password_is_required'.tr
+                            : null,
                   ),
                   const SizedBox(height: 24),
 
+                  // Button / loader
                   state.loading
-                      ? Center(child: const CircularProgressIndicator())
+                      ? const Center(child: CircularProgressIndicator())
                       : SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(
-                                context,
-                              ).primaryColor, // main color
-                              foregroundColor: Colors.white, // text color
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  12,
-                                ), // rounded corners
+                              backgroundColor:
+                                  Theme.of(context).primaryColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 16,
                               ),
-                              elevation: 4, // slight shadow
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 4,
                             ),
                             onPressed: () => cubit.submit(),
                             child: Text(
@@ -119,4 +109,44 @@ class LoginForm extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 🔹 دالة shared لليبل + BasicInput
+Widget labeledBasicInput({
+  required BuildContext context,
+  required String labelKey, // 'email' / 'password' ...
+  String? hintKey,          // 'enter_email' ...
+  required TextEditingController controller,
+  required IconData icon,
+  bool isPassword = false,
+  TextInputType? keyboardType,
+  String? Function(String?)? validator,
+  void Function(String)? onChanged,
+  double radius = 30,
+}) {
+  final labelText = labelKey.tr;
+  final hintText = (hintKey ?? labelKey).tr;
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        labelText,
+        style: AppTextStyles.caption(context),
+      ),
+      const SizedBox(height: 8),
+      BasicInput(
+        controller: controller,
+        label: labelText,
+        hintText: hintText,
+        isPassword: isPassword,
+        keyboardType: keyboardType,
+        isBorder: true,
+        radius: radius,
+        prefixIcon: Icon(icon),
+        onChanged: onChanged,
+        validator: validator,
+      ),
+    ],
+  );
 }

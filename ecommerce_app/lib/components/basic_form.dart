@@ -15,8 +15,10 @@ class BasicFormWidget extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
+                // ignore: deprecated_member_use
                 scheme.primaryContainer.withOpacity(.45),
-                scheme.surfaceVariant.withOpacity(.35),
+                // ignore: deprecated_member_use
+                scheme.surfaceContainerHighest.withOpacity(.35),
                 scheme.surface,
               ],
               begin: Alignment.topLeft,
@@ -29,11 +31,13 @@ class BasicFormWidget extends StatelessWidget {
         Positioned(
           top: -80,
           left: -50,
+          // ignore: deprecated_member_use
           child: _blurBall(scheme.primary.withOpacity(.18), 200),
         ),
         Positioned(
           bottom: -100,
           right: -60,
+          // ignore: deprecated_member_use
           child: _blurBall(scheme.secondary.withOpacity(.16), 240),
         ),
 
@@ -52,6 +56,7 @@ class BasicFormWidget extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
+            // ignore: deprecated_member_use
             color: color.withOpacity(0.9),
             blurRadius: size * 0.35,
             spreadRadius: size * 0.12,
