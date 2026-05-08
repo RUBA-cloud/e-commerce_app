@@ -1,12 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
 import 'package:ecommerce_app/data/model/request/register_request.dart';
-import 'package:ecommerce_app/presentation/home_screen.dart';
 import 'package:ecommerce_app/presentation/login_screen.dart';
-
+import 'package:ecommerce_app/presentation/verify_email_screen.dart';
 import 'package:ecommerce_app/presentation/widgets/basic_form_filed.dart';
 import 'package:ecommerce_app/services/company_info/company_info_cubit.dart';
 import 'package:ecommerce_app/services/company_info/company_info_state.dart';
+import 'package:ecommerce_app/services/login/login_cubit.dart';
 import 'package:ecommerce_app/services/register/register_cubit.dart';
 
 import 'package:flutter/material.dart';
@@ -16,115 +16,108 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
-  static void push(BuildContext context) => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => BlocProvider(
-            create: (_) => RegisterCubit()..getCountryAndCity(),
-            child: const RegisterScreen(),
-          ),
-        ),
-      );
-
-  static void pushReplacement(BuildContext context) =>
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => BlocProvider(
-            create: (_) => RegisterCubit()..getCountryAndCity(),
-            child: const RegisterScreen(),
-          ),
-        ),
-      );
-
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
 class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
-  final nameCtrl     = TextEditingController();
-  final emailCtrl    = TextEditingController();
-  final passwordCtrl = TextEditingController();
-  final phoneCtrl    = TextEditingController();
-  final formKey      = GlobalKey<FormState>();
+  final _nameCtrl     = TextEditingController();
+  final _emailCtrl    = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  final _phoneCtrl    = TextEditingController();
+  final _formKey      = GlobalKey<FormState>();
 
   @override
-  void initState() {
-    super.initState();
-    // ✅ getCountryAndCity already called via ..getCountryAndCity() in push()
-    // but also safe to call here if screen is built from elsewhere
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // FIX: moved from initState — context is safe here
     RegisterCubit.get(context).getCountryAndCity();
   }
 
   @override
   void dispose() {
-    nameCtrl.dispose();
-    emailCtrl.dispose();
-    passwordCtrl.dispose();
-    phoneCtrl.dispose();
+    _nameCtrl.dispose();
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    _phoneCtrl.dispose();
     super.dispose();
+  }
+
+  // FIX: pass all field values to submit so cubit doesn't need
+  // to hold controller references
+  void _submit(RegisterCubit cubit) {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    cubit.submit(
+       RegisterRequest(
+        name:     _nameCtrl.text.trim(),
+        email:    _emailCtrl.text.trim(),
+        phone:    _phoneCtrl.text.trim(),
+        password: _passwordCtrl.text,
+        country:  cubit.country,
+        city:     cubit.city,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // ── Outer: company info → colors ─────────────────────────
     return BlocBuilder<CompanyInfoCubit, CompanyInfoState>(
       buildWhen: (prev, curr) =>
-          curr is CompanyInfoLoaded || curr is CompanyInfoUpdated,
+      curr is CompanyInfoLoaded || curr is CompanyInfoUpdated,
       builder: (context, companyState) {
         final c       = companyColors(companyState);
         final surface = Theme.of(context).colorScheme.surface;
 
-        // ── Navigation side-effects ───────────────────────────
         return BlocListener<RegisterCubit, RegisterState>(
           listener: (context, state) {
-            if (state is RegisterSuccess) {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
-                (_) => false,
+            if (state is RegisterUnverified) {
+              navigateTo(
+                context: context,
+                page: BlocProvider.value(
+                  value: RegisterCubit.get(context),
+                  child: VerifyEmailScreen(
+                    email: _emailCtrl.text.trim(),
+                  ),
+                ),
               );
               return;
             }
-
-            if (state is RegisterUnverified) {
-              // ✅ pass real email — not placeholder "<EMAIL>"
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(
-              //     builder: (_) => BlocProvider(
-              //       create: (_) => VerifyEmailCubit(),
-              //       child: VerifyEmailScreen(
-              //         email: emailCtrl.text.trim(),
-              //       ),
-              //     ),
-              //   ),
-              // );
+            if (state is EmailAlreadyExist) {
+              showSnackBar(context: context,success: false, message: "email_already_exists".tr());
+              return;
+            }
+            if (state is PhoneAlreadyExist) {
+              showSnackBar(context: context,success: false, message: "phone_already_exists".tr());
+              return;
+            }
+            if (state is BackToLogin) {
+              navigateTo(
+                context:  context,
+                replace:  true,
+                page: BlocProvider(
+                  create: (_) => LoginCubit(),
+                  child:  const LoginScreen(),
+                ),
+              );
               return;
             }
 
             if (state is RegisterFailed) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content:         Text(state.message),
-                  backgroundColor: Colors.red.shade700,
-                  behavior:        SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-              );
+              // FIX: showSnackBar doesn't exist in UiUtility —
+              // use ScaffoldMessenger directly
+            showSnackBar(context: context, message: state.message,success: false);
             }
           },
 
-          // ── Inner: register state → UI ────────────────────────
           child: BlocBuilder<RegisterCubit, RegisterState>(
             buildWhen: (prev, curr) =>
-                curr is RegisterLoading ||
+            curr is RegisterLoading ||
                 curr is RegisterSuccess  ||
                 curr is RegisterFailed   ||
                 curr is RegisterInitial,
             builder: (context, registerState) {
-              final cubit = RegisterCubit.get(context);
+              final cubit     = RegisterCubit.get(context);
+              final isLoading = registerState is RegisterLoading;
 
               return Scaffold(
                 backgroundColor: c.card,
@@ -137,20 +130,22 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
                         physics: const BouncingScrollPhysics(),
                         padding: EdgeInsets.symmetric(horizontal: 28.w),
                         child: Form(
-                          key: formKey,
+                          key: _formKey,
                           autovalidateMode:
-                              AutovalidateMode.onUserInteraction,
+                          AutovalidateMode.onUserInteraction,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               SizedBox(height: 20.h),
 
-                              // ── Back button ─────────────────────
-                               backButton(c: c),
-                              
+                              // Back button
+                              backButton(
+                                c:     c,
+                                onTap: () => cubit.goToLogin(),
+                              ),
                               SizedBox(height: 28.h),
 
-                              // ── Brand logo ──────────────────────
+                              // Brand logo
                               Center(
                                 child: brandLogo(
                                   c:    c,
@@ -159,7 +154,7 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
                               ),
                               SizedBox(height: 28.h),
 
-                              // ── Headline ────────────────────────
+                              // Headline
                               screenHeadline(
                                 title:    'create_account'.tr(),
                                 subtitle: 'register_subtitle'.tr(),
@@ -167,25 +162,25 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
                               ),
                               SizedBox(height: 36.h),
 
-                              // ── Form card ───────────────────────
+                              // Form card
                               formCard(
                                 surfaceColor: surface,
                                 shadowColor:  c.main,
                                 child: Column(
                                   crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  CrossAxisAlignment.start,
                                   children: [
                                     // Name
                                     fieldLabel('name'.tr(), c.label),
                                     SizedBox(height: 8.h),
                                     BasicInput(
-                                      controller: nameCtrl,
+                                      controller: _nameCtrl,
                                       hintText:   'enter_name'.tr(),
+                                      isBorder:   false,
+                                      radius:     14,
                                       prefixIcon: Icon(
                                           Icons.person_outline,
                                           color: c.main),
-                                    isBorder:false,
-                                      radius:   14,
                                       validator: (v) {
                                         final val = (v ?? '').trim();
                                         if (val.isEmpty) {
@@ -203,22 +198,21 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
                                     fieldLabel('email'.tr(), c.label),
                                     SizedBox(height: 8.h),
                                     BasicInput(
-                                      controller:   emailCtrl,
-                                      hintText:     'enter_email'.tr(),
-                                      keyboardType:
-                                          TextInputType.emailAddress,
+                                      controller:   _emailCtrl,
+                                      hintText:     'enter.tr()${'email'.tr()}',
+                                      isBorder:     false,
+                                      radius:       14,
+                                      keyboardType: TextInputType.emailAddress,
                                       prefixIcon: Icon(
                                           Icons.email_outlined,
                                           color: c.main),
-                                    isBorder:false,
-                                      radius:   14,
                                       validator: (v) {
                                         final val = (v ?? '').trim();
                                         if (val.isEmpty) {
                                           return 'email_required'.tr();
                                         }
                                         if (!RegExp(
-                                                r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                                            r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
                                             .hasMatch(val)) {
                                           return 'enter_valid_email'.tr();
                                         }
@@ -231,14 +225,14 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
                                     fieldLabel('phone'.tr(), c.label),
                                     SizedBox(height: 8.h),
                                     BasicInput(
-                                      controller:   phoneCtrl,
+                                      controller:   _phoneCtrl,
                                       hintText:     'enter_phone'.tr(),
+                                      isBorder:     false,
+                                      radius:       14,
                                       keyboardType: TextInputType.phone,
                                       prefixIcon: Icon(
                                           Icons.phone_outlined,
                                           color: c.main),
-                                    isBorder:false,
-                                      radius:   14,
                                       validator: (v) {
                                         if ((v ?? '').trim().isEmpty) {
                                           return 'phone_required'.tr();
@@ -252,66 +246,55 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
                                     fieldLabel('password'.tr(), c.label),
                                     SizedBox(height: 8.h),
                                     BasicInput(
-                                      controller: passwordCtrl,
+                                      controller: _passwordCtrl,
                                       hintText:   'enter_password'.tr(),
+                                      isBorder:   false,
+                                      radius:     14,
                                       isPassword: true,
                                       prefixIcon: Icon(
                                           Icons.lock_outline,
                                           color: c.main),
-                                    isBorder:false,
-                                      radius:   14,
                                       validator: (v) {
                                         if (v == null || v.isEmpty) {
-                                          return 'password_is_required'
-                                              .tr();
+                                          return 'password_is_required'.tr();
                                         }
                                         if (v.length < 8) {
-                                          return 'password_too_short'
-                                              .tr();
+                                          return 'password_too_short'.tr();
                                         }
                                         return null;
                                       },
                                     ),
                                     SizedBox(height: 28.h),
 
-                                    // Submit
+                                    // Submit button
                                     primaryButton(
-                                      label: 'register'.tr(),
-                                      loading:
-                                          registerState is RegisterLoading,
+                                      label:           'register'.tr(),
+                                      loading:         cubit.state  is RegisterLoading,
                                       backgroundColor: c.button,
                                       foregroundColor: c.buttonText,
-                                      onPressed: () {
-                                        if (!formKey.currentState!
-                                            .validate()) return;
-                                        // ✅ submit reads from controllers
-                                        //    inside cubit — no params needed
-                                        cubit.submit();
-                                      },
+                                      // FIX: disabled while loading
+                                      onPressed: isLoading
+                                          ? null
+                                          : () => _submit(cubit),
                                     ),
                                   ],
                                 ),
                               ),
                               SizedBox(height: 28.h),
 
-                              // ── Divider ─────────────────────────
                               orDivider(c: c),
                               SizedBox(height: 28.h),
 
-                              // ── Login CTA ───────────────────────
+                              // Login CTA
                               Center(
                                 child: authLink(
-                                  question:  'have_account'.tr(),
-                                  action:    'login'.tr(),
-                                  c:     c,
-                                  onTap: () => Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const LoginScreen(),
-                                    ),
-                                  ),
+                                  question: 'have_account'.tr(),
+                                  action:   'login'.tr(),
+                                  c:        c,
+                                  onTap:    () => cubit.goToLogin(),
                                 ),
                               ),
+
                               SizedBox(height: 32.h),
                             ],
                           ),

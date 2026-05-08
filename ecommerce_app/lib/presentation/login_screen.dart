@@ -55,9 +55,19 @@ class _LoginScreenState extends State<LoginScreen> with UiUtility {
         // ── Navigation side-effects ───────────────────────────
         return BlocListener<LoginCubit, LoginState>(
           listener: (context, state) {
-            if (state is LoginUnverified) {
-              navigateTo(context: context, page: BlocProvider.value(value: loginCubit,child: VerifyEmailScreen(email: emailCtrl.text)));
-              return;
+
+              if (state is LoginUnverified) {
+                navigateTo(
+                  context: context,
+                  page: BlocProvider(
+                    create: (_) => RegisterCubit(),
+                    child: VerifyEmailScreen(
+                      email: emailCtrl.text.trim(),
+                    ),
+                  ),
+                );
+                return;
+
             }
 
             if (state is LoginSuccess) {
@@ -67,16 +77,19 @@ class _LoginScreenState extends State<LoginScreen> with UiUtility {
               navigateTo(context: context, page: BlocProvider.value(value: loginCubit,child: ForgotPassword(),)); return;
             }
             // ✅ goToRegister handled here — no phantom state needed
-            if (state is LoginFailed) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content:         Text(state.message),
-                  backgroundColor: Colors.red.shade700,
-                  behavior:        SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+            if (state is GoToRegister) {
+              navigateTo(
+                context: context,
+                page: BlocProvider(
+                  create: (_) => RegisterCubit(),
+                  child: const RegisterScreen(),
                 ),
               );
+              return;
+            }
+            if (state is LoginFailed) {
+              showSnackBar(context: context, message: state.message,success: false);
+
             }
           },
 
@@ -181,7 +194,7 @@ class _LoginScreenState extends State<LoginScreen> with UiUtility {
                                       alignment:
                                           AlignmentDirectional.centerEnd,
                                       child: TextButton(
-                                        onPressed: (){},
+                                        onPressed: (){cubit.goToForgotPassword();},
                                           
                                         
                                         style: TextButton.styleFrom(
@@ -242,16 +255,7 @@ class _LoginScreenState extends State<LoginScreen> with UiUtility {
                                   
                                   // ✅ push without named route —
                                   //    BlocProvider wraps RegisterScreen
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => BlocProvider(
-                                        create: (_) => RegisterCubit()
-                                          ..getCountryAndCity(),
-                                        child: const RegisterScreen(),
-                                      ),
-                                    ),
-                                  ),
+                                  onTap: () => cubit.goToRegister(),
                                 ),
                               ),
                               SizedBox(height: 32.h),

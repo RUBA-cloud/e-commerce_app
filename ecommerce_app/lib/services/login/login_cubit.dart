@@ -1,4 +1,5 @@
 // login_cubit.dart
+import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/core/di/api_result.dart';
 import 'package:ecommerce_app/core/di/configure_dependency.dart';
 import 'package:ecommerce_app/data/model/request/email_request.dart';
@@ -26,7 +27,6 @@ class LoginCubit extends Cubit<LoginState> {
   Future<void> getCountryAndCity() async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) return;
-
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
@@ -72,7 +72,7 @@ class LoginCubit extends Cubit<LoginState> {
           if (code == 403) {
             emit(LoginUnverified());
           } else {
-            emit(LoginFailed(result.error ?? 'unknown_error'));
+            emit(LoginFailed(result.error ?? 'login_failed'.tr()));
           }
       }
     } catch (e) {

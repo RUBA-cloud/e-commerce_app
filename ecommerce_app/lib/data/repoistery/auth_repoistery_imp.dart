@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:ecommerce_app/core/di/api_result.dart';
 import 'package:ecommerce_app/data/api_service/api_service.dart';
@@ -9,48 +11,121 @@ import 'package:ecommerce_app/data/model/response/login_entity.dart';
 import 'package:ecommerce_app/data/model/response/register_entity.dart';
 import 'package:ecommerce_app/domain/repoistery/auth_repoistery.dart';
 import 'package:injectable/injectable.dart';
+
 @Injectable(as: AuthRepoistery)
 class AuthRepoisteryImpl implements AuthRepoistery {
   final ApiService _apiService;
 
-  // FIX: ApiService is a Retrofit abstract class — Retrofit generates
-  // ApiServiceImpl at build time. Never call ApiService() directly;
-  // receive it from your DI container (get_it) instead.
   const AuthRepoisteryImpl({required ApiService apiService})
       : _apiService = apiService;
 
+  // ── Login ──────────────────────────────────────────────────────────────────
   @override
   Future<ApiResult<LoginEntity>> login(LoginRequest loginRequest) async {
     try {
       final entity = await _apiService.login(loginRequest);
       return Success(data: entity, statusCode: 200);
     } on DioException catch (e) {
-      final code = e.response?.statusCode;
-      if (code == 403) {
-        return Failure(
-          error: _extractError(e.response?.data) ?? 'account_not_verified',
-          statusCode: code,
-        );
-      }
-      return Failure(error: _parseDioError(e), statusCode: code);
+      return Failure(
+        error:      _encodeError(e),
+        statusCode: e.response?.statusCode,
+      );
     } catch (e) {
       return Failure(error: e.toString());
     }
   }
 
-  // ── helpers ───────────────────────────────────────────────────────────────
-  String? _extractError(dynamic data) {
-    if (data is! Map<String, dynamic>) return null;
-    return data['message']?.toString() ?? data['error']?.toString();
+  // ── Register ───────────────────────────────────────────────────────────────
+  @override
+  Future<ApiResult<RegisterEntity>> register(RegisterRequest request) async {
+    try {
+      final entity = await _apiService.register(request);
+      return Success(data: entity, statusCode: 200);
+    } on DioException catch (e) {
+      // FIX: pass full JSON so Failure can parse errors map
+      // e.g. {"status":"validation_error","errors":{"email":[...]}}
+      // _parseDioError was only returning message string — hasFieldError()
+      // in the cubit would always return false because _parsed was empty
+      return Failure(
+        error:      _encodeError(e),
+        statusCode: e.response?.statusCode,
+      );
+    } catch (e) {
+      return Failure(error: e.toString());
+    }
   }
 
-  String _parseDioError(DioException e) {
-    final data = e.response?.data;
-    if (data is Map<String, dynamic>) {
-      return data['message']?.toString() ??
-          data['error']?.toString() ??
-          'server_error';
+  // ── Forgot password ────────────────────────────────────────────────────────
+  @override
+  Future<ApiResult<EmailEntity>> forgetPassword(
+      EmailRequest forgetRequest) async {
+    try {
+      final entity = await _apiService.forgotPassword(forgetRequest);
+      return Success(data: entity, statusCode: 200);
+    } on DioException catch (e) {
+      return Failure(
+        error:      _encodeError(e),
+        statusCode: e.response?.statusCode,
+      );
+    } catch (e) {
+      return Failure(error: e.toString());
     }
+  }
+
+  // ── Resend forgot password email ───────────────────────────────────────────
+  @override
+  Future<ApiResult<EmailEntity>> resendForgetEmail(
+      EmailRequest forgetPassword) async {
+    try {
+      final entity = await _apiService.forgotPassword(forgetPassword);
+      return Success(data: entity, statusCode: 200);
+    } on DioException catch (e) {
+      return Failure(
+        error:      _encodeError(e),
+        statusCode: e.response?.statusCode,
+      );
+    } catch (e) {
+      return Failure(error: e.toString());
+    }
+  }
+
+  // ── Resend verify email ────────────────────────────────────────────────────
+  @override
+  Future<ApiResult<EmailEntity>> resendVerifyEmail(
+      EmailRequest request) async {
+    try {
+      final entity = await _apiService.resendVerifyEmail(request);
+      return Success(data: entity, statusCode: 200);
+    } on DioException catch (e) {
+      return Failure(
+        error:      _encodeError(e),
+        statusCode: e.response?.statusCode,
+      );
+    } catch (e) {
+      return Failure(error: e.toString());
+    }
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  // FIX: renamed from _parseDioError — old version extracted only the message
+  // string, losing the full errors map. Now returns the full JSON string so
+  // Failure._tryDecode can parse errors, status, message — all cubit helpers
+  // (hasFieldError, isValidation, message) depend on the full JSON being here.
+  String _encodeError(DioException e) {
+    final data = e.response?.data;
+
+    // Server returned a JSON body — re-encode to string for Failure to parse
+    if (data is Map<String, dynamic>) {
+      try {
+        return jsonEncode(data);
+      } catch (_) {}
+    }
+
+    // Server returned plain string
+    if (data is String && data.isNotEmpty) return data;
+
+    // No response body — map Dio error type to a readable key
     return switch (e.type) {
       DioExceptionType.connectionTimeout => 'connection_timeout',
       DioExceptionType.receiveTimeout    => 'receive_timeout',
@@ -60,70 +135,4 @@ class AuthRepoisteryImpl implements AuthRepoistery {
       _                                  => e.message ?? 'unknown_error',
     };
   }
-
-  @override
-  Future<ApiResult<RegisterEntity>> register(RegisterRequest loginRequest)async {
-    try {
-      final entity = await _apiService.register(loginRequest);
-      return Success(data: entity, statusCode: 200);
-    } on DioException catch (e) {
-      final code = e.response?.statusCode;
-      if (code == 403) {
-        return Failure(
-          error: _extractError(e.response?.data) ?? 'account_not_verified',
-          statusCode: code,
-        );
-      }
-      return Failure(error: _parseDioError(e), statusCode: code);
-    } catch (e) {
-      return Failure(error: e.toString());
-    }
-  }
-
-
-  @override
-  Future<ApiResult<EmailEntity>>forgetPassword(EmailRequest forgetRequest)async {
-    try {
-      final entity = await _apiService.forgotPassword(forgetRequest);
-      return Success(data: entity, statusCode: 200);
-    } on DioException catch (e) {
-      final code = e.response?.statusCode;
-      return Failure(error: _parseDioError(e), statusCode: code);
-    } catch (e) {
-      return Failure(error: e.toString());
-    }
-  }
-
-  @override
-  Future<ApiResult<EmailEntity>> resendForgetEmail(EmailRequest forgetPassword)async {
-    try {
-      final entity = await _apiService.forgotPassword(forgetPassword);
-      return Success(data: entity, statusCode: 200);
-    } on DioException catch (e) {
-      final code = e.response?.statusCode;
-      return Failure(error: _parseDioError(e), statusCode: code);
-    } catch (e) {
-      return Failure(error: e.toString());
-    }
-  }
-
-  @override
-  Future<ApiResult<EmailEntity>> resendVerifyEmail(EmailRequest forgetPassword)async {
-    try {
-      final entity = await _apiService.resendVerifyEmail(forgetPassword);
-      return Success(data: entity, statusCode: 200);
-    } on DioException catch (e) {
-      final code = e.response?.statusCode;
-      return Failure(error: _parseDioError(e), statusCode: code);
-    } catch (e) {
-      return Failure(error: e.toString());
-    }
-  }
 }
-
-
-// ── get_it wiring (add this to your injection.dart) ──────────────────────────
-//
-// getIt.registerLazySingleton<AuthRepoistery>(
-//   () => AuthRepoisteryImpl(apiService: getIt<ApiService>()),
-// );

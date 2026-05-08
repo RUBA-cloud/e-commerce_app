@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/core/di/api_result.dart';
 import 'package:ecommerce_app/core/di/configure_dependency.dart';
@@ -6,7 +8,6 @@ import 'package:ecommerce_app/data/model/request/register_request.dart';
 import 'package:ecommerce_app/data/model/response/register_entity.dart';
 import 'package:ecommerce_app/domain/usecases/register_use_case.dart';
 import 'package:ecommerce_app/domain/usecases/resend_verify_email.dart';
-import 'package:ecommerce_app/domain/usecases/resend_verify_use_case.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geocoding/geocoding.dart';
@@ -26,12 +27,6 @@ class RegisterCubit extends Cubit<RegisterState> {
   String country = 'Jordan';
   String city    = 'Amman';
 
-  // ── Form controllers ──────────────────────────────────────
-  final nameController     = TextEditingController();
-  final emailController    = TextEditingController();
-  final passwordController = TextEditingController();
-  final phoneController    = TextEditingController();
-  final formKey            = GlobalKey<FormState>();
 
   // ── Password visibility toggle ────────────────────────────
   bool _obscurePassword = true;
@@ -43,14 +38,6 @@ class RegisterCubit extends Cubit<RegisterState> {
     emit(state);
   }
 
-  @override
-  Future<void> close() {
-    nameController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
-    phoneController.dispose();
-    return super.close();
-  }
 
   // ── GPS → country & city ──────────────────────────────────
   Future<void> getCountryAndCity() async {
@@ -86,70 +73,45 @@ class RegisterCubit extends Cubit<RegisterState> {
   }
 
   // ── Submit ────────────────────────────────────────────────
-  Future<void> submit() async {
+  Future<void> submit(RegisterRequest request) async {
     if (state is RegisterLoading) return;
-    if (!(formKey.currentState?.validate() ?? false)) return;
-
     emit(const RegisterLoading());
 
     try {
-      final request = RegisterRequest(
-        name:     nameController.text.trim(),
-        email:    emailController.text.trim(),
-        password: passwordController.text,
-        phone:    phoneController.text.trim(),
-        country:  country,
-        city:     city,
-      );
+
 
       final result = await _registerUseCase.execute(request);
 
       switch (result) {
         case Success<RegisterEntity>():
-          emit(const RegisterSuccess());
+          emit(const RegisterUnverified());
+
 
         case Failure():
           final code = result.statusCode;
+
+          if (result.isValidation) {
+            if (result.hasFieldError('email')) {
+              emit(const EmailAlreadyExist());
+            } else if (result.hasFieldError('phone')) {
+              emit(const PhoneAlreadyExist());
+            } else {
+              emit(RegisterFailed(result.message));
+            }
+            return;
+          }
+
           if (code == 403) {
             emit(const RegisterUnverified());
           } else {
-            emit(RegisterFailed(
-              result.error ?? 'unknown_error'.tr(),
-            ));
+            emit(RegisterFailed(result.message));
           }
+
       }
     } catch (e) {
       emit(RegisterFailed(e.toString()));
     }
   }
-
-  // ── Verify OTP ────────────────────────────────────────────
-  Future<void> verify({
-    required String otp,
-    required String email,
-  }) async {
-    if (state is VerifyEmailLoading) return;
-    emit(const VerifyEmailLoading());
- 
-    // try {
-    //   final result = await _verifyUseCase.execute(
-    //     otp:   otp,
-    //     email: email,
-    //   );
- 
-    //   switch (result) {
-    //     case Success():
-    //       emit(const VerifyEmailSuccess());
-    //     case Failure():
-    //       emit(VerifyEmailFailed(
-    //         result.error ?? 'unknown_error'.tr(),
-    //       ));
-    //   }
-    // } catch (e) {
-    //   emit(VerifyEmailFailed(e.toString()));
-    // }
-  }
- 
   // ── Resend OTP ────────────────────────────────────────────
   Future<void> resendEmailVerify({required String email}) async {
     if (state is VerifyEmailResendLoading) return;
@@ -170,6 +132,8 @@ class RegisterCubit extends Cubit<RegisterState> {
       emit(VerifyEmailFailed(e.toString()));
     }
   }
+
+  void goToLogin() { emit(const BackToLogin());}
 
 
 }

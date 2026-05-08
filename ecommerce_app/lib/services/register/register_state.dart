@@ -27,30 +27,44 @@ class RegisterUnverified extends RegisterState {
 /// Any failure — network, server, validation.
 class RegisterFailed extends RegisterState {
   const RegisterFailed(this.message);
-
   final String message;
 }
-class VerifyEmailInitial extends   RegisterState {
+
+class VerifyEmailInitial extends RegisterState {
   const VerifyEmailInitial();
 }
- 
-class VerifyEmailLoading extends   RegisterState {
+
+class VerifyEmailLoading extends RegisterState {
   const VerifyEmailLoading();
 }
- 
-class VerifyEmailSuccess extends   RegisterState {
+
+class VerifyEmailSuccess extends RegisterState {
   const VerifyEmailSuccess();
 }
- 
-class VerifyEmailFailed extends   RegisterState {
+
+class VerifyEmailFailed extends RegisterState {
   const VerifyEmailFailed(this.message);
   final String message;
 }
- 
-class VerifyEmailResendLoading extends   RegisterState {
+
+class VerifyEmailResendLoading extends RegisterState {
   const VerifyEmailResendLoading();
 }
- 
-class VerifyEmailResendSuccess extends   RegisterState {
+
+class VerifyEmailResendSuccess extends RegisterState {
   const VerifyEmailResendSuccess();
+}
+
+// FIX: constructor was named EmailAlreadyExistt (typo) and missing const
+class EmailAlreadyExist extends RegisterState {
+  const EmailAlreadyExist();
+}
+
+class PhoneAlreadyExist extends RegisterState {
+  // FIX: renamed PhonelAlreadyExist → PhoneAlreadyExist (typo: extra 'l')
+  const PhoneAlreadyExist();
+}
+
+class BackToLogin extends RegisterState {
+  const BackToLogin();
 }

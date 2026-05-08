@@ -87,7 +87,7 @@ mixin UiUtility {
         backgroundColor: c.main,
         foregroundColor: c.buttonText,
         iconTheme:       IconThemeData(color: c.icon),
-        titleTextStyle: TextStyle(
+        titleTextStyle:  TextStyle(
             color: c.buttonText, fontSize: 18, fontWeight: FontWeight.w600),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -189,7 +189,7 @@ mixin UiUtility {
   ];
 
   // ════════════════════════════════════════════════════════════════
-  // AUTH WIDGETS
+  // AUTH WIDGETS — delegates to top-level widget classes
   // ════════════════════════════════════════════════════════════════
 
   Widget brandLogo({
@@ -207,18 +207,28 @@ mixin UiUtility {
 
   Widget orDivider({required CompanyColors c}) => _OrDivider(c: c);
 
+  // FIX: backButton was inlined with widget/context/animation references
+  // that don't exist in a mixin — replaced with delegation to _AuthBackButton
+  Widget backButton({
+    required CompanyColors c,
+    VoidCallback?          onTap,
+  }) =>
+      _AuthBackButton(color: c.main, onTap: onTap);
+
+  // FIX: authLink now delegates to AuthLink (public top-level widget)
   Widget authLink({
     required String        question,
     required String        action,
     required CompanyColors c,
     required VoidCallback  onTap,
   }) =>
-      _AuthLink(
-          question: question, action: action,
-          color: c.main, hintColor: c.hint, onTap: onTap);
-
-  Widget backButton({required CompanyColors c}) =>
-      _AuthBackButton(color: c.main);
+      AuthLink(
+        question:  question,
+        action:    action,
+        color:     c.main,
+        hintColor: c.hint,
+        onTap:     onTap,
+      );
 
   Widget stepBadge({
     required int           step,
@@ -241,8 +251,7 @@ mixin UiUtility {
   }) =>
       _InfoChip(label: label, icon: icon, color: c.main);
 
-  Widget meshBackground({required CompanyColors c}) =>
-      _MeshBackground(c: c);
+  Widget meshBackground({required CompanyColors c}) => _MeshBackground(c: c);
 
   Widget glassCard({
     required Widget        child,
@@ -267,10 +276,17 @@ mixin UiUtility {
   }) =>
       _StepProgress(current: current, total: total, c: c);
 
-  Widget hexBackground({required Color color}) =>
-      _HexBackground(color: color);
+  Widget hexBackground({required Color color}) => _HexBackground(color: color);
 
   Widget trustBadges({required CompanyColors c}) => _TrustBadges(c: c);
+
+  // FIX: successCard now delegates to SuccessCard (public top-level widget)
+  Widget successCard({
+    required CompanyColors c,
+    required String        email,
+    required VoidCallback  onTap,
+  }) =>
+      SuccessCard(c: c, email: email, onTap: onTap);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -304,7 +320,7 @@ class CompanyColors {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// BASE WIDGETS
+// PRIVATE SUB-WIDGETS  (file-private, used only by the mixin above)
 // ════════════════════════════════════════════════════════════════════════════
 
 class _FieldLabel extends StatelessWidget {
@@ -313,17 +329,15 @@ class _FieldLabel extends StatelessWidget {
   final Color  color;
 
   @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize:      13.sp,
-        fontWeight:    FontWeight.w600,
-        color:         color,
-        letterSpacing: 0.2,
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Text(
+    text,
+    style: TextStyle(
+      fontSize:      13.sp,
+      fontWeight:    FontWeight.w600,
+      color:         color,
+      letterSpacing: 0.2,
+    ),
+  );
 }
 
 class _Blob extends StatelessWidget {
@@ -332,12 +346,11 @@ class _Blob extends StatelessWidget {
   final Color  color;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size, height: size,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-    );
-  }
+  Widget build(BuildContext context) => Container(
+    width:  size,
+    height: size,
+    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  );
 }
 
 // ── Primary Button ────────────────────────────────────────────────────────────
@@ -380,10 +393,7 @@ class _PrimaryButtonState extends State<_PrimaryButton>
   }
 
   @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
+  void dispose() { _ctrl.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -424,9 +434,11 @@ class _PrimaryButtonState extends State<_PrimaryButton>
           alignment: Alignment.center,
           child: widget.loading
               ? SizedBox(
-              width: 22, height: 22,
-              child: CircularProgressIndicator(
-                  color: widget.foregroundColor, strokeWidth: 2.5))
+            width:  22,
+            height: 22,
+            child: CircularProgressIndicator(
+                color: widget.foregroundColor, strokeWidth: 2.5),
+          )
               : Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -466,28 +478,27 @@ class _FormCard extends StatelessWidget {
   final double radius;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(padding.r),
-      decoration: BoxDecoration(
-        color:        surfaceColor,
-        borderRadius: BorderRadius.circular(radius.r),
-        border: Border.all(color: shadowColor.withOpacity(0.08), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color:      shadowColor.withOpacity(0.06),
-            blurRadius: 32,
-            offset:     const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
+  Widget build(BuildContext context) => Container(
+    padding: EdgeInsets.all(padding.r),
+    decoration: BoxDecoration(
+      color:        surfaceColor,
+      borderRadius: BorderRadius.circular(radius.r),
+      border: Border.all(
+          color: shadowColor.withOpacity(0.08), width: 1.2),
+      boxShadow: [
+        BoxShadow(
+          color:      shadowColor.withOpacity(0.06),
+          blurRadius: 32,
+          offset:     const Offset(0, 8),
+        ),
+      ],
+    ),
+    child: child,
+  );
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// AUTH WIDGETS
+// AUTH WIDGETS — private implementations
 // ════════════════════════════════════════════════════════════════════════════
 
 // ── Animated Brand Logo ──────────────────────────────────────────────────────
@@ -607,7 +618,7 @@ class _ScreenHeadline extends StatelessWidget {
             width:  48.w,
             height: 3.h,
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [c.main, c.sub]),
+              gradient:     LinearGradient(colors: [c.main, c.sub]),
               borderRadius: BorderRadius.circular(2.r),
             ),
           ),
@@ -661,7 +672,9 @@ class _OrDivider extends StatelessWidget {
             child: Text(
               'or',
               style: TextStyle(
-                  fontSize: 12.sp, color: c.hint, fontWeight: FontWeight.w600),
+                  fontSize: 12.sp,
+                  color:    c.hint,
+                  fontWeight: FontWeight.w600),
             ),
           ),
         ),
@@ -679,16 +692,87 @@ class _OrDivider extends StatelessWidget {
   }
 }
 
-// ── Auth Link ─────────────────────────────────────────────────────────────────
+// ── Back Button ───────────────────────────────────────────────────────────────
+// FIX: was inlined inside the mixin using widget/context/_ctrl/_scale which
+// don't exist there. Now a proper StatefulWidget with its own animation state.
 
-class _AuthLink extends StatelessWidget {
-  const _AuthLink({
+class _AuthBackButton extends StatefulWidget {
+  const _AuthBackButton({required this.color, this.onTap});
+  final Color        color;
+  final VoidCallback? onTap;
+
+  @override
+  State<_AuthBackButton> createState() => _AuthBackButtonState();
+}
+
+class _AuthBackButtonState extends State<_AuthBackButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double>   _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 100));
+    _scale = Tween<double>(begin: 1.0, end: 0.92)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeIn));
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown:   (_) => _ctrl.forward(),
+      onTapUp:     (_) {
+        _ctrl.reverse();
+        // FIX: use custom onTap if provided, otherwise default to maybePop
+        if (widget.onTap != null) {
+          widget.onTap!();
+        } else {
+          Navigator.maybePop(context);
+        }
+      },
+      onTapCancel: ()  => _ctrl.reverse(),
+      child: ScaleTransition(
+        scale: _scale,
+        child: Container(
+          width:  42.r,
+          height: 42.r,
+          decoration: BoxDecoration(
+            color:        widget.color.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(14.r),
+            border: Border.all(
+                color: widget.color.withOpacity(0.25), width: 1.2),
+          ),
+          child: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: widget.color,
+            size:  16.r,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Auth Link — PUBLIC top-level widget ──────────────────────────────────────
+// FIX: promoted from private _AuthLink to public AuthLink so it can be
+// used directly in screens (e.g. ForgotPassword) without going through
+// the mixin, while still being accessible via mixin's authLink() helper.
+
+class AuthLink extends StatelessWidget {
+  const AuthLink({
+    super.key,
     required this.question,
     required this.action,
     required this.color,
     required this.hintColor,
     required this.onTap,
   });
+
   final String       question;
   final String       action;
   final Color        color;
@@ -729,60 +813,6 @@ class _AuthLink extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-// ── Back Button ───────────────────────────────────────────────────────────────
-
-class _AuthBackButton extends StatefulWidget {
-  const _AuthBackButton({required this.color});
-  final Color color;
-
-  @override
-  State<_AuthBackButton> createState() => _AuthBackButtonState();
-}
-
-class _AuthBackButtonState extends State<_AuthBackButton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double>   _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 100));
-    _scale = Tween<double>(begin: 1.0, end: 0.92)
-        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeIn));
-  }
-
-  @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown:   (_) => _ctrl.forward(),
-      onTapUp:     (_) { _ctrl.reverse(); Navigator.maybePop(context); },
-      onTapCancel: ()  => _ctrl.reverse(),
-      child: ScaleTransition(
-        scale: _scale,
-        child: Container(
-          width:  42.r,
-          height: 42.r,
-          decoration: BoxDecoration(
-            color:        widget.color.withOpacity(0.06),
-            borderRadius: BorderRadius.circular(14.r),
-            border: Border.all(
-                color: widget.color.withOpacity(0.25), width: 1.2),
-          ),
-          child: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: widget.color, size: 16.r,
-          ),
-        ),
-      ),
     );
   }
 }
@@ -1100,7 +1130,7 @@ class _StepProgress extends StatelessWidget {
                 child: Container(
                   height: 6.h,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [c.main, c.sub]),
+                    gradient:     LinearGradient(colors: [c.main, c.sub]),
                     borderRadius: BorderRadius.circular(4.r),
                   ),
                 ),
@@ -1198,8 +1228,8 @@ class _TrustBadges extends StatelessWidget {
               Text(
                 item.label,
                 style: TextStyle(
-                    fontSize: 10.sp,
-                    color:    c.hint,
+                    fontSize:   10.sp,
+                    color:      c.hint,
                     fontWeight: FontWeight.w500),
               ),
             ],
@@ -1209,29 +1239,44 @@ class _TrustBadges extends StatelessWidget {
     );
   }
 }
+void showSnackBar({required BuildContext context, required String message, bool success =true}){
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content:         Text(message),
+      backgroundColor:success?Colors.green: Colors.red.shade700,
+      behavior:        SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12)),
+    ),
+  );
+}
+// ════════════════════════════════════════════════════════════════════════════
+// PUBLIC WIDGETS — usable directly in screens OR via mixin helpers
+// ════════════════════════════════════════════════════════════════════════════
 
-// ════════════════════════════════════════════════════════════════════════════
-// FORGOT PASSWORD — SUCCESS CARD
-// FIX: moved out of mixin to top-level — classes cannot be declared inside
-//      a mixin body in Dart. Place this in forgot_password.dart instead,
-//      or keep it here as a shared widget.
-// ════════════════════════════════════════════════════════════════════════════
+// ── Auth Link — PUBLIC ────────────────────────────────────────────────────────
+// (implementation above — AuthLink class)
+
+// ── Success Card — PUBLIC ─────────────────────────────────────────────────────
+
 class SuccessCard extends StatelessWidget with UiUtility {
   const SuccessCard({
     super.key,
     required this.c,
     required this.email,
-    required this.onTap,  // FIX: stored in a field
+    required this.onTap,
   });
 
   final CompanyColors c;
   final String        email;
-  final VoidCallback  onTap;  // FIX: typed as VoidCallback, not Function
+  final VoidCallback  onTap;
 
   @override
   Widget build(BuildContext context) {
-    return glassCard(
-      c: c,
+    return _GlassCard(
+      c:       c,
+      padding: 24,
+      radius:  28,
       child: Column(
         children: [
           Container(
@@ -1256,23 +1301,26 @@ class SuccessCard extends StatelessWidget with UiUtility {
           ),
           SizedBox(height: 8.h),
           InkWell(
-            onTap: onTap,  // FIX: use the stored field, not ()
+            onTap: onTap,
             child: Text(
               '${'reset_link_sent_to'.tr()} $email',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 13.sp,
-                color:    c.hint,
-                height:   1.5,
+                fontSize:      13.sp,
+                color:         c.hint,
+                height:        1.5,
               ),
             ),
           ),
           SizedBox(height: 20.h),
-          primaryButton(
+          _PrimaryButton(
             label:           'back_to_login'.tr(),
             onPressed:       () => Navigator.pop(context),
             backgroundColor: c.button,
             foregroundColor: c.buttonText,
+            loading:         false,
+            height:          54,
+            radius:          14,
           ),
         ],
       ),

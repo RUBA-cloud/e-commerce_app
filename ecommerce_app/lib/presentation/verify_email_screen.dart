@@ -8,61 +8,46 @@ import 'package:ecommerce_app/services/company_info/company_info_state.dart';
 import 'package:ecommerce_app/services/register/register_cubit.dart';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   const VerifyEmailScreen({super.key, required this.email});
-
   final String email;
+
   @override
   State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
 }
 
 class _VerifyEmailScreenState extends State<VerifyEmailScreen>
     with UiUtility, TickerProviderStateMixin {
-  // ── OTP fields ────────────────────────────────────────────
-  static const _otpLength = 6;
-  final List<TextEditingController> _otpCtrl =
-      List.generate(_otpLength, (_) => TextEditingController());
-  final List<FocusNode> _focusNodes =
-      List.generate(_otpLength, (_) => FocusNode());
 
   // ── Resend timer ──────────────────────────────────────────
   static const _resendSeconds = 60;
-  int  _secondsLeft  = _resendSeconds;
-  bool _canResend    = false;
+  int    _secondsLeft = _resendSeconds;
+  bool   _canResend   = false;
   Timer? _timer;
 
-  // ── Shake animation ───────────────────────────────────────
-  late final AnimationController _shakeCtrl;
-  late final Animation<double>   _shakeAnim;
+  // ── Pulse animation ───────────────────────────────────────
+  late final AnimationController _pulseCtrl;
+  late final Animation<double>   _pulseAnim;
 
   @override
   void initState() {
     super.initState();
     _startTimer();
-
-    _shakeCtrl = AnimationController(
+    _pulseCtrl = AnimationController(
       vsync:    this,
-      duration: const Duration(milliseconds: 480),
-    );
-    _shakeAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0, end: -10), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: -10, end: 10), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: 10, end: -8),  weight: 2),
-      TweenSequenceItem(tween: Tween(begin: -8, end: 8),   weight: 2),
-      TweenSequenceItem(tween: Tween(begin: 8, end: 0),    weight: 1),
-    ]).animate(CurvedAnimation(parent: _shakeCtrl, curve: Curves.easeInOut));
+      duration: const Duration(milliseconds: 1600),
+    )..repeat(reverse: true);
+    _pulseAnim = Tween<double>(begin: 1.0, end: 1.08).animate(
+        CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
   }
 
   @override
   void dispose() {
-    for (final c in _otpCtrl)     { c.dispose(); }
-    for (final f in _focusNodes)  { f.dispose(); }
     _timer?.cancel();
-    _shakeCtrl.dispose();
+    _pulseCtrl.dispose();
     super.dispose();
   }
 
@@ -84,252 +69,212 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
     });
   }
 
-  // ── OTP helpers ───────────────────────────────────────────
-  String get _otpValue =>
-      _otpCtrl.map((c) => c.text).join();
-
-  bool get _otpComplete =>
-      _otpCtrl.every((c) => c.text.isNotEmpty);
-
-  void _onOtpChanged(int index, String value) {
-    if (value.length > 1) {
-      // Handle paste — distribute across fields
-      final digits = value.replaceAll(RegExp(r'\D'), '');
-      for (var i = 0; i < _otpLength && i < digits.length; i++) {
-        _otpCtrl[i].text = digits[i];
-      }
-      final nextEmpty = _otpCtrl.indexWhere((c) => c.text.isEmpty);
-      final focus     = nextEmpty == -1 ? _otpLength - 1 : nextEmpty;
-      FocusScope.of(context).requestFocus(_focusNodes[focus]);
-      setState(() {});
-      return;
-    }
-
-    if (value.isNotEmpty && index < _otpLength - 1) {
-      FocusScope.of(context).requestFocus(_focusNodes[index + 1]);
-    }
-    setState(() {});
-  }
-
-  void _onBackspace(int index) {
-    if (_otpCtrl[index].text.isEmpty && index > 0) {
-      _otpCtrl[index - 1].clear();
-      FocusScope.of(context).requestFocus(_focusNodes[index - 1]);
-      setState(() {});
-    }
-  }
-
-  void _clearOtp() {
-    for (final c in _otpCtrl) { c.clear(); }
-    FocusScope.of(context).requestFocus(_focusNodes[0]);
-    setState(() {});
-  }
-
-  // ── Submit ────────────────────────────────────────────────
-  void _submit(RegisterCubit cubit) {
-    if (!_otpComplete) {
-      _shakeCtrl.forward(from: 0);
-      return;
-    }
-    cubit.verify(otp: _otpValue, email: widget.email);
+  // ── Resend ────────────────────────────────────────────────
+  void _resend(RegisterCubit cubit) {
+    _startTimer();
+    cubit.resendEmailVerify(email: widget.email);
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CompanyInfoCubit, CompanyInfoState>(
       buildWhen: (p, c) =>
-          c is CompanyInfoLoaded || c is CompanyInfoUpdated,
+      c is CompanyInfoLoaded || c is CompanyInfoUpdated,
       builder: (context, companyState) {
-        final c       = companyColors(companyState);
-        final surface = Theme.of(context).colorScheme.surface;
+        final c = companyColors(companyState);
 
-        return BlocListener<RegisterCubit,  RegisterState>(
+        return BlocListener<RegisterCubit, RegisterState>(
           listener: (context, state) {
             if (state is VerifyEmailSuccess) {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
-                (_) => false,
+              BlocProvider(
+                create: (_) => RegisterCubit(),
+                child: VerifyEmailScreen(email: widget.email)
               );
-              return;
             }
             if (state is VerifyEmailFailed) {
-              _shakeCtrl.forward(from: 0);
-              _clearOtp();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content:         Text(state.message),
-                  backgroundColor: Colors.red.shade700,
-                  behavior:        SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-              );
+             showSnackBar(context: context, message: state.message,success: false);
+            }
+            if (state is VerifyEmailResendSuccess) {
+
+              showSnackBar(context: context, message:'resend_success'.tr(),success: false);
+
+
             }
           },
-          child: BlocBuilder<RegisterCubit,   RegisterState>(
-            builder: (context, verifyState) {
-              final cubit   = context.read<RegisterCubit>();
-              final loading = verifyState is RegisterLoading;
+
+          child: BlocBuilder<RegisterCubit, RegisterState>(
+            builder: (context, state) {
+              final cubit     = context.read<RegisterCubit>();
+              final isLoading = state is VerifyEmailResendLoading;
 
               return Scaffold(
                 backgroundColor: c.card,
                 body: Stack(
+                  fit: StackFit.expand,
                   children: [
+                    meshBackground(c: c),
                     ...backgroundBlobs(c.main),
 
                     SafeArea(
                       child: SingleChildScrollView(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 28.w),
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 28.w, vertical: 16.h),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            SizedBox(height: 16.h),
-
-                            // ── Back button ───────────────────────
-                            backButton(c: c),
-
-                            SizedBox(height: 40.h),
-
-                            // ── Icon ──────────────────────────────
-                            Center(
-                              child: _MailIcon(color: c.main,
-                                  buttonText: c.buttonText),
+                            // Back button
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: backButton(c: c),
                             ),
-                            SizedBox(height: 28.h),
+                            SizedBox(height: 48.h),
 
-                            // ── Title ─────────────────────────────
-                            Center(
-                              child: Text(
-                                'verify_email'.tr(),
-                                style: TextStyle(
-                                  fontSize:      26.sp,
-                                  fontWeight:    FontWeight.w800,
-                                  color:         c.text,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: 10.h),
-
-                            // ── Subtitle with masked email ─────────
-                            Center(
-                              child: RichText(
-                                textAlign: TextAlign.center,
-                                text: TextSpan(
-                                  style: TextStyle(
-                                    fontSize:   14.sp,
-                                    color:      c.hint,
-                                    height:     1.5,
-                                  ),
-                                  children: [
-                                    TextSpan(text: '${'otp_sent_to'.tr()} '),
-                                    TextSpan(
-                                      text: widget.email,
-                                      style: TextStyle(
-                                        color:      c.main,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                            // ── Pulsing mail icon ──────────────
+                            ScaleTransition(
+                              scale: _pulseAnim,
+                              child: Container(
+                                width:  100.r,
+                                height: 100.r,
+                                decoration: BoxDecoration(
+                                  color:        c.main,
+                                  borderRadius: BorderRadius.circular(30.r),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:      c.main.withOpacity(0.35),
+                                      blurRadius: 32,
+                                      offset:     const Offset(0, 12),
                                     ),
                                   ],
                                 ),
+                                child: Icon(
+                                  Icons.mark_email_unread_outlined,
+                                  color: c.buttonText,
+                                  size:  48.r,
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 36.h),
+
+                            // ── Title ──────────────────────────
+                            Text(
+                              'check_your_email'.tr(),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize:      26.sp,
+                                fontWeight:    FontWeight.w800,
+                                color:         c.text,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            SizedBox(height: 12.h),
+
+                            // ── Subtitle ───────────────────────
+                            Text(
+                              'verify_email_subtitle'.tr(),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                color:    c.hint,
+                                height:   1.6,
+                              ),
+                            ),
+                            SizedBox(height: 12.h),
+
+                            // ── Email pill ─────────────────────
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 16.w, vertical: 8.h),
+                              decoration: BoxDecoration(
+                                color:        c.main.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(20.r),
+                                border: Border.all(
+                                    color: c.main.withOpacity(0.2)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.email_outlined,
+                                      color: c.main, size: 16.r),
+                                  SizedBox(width: 8.w),
+                                  Text(
+                                    widget.email,
+                                    style: TextStyle(
+                                      fontSize:   13.sp,
+                                      color:      c.main,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             SizedBox(height: 40.h),
 
-                            // ── OTP card ──────────────────────────
-                            formCard(
-                              surfaceColor: surface,
-                              shadowColor:  c.main,
+                            // ── Single step card ───────────────
+                            glassCard(
+                              c: c,
                               child: Column(
                                 children: [
-                                  // OTP boxes with shake on error
-                                  AnimatedBuilder(
-                                    animation: _shakeAnim,
-                                    builder: (_, child) => Transform.translate(
-                                      offset: Offset(_shakeAnim.value, 0),
-                                      child: child,
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: List.generate(
-                                        _otpLength,
-                                        (i) => _OtpBox(
-                                          controller:  _otpCtrl[i],
-                                          focusNode:   _focusNodes[i],
-                                          activeColor: c.main,
-                                          textColor:   c.text,
-                                          surfaceColor: surface,
-                                          isFilled: _otpCtrl[i]
-                                              .text
-                                              .isNotEmpty,
-                                          onChanged: (v) =>
-                                              _onOtpChanged(i, v),
-                                          onBackspace: () =>
-                                              _onBackspace(i),
-                                        ),
-                                      ),
-                                    ),
+                                  // Step
+                                  _StepRow(
+                                    icon:  Icons.touch_app_outlined,
+                                    color: c.main,
+                                    hint:  c.hint,
+                                    text:  'verify_step_2'.tr(),
                                   ),
-
                                   SizedBox(height: 28.h),
 
-                                  // Verify button
-                                  primaryButton(
-                                    label:           'verify'.tr(),
-                                    loading:         loading,
+                                  // ── Resend button / countdown ──
+                                  _canResend
+                                      ? primaryButton(
+                                    label:           'resend_code'.tr(),
+                                    loading:         isLoading,
                                     backgroundColor: c.button,
                                     foregroundColor: c.buttonText,
-                                    onPressed:
-                                        loading ? null : () => _submit(cubit),
+                                    onPressed: isLoading
+                                        ? null
+                                        : () => _resend(cubit),
+                                  )
+                                      : Column(
+                                    children: [
+                                      primaryButton(
+                                        label:           'resend_code'.tr(),
+                                        loading:         false,
+                                        backgroundColor:
+                                        c.main.withOpacity(0.08),
+                                        foregroundColor: c.hint,
+                                        onPressed:       null,
+                                      ),
+                                      SizedBox(height: 12.h),
+
+                                      RichText(
+                                        text: TextSpan(
+                                          style: TextStyle(
+                                              fontSize: 13.sp,
+                                              color:    c.hint),
+                                          children: [
+                                            TextSpan(
+                                                text:
+                                                '${'resend_in'.tr()} '),
+                                            TextSpan(
+                                              text: '$_secondsLeft s',
+                                              style: TextStyle(
+                                                color:      c.main,
+                                                fontWeight:
+                                                FontWeight.w700,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
                             ),
 
-                            SizedBox(height: 28.h),
-
-                            // ── Resend row ────────────────────────
-                            Center(
-                              child: _canResend
-                                  ? GestureDetector(
-                                      onTap: () {
-                                        _startTimer();
-                                        cubit.resendEmailVerify(email: widget.email);
-                                      },
-                                      child: Text(
-                                        'resend_code'.tr(),
-                                        style: TextStyle(
-                                          fontSize:   14.sp,
-                                          color:      c.main,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    )
-                                  : RichText(
-                                      text: TextSpan(
-                                        style: TextStyle(
-                                          fontSize: 13.sp,
-                                          color:    c.hint,
-                                        ),
-                                        children: [
-                                          TextSpan(
-                                              text: '${'resend_in'.tr()} '),
-                                          TextSpan(
-                                            text: '$_secondsLeft s',
-                                            style: TextStyle(
-                                              color:      c.main,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                            ),
-
                             SizedBox(height: 32.h),
+                            Center(child: trustBadges(c: c)),
+                            SizedBox(height: 24.h),
                           ],
                         ),
                       ),
@@ -345,112 +290,46 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
   }
 }
 
-class _MailIcon extends StatelessWidget {
-  const _MailIcon({required this.color, required this.buttonText});
-  final Color color;
-  final Color buttonText;
+// ── Step row ──────────────────────────────────────────────────────────────────
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width:  80.r,
-      height: 80.r,
-      decoration: BoxDecoration(
-        color:        color,
-        borderRadius: BorderRadius.circular(24.r),
-        boxShadow: [
-          BoxShadow(
-            color:      color.withOpacity(0.35),
-            blurRadius: 28,
-            offset:     const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Icon(
-        Icons.mark_email_unread_outlined,
-        color: buttonText,
-        size:  38.r,
-      ),
-    );
-  }
-}
-
-/// Single OTP input box.
-class _OtpBox extends StatelessWidget {
-  const _OtpBox({
-    required this.controller,
-    required this.focusNode,
-    required this.activeColor,
-    required this.textColor,
-    required this.surfaceColor,
-    required this.isFilled,
-    required this.onChanged,
-    required this.onBackspace,
+class _StepRow extends StatelessWidget {
+  const _StepRow({
+    required this.icon,
+    required this.color,
+    required this.hint,
+    required this.text,
   });
-
-  final TextEditingController controller;
-  final FocusNode             focusNode;
-  final Color                 activeColor;
-  final Color                 textColor;
-  final Color                 surfaceColor;
-  final bool                  isFilled;
-  final ValueChanged<String>  onChanged;
-  final VoidCallback          onBackspace;
+  final IconData icon;
+  final Color    color;
+  final Color    hint;
+  final String   text;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width:  46.w,
-      height: 56.h,
-      child: KeyboardListener(
-        focusNode: FocusNode(),
-        onKeyEvent: (event) {
-          if (event is KeyDownEvent &&
-              event.logicalKey == LogicalKeyboardKey.backspace) {
-            onBackspace();
-          }
-        },
-        child: TextFormField(
-          controller:  controller,
-          focusNode:   focusNode,
-          textAlign:   TextAlign.center,
-          maxLength:   1,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          onChanged:   onChanged,
-          style: TextStyle(
-            fontSize:   20.sp,
-            fontWeight: FontWeight.w800,
-            color:      textColor,
+    return Row(
+      children: [
+        Container(
+          width:  36.r,
+          height: 36.r,
+          decoration: BoxDecoration(
+            color:  color.withOpacity(0.10),
+            shape:  BoxShape.circle,
+            border: Border.all(color: color.withOpacity(0.2)),
           ),
-          decoration: InputDecoration(
-            counterText: '',
-            filled:      true,
-            fillColor: isFilled
-                ? activeColor.withOpacity(0.1)
-                : surfaceColor,
-            contentPadding: EdgeInsets.zero,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14.r),
-              borderSide:   BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14.r),
-              borderSide: BorderSide(
-                color: isFilled
-                    ? activeColor.withOpacity(0.6)
-                    : activeColor.withOpacity(0.15),
-                width: 1.5,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14.r),
-              borderSide:
-                  BorderSide(color: activeColor, width: 2),
+          child: Icon(icon, color: color, size: 18.r),
+        ),
+        SizedBox(width: 14.w),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 13.sp,
+              color:    hint,
+              height:   1.5,
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

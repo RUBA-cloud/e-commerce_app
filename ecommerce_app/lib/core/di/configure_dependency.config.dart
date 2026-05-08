@@ -14,12 +14,16 @@ import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 
 import '../../data/api_service/api_service.dart' as _i790;
-import '../../data/repoistery/auth_repoistery.dart' as _i1027;
+import '../../data/repoistery/auth_repoistery_imp.dart' as _i1024;
 import '../../data/repoistery/company_repoistery_imp.dart' as _i552;
 import '../../domain/repoistery/auth_repoistery.dart' as _i145;
 import '../../domain/repoistery/company_info_repoistirey.dart' as _i791;
 import '../../domain/usecases/company_info_use_cases.dart' as _i373;
+import '../../domain/usecases/forget_password_use_case.dart' as _i317;
 import '../../domain/usecases/login_use_case.dart' as _i210;
+import '../../domain/usecases/register_use_case.dart' as _i502;
+import '../../domain/usecases/resend_verify_email.dart' as _i986;
+import '../../domain/usecases/resend_verify_use_case.dart' as _i384;
 import '../../services/company_info/company_info_cubit.dart' as _i267;
 import 'network_module.dart' as _i567;
 
@@ -34,17 +38,30 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i267.CompanyInfoCubit>(() => _i267.CompanyInfoCubit());
     gh.lazySingleton<_i361.Dio>(() => networkModule.dio);
     gh.lazySingleton<_i790.ApiService>(() => _i790.ApiService(gh<_i361.Dio>()));
-    gh.factory<_i145.AuthRepoistery>(
-      () => _i1027.AuthRepoisteryImpl(apiService: gh<_i790.ApiService>()),
-    );
     gh.factory<_i791.CompanyInfoRepository>(
       () => _i552.CompanyInfoRepositoryImpl(gh<_i790.ApiService>()),
+    );
+    gh.factory<_i145.AuthRepoistery>(
+      () => _i1024.AuthRepoisteryImpl(apiService: gh<_i790.ApiService>()),
+    );
+    gh.singleton<_i373.GetCompanyInfoUseCase>(
+      () => _i373.GetCompanyInfoUseCase(gh<_i791.CompanyInfoRepository>()),
+    );
+    gh.singleton<_i317.ForgetPasswordUseCase>(
+      () => _i317.ForgetPasswordUseCase(authRepo: gh<_i145.AuthRepoistery>()),
     );
     gh.singleton<_i210.LoginUseCase>(
       () => _i210.LoginUseCase(authRepo: gh<_i145.AuthRepoistery>()),
     );
-    gh.singleton<_i373.GetCompanyInfoUseCase>(
-      () => _i373.GetCompanyInfoUseCase(gh<_i791.CompanyInfoRepository>()),
+    gh.singleton<_i502.RegisterUseCase>(
+      () => _i502.RegisterUseCase(authRepo: gh<_i145.AuthRepoistery>()),
+    );
+    gh.singleton<_i986.ResendVerifyEmailUseCase>(
+      () =>
+          _i986.ResendVerifyEmailUseCase(authRepo: gh<_i145.AuthRepoistery>()),
+    );
+    gh.singleton<_i384.ResendForgetUseCase>(
+      () => _i384.ResendForgetUseCase(authRepo: gh<_i145.AuthRepoistery>()),
     );
     return this;
   }
