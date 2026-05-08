@@ -1,9 +1,10 @@
-import 'package:bloc/bloc.dart';
-import 'package:easy_localization/easy_localization.dart';
+// login_cubit.dart
 import 'package:ecommerce_app/core/di/api_result.dart';
 import 'package:ecommerce_app/core/di/configure_dependency.dart';
+import 'package:ecommerce_app/data/model/request/email_request.dart';
 import 'package:ecommerce_app/data/model/request/login_request.dart';
 import 'package:ecommerce_app/data/model/response/login_entity.dart';
+import 'package:ecommerce_app/domain/usecases/forget_password_use_case.dart';
 import 'package:ecommerce_app/domain/usecases/login_use_case.dart';
 import 'package:ecommerce_app/services/login/login_state.dart';
 import 'package:flutter/widgets.dart';
@@ -12,18 +13,16 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 
 class LoginCubit extends Cubit<LoginState> {
-  LoginCubit() : super(LoginInitial());
+  LoginCubit() : super(const LoginInitial());
   static LoginCubit get(BuildContext context) => BlocProvider.of(context);
 
   String country = 'Jordan';
   String city    = 'Amman';
 
-  // FIX: field initializer can't call getIt before super() — move to constructor
-  final  _loginUseCase = getIt<LoginUseCase>();
+  late final LoginUseCase          _loginUseCase          = getIt<LoginUseCase>();
+  late final ForgetPasswordUseCase _forgetPasswordUseCase = getIt<ForgetPasswordUseCase>();
 
-    // ✅
-
-  // ── Get country & city from GPS ──────────────────────────────────────────
+  // ── Get country & city from GPS ──────────────────────────────────────
   Future<void> getCountryAndCity() async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) return;
@@ -52,18 +51,16 @@ class LoginCubit extends Cubit<LoginState> {
         city = place.locality ?? place.administrativeArea ?? city;
       }
     } catch (_) {
-      // Non-fatal — login still works with fallback values
+      // Non-fatal — fallback values remain
     }
   }
 
-  // ── Submit ───────────────────────────────────────────────────────────────
+  // ── Login ─────────────────────────────────────────────────────────────
   Future<void> submit({required LoginRequest loginRequest}) async {
     if (state is LoginLoading) return;
     emit(LoginLoading());
 
     try {
-
-
       final result = await _loginUseCase.execute(loginRequest);
 
       switch (result) {
@@ -82,4 +79,45 @@ class LoginCubit extends Cubit<LoginState> {
       emit(LoginFailed(e.toString()));
     }
   }
+
+  // ── Forgot Password ───────────────────────────────────────────────────
+  // FIX: both forgetPassword and resendForgetPassword were identical —
+  // extracted shared logic into _executeForgetPassword to avoid duplication.
+  // Public methods only differ in intent (first send vs resend) but hit
+  // the same endpoint, so they both delegate to the private method.
+
+  Future<void> forgetPassword(EmailRequest request) =>
+      _executeForgetPassword(request);
+
+  Future<void> resendForgetPassword(EmailRequest request) =>
+      _executeForgetPassword(request);
+
+  Future<void> _executeForgetPassword(EmailRequest request) async {
+    if (state is ForgetPasswordLoading) return;
+    emit(ForgetPasswordLoading());
+
+    try {
+      final result = await _forgetPasswordUseCase.execute(request);
+
+      switch (result) {
+        case Success():
+          emit(ForgetPasswordEmailSuccessToSend());
+
+        case Failure():
+          final code = result.statusCode;
+          if (code == 404) {
+            emit(ForgetPasswordEmailFailedToSend());
+          } else {
+            // FIX: result.error is nullable — added ?? fallback to avoid
+            // passing null into ForgetPasswordFail which expects a String
+            emit(ForgetPasswordFail(result.error ?? 'unknown_error'));
+          }
+      }
+    } catch (e) {
+      emit(ForgetPasswordFail(e.toString()));
+    }
+  }
+
+  void goToRegister()       => emit(const GoToRegister());
+  void goToForgotPassword() => emit(const GoToForgotPassword());
 }

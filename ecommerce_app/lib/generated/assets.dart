@@ -4,6 +4,278 @@ import 'package:flutter/widgets.dart';
 
 class Assets {
   Assets._();
+
+  static const String buildGradle = 'android/build.gradle.kts';
+  static const String ecommerceAppAndroid = 'android/ecommerce_app_android.iml';
+  static const String gradle = 'android/gradle.properties';
+  static const String gradlew = 'android/gradlew';
+  static const String gradlewBat = 'android/gradlew.bat';
+  static const String local = 'android/local.properties';
+  static const String settingsGradle = 'android/settings.gradle.kts';
+  static const $AssetsGradleGen Gradle = $AssetsGradleGen();
+  static const $AssetsAppGen app = $AssetsAppGen();
+  static const $AssetsBuildGen build = $AssetsBuildGen();
+  static const $AssetsGradleGen gradle1 = $AssetsGradleGen();
+}
+
+class $AssetsAppGen {
+  const $AssetsAppGen();
+
+  final $AssetsSrcGen src = const $AssetsSrcGen();
+  final String buildGradle = 'android/app/build.gradle.kts';
+}
+
+class $AssetsSrcGen {
+  const $AssetsSrcGen();
+
+  final $AssetsDebugGen debug = const $AssetsDebugGen();
+  final $AssetsMainGen main = const $AssetsMainGen();
+  final $AssetsProfileGen profile = const $AssetsProfileGen();
+}
+
+class $AssetsMainGen {
+  const $AssetsMainGen();
+
+  final $AssetsJavaGen java = const $AssetsJavaGen();
+  final $AssetsKotlinGen kotlin = const $AssetsKotlinGen();
+  final $AssetsResGen res = const $AssetsResGen();
+  final String androidManifest = 'android/app/src/main/AndroidManifest.xml';
+}
+
+class $AssetsResGen {
+  const $AssetsResGen();
+
+  final $AssetsDrawableGen drawable = const $AssetsDrawableGen();
+  final $AssetsDrawableV21Gen drawableV21 = const $AssetsDrawableV21Gen();
+  final $AssetsMipmapHdpiGen mipmapHdpi = const $AssetsMipmapHdpiGen();
+  final $AssetsMipmapMdpiGen mipmapMdpi = const $AssetsMipmapMdpiGen();
+  final $AssetsMipmapXhdpiGen mipmapXhdpi = const $AssetsMipmapXhdpiGen();
+  final $AssetsMipmapXxhdpiGen mipmapXxhdpi = const $AssetsMipmapXxhdpiGen();
+  final $AssetsMipmapXxxhdpiGen mipmapXxxhdpi = const $AssetsMipmapXxxhdpiGen();
+  final $AssetsValuesGen values = const $AssetsValuesGen();
+  final $AssetsValuesNightGen valuesNight = const $AssetsValuesNightGen();
+}
+
+class $AssetsValuesGen {
+  const $AssetsValuesGen();
+
+  final String styles = 'android/app/src/main/res/values/styles.xml';
+}
+
+class $AssetsDrawableGen {
+  const $AssetsDrawableGen();
+
+  final String launchBackground =
+      'android/app/src/main/res/drawable/launch_background.xml';
+}
+
+class $AssetsMipmapHdpiGen {
+  const $AssetsMipmapHdpiGen();
+
+  final AssetGenImage icLauncher = const AssetGenImage(
+    'android/app/src/main/res/mipmap-hdpi/ic_launcher.png',
+  );
+}
+
+class $AssetsMipmapMdpiGen {
+  const $AssetsMipmapMdpiGen();
+
+  final AssetGenImage icLauncher = const AssetGenImage(
+    'android/app/src/main/res/mipmap-mdpi/ic_launcher.png',
+  );
+}
+
+class $AssetsDrawableV21Gen {
+  const $AssetsDrawableV21Gen();
+
+  final String launchBackground =
+      'android/app/src/main/res/drawable-v21/launch_background.xml';
+}
+
+class $AssetsMipmapXhdpiGen {
+  const $AssetsMipmapXhdpiGen();
+
+  final AssetGenImage icLauncher = const AssetGenImage(
+    'android/app/src/main/res/mipmap-xhdpi/ic_launcher.png',
+  );
+}
+
+class $AssetsValuesNightGen {
+  const $AssetsValuesNightGen();
+
+  final String styles = 'android/app/src/main/res/values-night/styles.xml';
+}
+
+class $AssetsMipmapXxhdpiGen {
+  const $AssetsMipmapXxhdpiGen();
+
+  final AssetGenImage icLauncher = const AssetGenImage(
+    'android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png',
+  );
+}
+
+class $AssetsMipmapXxxhdpiGen {
+  const $AssetsMipmapXxxhdpiGen();
+
+  final AssetGenImage icLauncher = const AssetGenImage(
+    'android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png',
+  );
+}
+
+class $AssetsJavaGen {
+  const $AssetsJavaGen();
+
+  final $AssetsIoGen io = const $AssetsIoGen();
+}
+
+class $AssetsIoGen {
+  const $AssetsIoGen();
+
+  final $AssetsFlutterGen flutter = const $AssetsFlutterGen();
+}
+
+class $AssetsFlutterGen {
+  const $AssetsFlutterGen();
+
+  final $AssetsPluginsGen plugins = const $AssetsPluginsGen();
+}
+
+class $AssetsPluginsGen {
+  const $AssetsPluginsGen();
+
+  final String generatedPluginRegistrant =
+      'android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java';
+}
+
+class $AssetsKotlinGen {
+  const $AssetsKotlinGen();
+
+  final $AssetsComGen com = const $AssetsComGen();
+}
+
+class $AssetsComGen {
+  const $AssetsComGen();
+
+  final $AssetsExampleGen example = const $AssetsExampleGen();
+}
+
+class $AssetsExampleGen {
+  const $AssetsExampleGen();
+
+  final $AssetsEcommerceAppGen ecommerceApp = const $AssetsEcommerceAppGen();
+}
+
+class $AssetsEcommerceAppGen {
+  const $AssetsEcommerceAppGen();
+
+  final String mainActivity =
+      'android/app/src/main/kotlin/com/example/ecommerce_app/MainActivity.kt';
+}
+
+class $AssetsDebugGen {
+  const $AssetsDebugGen();
+
+  final String androidManifest = 'android/app/src/debug/AndroidManifest.xml';
+}
+
+class $AssetsProfileGen {
+  const $AssetsProfileGen();
+
+  final String androidManifest = 'android/app/src/profile/AndroidManifest.xml';
+}
+
+class $AssetsBuildGen {
+  const $AssetsBuildGen();
+
+  final $AssetsReportsGen reports = const $AssetsReportsGen();
+}
+
+class $AssetsReportsGen {
+  const $AssetsReportsGen();
+
+  final $AssetsProblemsGen problems = const $AssetsProblemsGen();
+}
+
+class $AssetsProblemsGen {
+  const $AssetsProblemsGen();
+
+  final String problemsReport =
+      'android/build/reports/problems/problems-report.html';
+}
+
+
+
+class $AssetsWrapperGen {
+  const $AssetsWrapperGen();
+
+  final String gradleWrapperJar = 'android/gradle/wrapper/gradle-wrapper.jar';
+  final String gradleWrapperProperties =
+      'android/gradle/wrapper/gradle-wrapper.properties';
+}
+
+class $AssetsGradleGen {
+  const $AssetsGradleGen();
+
+  final $Assets812Gen a812 = const $Assets812Gen();
+  final $AssetsBuildOutputCleanupGen buildOutputCleanup =
+      const $AssetsBuildOutputCleanupGen();
+  final $AssetsNoVersionGen noVersion = const $AssetsNoVersionGen();
+  final $AssetsVcs1Gen vcs1 = const $AssetsVcs1Gen();
+}
+
+class $Assets812Gen {
+  const $Assets812Gen();
+
+  final $AssetsChecksumsGen checksums = const $AssetsChecksumsGen();
+  final $AssetsFileChangesGen fileChanges = const $AssetsFileChangesGen();
+  final $AssetsFileHashesGen fileHashes = const $AssetsFileHashesGen();
+  final String gc = 'android/.gradle/8.12/gc.properties';
+}
+
+class $AssetsChecksumsGen {
+  const $AssetsChecksumsGen();
+
+  final String checksums = 'android/.gradle/8.12/checksums/checksums.lock';
+  final String md5Checksums =
+      'android/.gradle/8.12/checksums/md5-checksums.bin';
+  final String sha1Checksums =
+      'android/.gradle/8.12/checksums/sha1-checksums.bin';
+}
+
+class $AssetsFileHashesGen {
+  const $AssetsFileHashesGen();
+
+  final String fileHashesBin = 'android/.gradle/8.12/fileHashes/fileHashes.bin';
+  final String fileHashesLock =
+      'android/.gradle/8.12/fileHashes/fileHashes.lock';
+  final String resourceHashesCache =
+      'android/.gradle/8.12/fileHashes/resourceHashesCache.bin';
+}
+
+class $AssetsFileChangesGen {
+  const $AssetsFileChangesGen();
+
+  final String lastBuild = 'android/.gradle/8.12/fileChanges/last-build.bin';
+}
+
+class $AssetsVcs1Gen {
+  const $AssetsVcs1Gen();
+
+  final String gc = 'android/.gradle/vcs-1/gc.properties';
+}
+
+class $AssetsNoVersionGen {
+  const $AssetsNoVersionGen();
+
+  final String buildLogic = 'android/.gradle/noVersion/buildLogic.lock';
+}
+
+class $AssetsBuildOutputCleanupGen {
+  const $AssetsBuildOutputCleanupGen();
+
+  final String buildOutputCleanup =
+      'android/.gradle/buildOutputCleanup/buildOutputCleanup.lock';
+  final String cache = 'android/.gradle/buildOutputCleanup/cache.properties';
 }
 
 class AssetGenImage {

@@ -1,8 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:ecommerce_app/core/di/api_result.dart';
 import 'package:ecommerce_app/data/api_service/api_service.dart';
+import 'package:ecommerce_app/data/model/request/email_request.dart';
 import 'package:ecommerce_app/data/model/request/login_request.dart';
+import 'package:ecommerce_app/data/model/request/register_request.dart';
+import 'package:ecommerce_app/data/model/response/email_entity.dart';
 import 'package:ecommerce_app/data/model/response/login_entity.dart';
+import 'package:ecommerce_app/data/model/response/register_entity.dart';
 import 'package:ecommerce_app/domain/repoistery/auth_repoistery.dart';
 import 'package:injectable/injectable.dart';
 @Injectable(as: AuthRepoistery)
@@ -55,6 +59,65 @@ class AuthRepoisteryImpl implements AuthRepoistery {
       DioExceptionType.cancel            => 'request_cancelled',
       _                                  => e.message ?? 'unknown_error',
     };
+  }
+
+  @override
+  Future<ApiResult<RegisterEntity>> register(RegisterRequest loginRequest)async {
+    try {
+      final entity = await _apiService.register(loginRequest);
+      return Success(data: entity, statusCode: 200);
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      if (code == 403) {
+        return Failure(
+          error: _extractError(e.response?.data) ?? 'account_not_verified',
+          statusCode: code,
+        );
+      }
+      return Failure(error: _parseDioError(e), statusCode: code);
+    } catch (e) {
+      return Failure(error: e.toString());
+    }
+  }
+
+
+  @override
+  Future<ApiResult<EmailEntity>>forgetPassword(EmailRequest forgetRequest)async {
+    try {
+      final entity = await _apiService.forgotPassword(forgetRequest);
+      return Success(data: entity, statusCode: 200);
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      return Failure(error: _parseDioError(e), statusCode: code);
+    } catch (e) {
+      return Failure(error: e.toString());
+    }
+  }
+
+  @override
+  Future<ApiResult<EmailEntity>> resendForgetEmail(EmailRequest forgetPassword)async {
+    try {
+      final entity = await _apiService.forgotPassword(forgetPassword);
+      return Success(data: entity, statusCode: 200);
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      return Failure(error: _parseDioError(e), statusCode: code);
+    } catch (e) {
+      return Failure(error: e.toString());
+    }
+  }
+
+  @override
+  Future<ApiResult<EmailEntity>> resendVerifyEmail(EmailRequest forgetPassword)async {
+    try {
+      final entity = await _apiService.resendVerifyEmail(forgetPassword);
+      return Success(data: entity, statusCode: 200);
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      return Failure(error: _parseDioError(e), statusCode: code);
+    } catch (e) {
+      return Failure(error: e.toString());
+    }
   }
 }
 

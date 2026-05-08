@@ -1,44 +1,67 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
-import 'package:ecommerce_app/data/model/request/login_request.dart';
-import 'package:ecommerce_app/presentation/forgot_password_screen.dart';
+import 'package:ecommerce_app/data/model/request/register_request.dart';
 import 'package:ecommerce_app/presentation/home_screen.dart';
-import 'package:ecommerce_app/presentation/register_screen.dart';
-import 'package:ecommerce_app/presentation/verify_email_screen.dart';
+import 'package:ecommerce_app/presentation/login_screen.dart';
+
 import 'package:ecommerce_app/presentation/widgets/basic_form_filed.dart';
 import 'package:ecommerce_app/services/company_info/company_info_cubit.dart';
 import 'package:ecommerce_app/services/company_info/company_info_state.dart';
-import 'package:ecommerce_app/services/login/login_cubit.dart';
-import 'package:ecommerce_app/services/login/login_state.dart';
 import 'package:ecommerce_app/services/register/register_cubit.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
+  static void push(BuildContext context) => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => BlocProvider(
+            create: (_) => RegisterCubit()..getCountryAndCity(),
+            child: const RegisterScreen(),
+          ),
+        ),
+      );
+
+  static void pushReplacement(BuildContext context) =>
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => BlocProvider(
+            create: (_) => RegisterCubit()..getCountryAndCity(),
+            child: const RegisterScreen(),
+          ),
+        ),
+      );
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with UiUtility {
+class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
+  final nameCtrl     = TextEditingController();
   final emailCtrl    = TextEditingController();
   final passwordCtrl = TextEditingController();
+  final phoneCtrl    = TextEditingController();
   final formKey      = GlobalKey<FormState>();
-  late LoginCubit loginCubit;
 
   @override
   void initState() {
     super.initState();
-  loginCubit=  LoginCubit.get(context);
+    // ✅ getCountryAndCity already called via ..getCountryAndCity() in push()
+    // but also safe to call here if screen is built from elsewhere
+    RegisterCubit.get(context).getCountryAndCity();
   }
 
   @override
   void dispose() {
+    nameCtrl.dispose();
     emailCtrl.dispose();
     passwordCtrl.dispose();
+    phoneCtrl.dispose();
     super.dispose();
   }
 
@@ -53,21 +76,34 @@ class _LoginScreenState extends State<LoginScreen> with UiUtility {
         final surface = Theme.of(context).colorScheme.surface;
 
         // ── Navigation side-effects ───────────────────────────
-        return BlocListener<LoginCubit, LoginState>(
+        return BlocListener<RegisterCubit, RegisterState>(
           listener: (context, state) {
-            if (state is LoginUnverified) {
-              navigateTo(context: context, page: BlocProvider.value(value: loginCubit,child: VerifyEmailScreen(email: emailCtrl.text)));
+            if (state is RegisterSuccess) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const HomeScreen()),
+                (_) => false,
+              );
               return;
             }
 
-            if (state is LoginSuccess) {
-              navigateTo(context: context, page: HomeScreen()); return;
+            if (state is RegisterUnverified) {
+              // ✅ pass real email — not placeholder "<EMAIL>"
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(
+              //     builder: (_) => BlocProvider(
+              //       create: (_) => VerifyEmailCubit(),
+              //       child: VerifyEmailScreen(
+              //         email: emailCtrl.text.trim(),
+              //       ),
+              //     ),
+              //   ),
+              // );
+              return;
             }
-            if (state is GoToForgotPassword) {
-              navigateTo(context: context, page: BlocProvider.value(value: loginCubit,child: ForgotPassword(),)); return;
-            }
-            // ✅ goToRegister handled here — no phantom state needed
-            if (state is LoginFailed) {
+
+            if (state is RegisterFailed) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content:         Text(state.message),
@@ -80,15 +116,15 @@ class _LoginScreenState extends State<LoginScreen> with UiUtility {
             }
           },
 
-          // ── Inner: login state → UI ───────────────────────────
-          child: BlocBuilder<LoginCubit, LoginState>(
+          // ── Inner: register state → UI ────────────────────────
+          child: BlocBuilder<RegisterCubit, RegisterState>(
             buildWhen: (prev, curr) =>
-                curr is LoginLoading ||
-                curr is LoginSuccess ||
-                curr is LoginFailed  ||
-                curr is LoginInitial,
-            builder: (context, loginState) {
-              final cubit = LoginCubit.get(context);
+                curr is RegisterLoading ||
+                curr is RegisterSuccess  ||
+                curr is RegisterFailed   ||
+                curr is RegisterInitial,
+            builder: (context, registerState) {
+              final cubit = RegisterCubit.get(context);
 
               return Scaffold(
                 backgroundColor: c.card,
@@ -107,19 +143,29 @@ class _LoginScreenState extends State<LoginScreen> with UiUtility {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SizedBox(height: 56.h),
+                              SizedBox(height: 20.h),
+
+                              // ── Back button ─────────────────────
+                               backButton(c: c),
+                              
+                              SizedBox(height: 28.h),
 
                               // ── Brand logo ──────────────────────
-                              Center(child: brandLogo(c: c)),
-                              SizedBox(height: 32.h),
+                              Center(
+                                child: brandLogo(
+                                  c:    c,
+                                  icon: Icons.person_add_outlined,
+                                ),
+                              ),
+                              SizedBox(height: 28.h),
 
                               // ── Headline ────────────────────────
                               screenHeadline(
-                                title:    'welcome_back'.tr(),
-                                subtitle: 'login_subtitle'.tr(),
+                                title:    'create_account'.tr(),
+                                subtitle: 'register_subtitle'.tr(),
                                 c:        c,
                               ),
-                              SizedBox(height: 40.h),
+                              SizedBox(height: 36.h),
 
                               // ── Form card ───────────────────────
                               formCard(
@@ -129,6 +175,30 @@ class _LoginScreenState extends State<LoginScreen> with UiUtility {
                                   crossAxisAlignment:
                                       CrossAxisAlignment.start,
                                   children: [
+                                    // Name
+                                    fieldLabel('name'.tr(), c.label),
+                                    SizedBox(height: 8.h),
+                                    BasicInput(
+                                      controller: nameCtrl,
+                                      hintText:   'enter_name'.tr(),
+                                      prefixIcon: Icon(
+                                          Icons.person_outline,
+                                          color: c.main),
+                                    isBorder:false,
+                                      radius:   14,
+                                      validator: (v) {
+                                        final val = (v ?? '').trim();
+                                        if (val.isEmpty) {
+                                          return 'name_required'.tr();
+                                        }
+                                        if (val.length < 2) {
+                                          return 'name_too_short'.tr();
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                    SizedBox(height: 20.h),
+
                                     // Email
                                     fieldLabel('email'.tr(), c.label),
                                     SizedBox(height: 8.h),
@@ -140,7 +210,7 @@ class _LoginScreenState extends State<LoginScreen> with UiUtility {
                                       prefixIcon: Icon(
                                           Icons.email_outlined,
                                           color: c.main),
-                                      isBorder: false,
+                                    isBorder:false,
                                       radius:   14,
                                       validator: (v) {
                                         final val = (v ?? '').trim();
@@ -157,6 +227,27 @@ class _LoginScreenState extends State<LoginScreen> with UiUtility {
                                     ),
                                     SizedBox(height: 20.h),
 
+                                    // Phone
+                                    fieldLabel('phone'.tr(), c.label),
+                                    SizedBox(height: 8.h),
+                                    BasicInput(
+                                      controller:   phoneCtrl,
+                                      hintText:     'enter_phone'.tr(),
+                                      keyboardType: TextInputType.phone,
+                                      prefixIcon: Icon(
+                                          Icons.phone_outlined,
+                                          color: c.main),
+                                    isBorder:false,
+                                      radius:   14,
+                                      validator: (v) {
+                                        if ((v ?? '').trim().isEmpty) {
+                                          return 'phone_required'.tr();
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                    SizedBox(height: 20.h),
+
                                     // Password
                                     fieldLabel('password'.tr(), c.label),
                                     SizedBox(height: 8.h),
@@ -167,61 +258,35 @@ class _LoginScreenState extends State<LoginScreen> with UiUtility {
                                       prefixIcon: Icon(
                                           Icons.lock_outline,
                                           color: c.main),
-                                      isBorder: false,
+                                    isBorder:false,
                                       radius:   14,
-                                      validator: (v) =>
-                                          (v == null || v.isEmpty)
-                                              ? 'password_is_required'.tr()
-                                              : null,
-                                    ),
-                                    SizedBox(height: 10.h),
-
-                                    // Forgot password
-                                    Align(
-                                      alignment:
-                                          AlignmentDirectional.centerEnd,
-                                      child: TextButton(
-                                        onPressed: (){},
-                                          
-                                        
-                                        style: TextButton.styleFrom(
-                                          padding:     EdgeInsets.zero,
-                                          minimumSize: Size.zero,
-                                          tapTargetSize:
-                                              MaterialTapTargetSize
-                                                  .shrinkWrap,
-                                        ),
-                                        child: Text(
-                                          'forgot_password'.tr(),
-                                          style: TextStyle(
-                                            fontSize:   13.sp,
-                                            color:      c.main,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
+                                      validator: (v) {
+                                        if (v == null || v.isEmpty) {
+                                          return 'password_is_required'
+                                              .tr();
+                                        }
+                                        if (v.length < 8) {
+                                          return 'password_too_short'
+                                              .tr();
+                                        }
+                                        return null;
+                                      },
                                     ),
                                     SizedBox(height: 28.h),
 
                                     // Submit
                                     primaryButton(
-                                      label:           'login'.tr(),
+                                      label: 'register'.tr(),
                                       loading:
-                                          loginState is LoginLoading,
+                                          registerState is RegisterLoading,
                                       backgroundColor: c.button,
                                       foregroundColor: c.buttonText,
                                       onPressed: () {
                                         if (!formKey.currentState!
                                             .validate()) return;
-                                        cubit.submit(
-                                          loginRequest: LoginRequest(
-                                            email:    emailCtrl.text
-                                                .trim(),
-                                            password: passwordCtrl.text,
-                                            country:  cubit.country,
-                                            city:     cubit.city,
-                                          ),
-                                        );
+                                        // ✅ submit reads from controllers
+                                        //    inside cubit — no params needed
+                                        cubit.submit();
                                       },
                                     ),
                                   ],
@@ -233,23 +298,16 @@ class _LoginScreenState extends State<LoginScreen> with UiUtility {
                               orDivider(c: c),
                               SizedBox(height: 28.h),
 
-                              // ── Register CTA ────────────────────
+                              // ── Login CTA ───────────────────────
                               Center(
                                 child: authLink(
-                                  question: 'no_account'.tr(),
-                                  action:   'register'.tr(),
-                                  c:    c,
-                                  
-                                  // ✅ push without named route —
-                                  //    BlocProvider wraps RegisterScreen
-                                  onTap: () => Navigator.push(
+                                  question:  'have_account'.tr(),
+                                  action:    'login'.tr(),
+                                  c:     c,
+                                  onTap: () => Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => BlocProvider(
-                                        create: (_) => RegisterCubit()
-                                          ..getCountryAndCity(),
-                                        child: const RegisterScreen(),
-                                      ),
+                                      builder: (_) => const LoginScreen(),
                                     ),
                                   ),
                                 ),
