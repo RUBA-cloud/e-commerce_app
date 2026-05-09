@@ -8,6 +8,7 @@ import 'package:ecommerce_app/presentation/verify_email_screen.dart';
 import 'package:ecommerce_app/presentation/widgets/basic_form_filed.dart';
 import 'package:ecommerce_app/services/company_info/company_info_cubit.dart';
 import 'package:ecommerce_app/services/company_info/company_info_state.dart';
+import 'package:ecommerce_app/services/home/home_cubit.dart';
 import 'package:ecommerce_app/services/login/login_cubit.dart';
 import 'package:ecommerce_app/services/login/login_state.dart';
 import 'package:ecommerce_app/services/register/register_cubit.dart';
@@ -45,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> with UiUtility {
   @override
   Widget build(BuildContext context) {
     // ── Outer: company info → colors ─────────────────────────
-    return BlocBuilder<CompanyInfoCubit, CompanyInfoState>(
+    return BlocBuilder<AppMainCubit, AppMainState>(
       buildWhen: (prev, curr) =>
           curr is CompanyInfoLoaded || curr is CompanyInfoUpdated,
       builder: (context, companyState) {
@@ -71,7 +72,14 @@ class _LoginScreenState extends State<LoginScreen> with UiUtility {
             }
 
             if (state is LoginSuccess) {
-              navigateTo(context: context, page: HomeScreen()); return;
+              navigateTo(
+                context: context,
+                page: BlocProvider(
+                  create: (_) => HomeCubit(),
+                  child: const HomeScreen(),
+                ),
+              );
+              return;
             }
             if (state is GoToForgotPassword) {
               navigateTo(context: context, page: BlocProvider.value(value: loginCubit,child: ForgotPassword(),)); return;

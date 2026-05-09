@@ -7,6 +7,7 @@ import 'package:ecommerce_app/data/model/request/email_request.dart';
 import 'package:ecommerce_app/data/model/request/login_request.dart';
 import 'package:ecommerce_app/data/model/request/register_request.dart';
 import 'package:ecommerce_app/data/model/response/email_entity.dart';
+import 'package:ecommerce_app/data/model/response/email_verified_entity.dart';
 import 'package:ecommerce_app/data/model/response/login_entity.dart';
 import 'package:ecommerce_app/data/model/response/register_entity.dart';
 import 'package:ecommerce_app/domain/repoistery/auth_repoistery.dart';
@@ -135,4 +136,19 @@ class AuthRepoisteryImpl implements AuthRepoistery {
       _                                  => e.message ?? 'unknown_error',
     };
   }
-}
+
+  @override
+  Future<ApiResult<EmailVerifiedEntity>> checkEmailVerified(EmailRequest request) async{
+    try {
+      final entity = await _apiService.checkEmailVerified(request);
+      return Success(data: entity, statusCode: 200);
+    } on DioException catch (e) {
+      return Failure(
+        error:      _encodeError(e),
+        statusCode: e.response?.statusCode,
+      );
+    } catch (e) {
+      return Failure(error: e.toString());
+    }
+  }
+  }

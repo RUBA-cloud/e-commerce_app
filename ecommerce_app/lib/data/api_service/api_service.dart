@@ -4,8 +4,10 @@ import 'package:dio/dio.dart';
 import 'package:ecommerce_app/data/model/request/email_request.dart';
 import 'package:ecommerce_app/data/model/request/login_request.dart';
 import 'package:ecommerce_app/data/model/request/register_request.dart';
+import 'package:ecommerce_app/data/model/response/categories_entity.dart';
 import 'package:ecommerce_app/data/model/response/company_info_entity.dart';
 import 'package:ecommerce_app/data/model/response/email_entity.dart';
+import 'package:ecommerce_app/data/model/response/email_verified_entity.dart';
 import 'package:ecommerce_app/data/model/response/login_entity.dart';
 import 'package:ecommerce_app/data/model/response/register_entity.dart';
 import 'package:injectable/injectable.dart';  // ← must be imported
@@ -32,8 +34,13 @@ abstract class ApiService {
   Future<EmailEntity> resendForgotPasswordEmail(@Body() EmailRequest request);
   @POST('/auth/register')
   Future<RegisterEntity> register(@Body() RegisterRequest request);
+  @POST('/auth/register')
+  Future<EmailVerifiedEntity> checkEmailVerified(@Body() EmailRequest request);
   @POST('/auth/refresh')
-  Future<LoginEntity> refreshToken(
-      @Query('refresh_token') String refreshToken,
-      );
+  Future<LoginEntity> refreshToken(@Query('refresh_token') String refreshToken,);
+
+
+  /// Categories
+ @GET('/categories')
+  Future<CategoriesEntity>getCategory();
 }

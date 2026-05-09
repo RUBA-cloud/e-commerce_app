@@ -5,6 +5,7 @@ import 'package:ecommerce_app/core/utility/ui_utility.dart';
 import 'package:ecommerce_app/presentation/home_screen.dart';
 import 'package:ecommerce_app/services/company_info/company_info_cubit.dart';
 import 'package:ecommerce_app/services/company_info/company_info_state.dart';
+import 'package:ecommerce_app/services/home/home_cubit.dart';
 import 'package:ecommerce_app/services/register/register_cubit.dart';
 
 import 'package:flutter/material.dart';
@@ -75,9 +76,14 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
     cubit.resendEmailVerify(email: widget.email);
   }
 
+  // ── Check verification ────────────────────────────────────
+  void _checkVerification(RegisterCubit cubit) {
+    cubit.checkEmailVerified(email: widget.email);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CompanyInfoCubit, CompanyInfoState>(
+    return BlocBuilder<AppMainCubit, AppMainState>(
       buildWhen: (p, c) =>
       c is CompanyInfoLoaded || c is CompanyInfoUpdated,
       builder: (context, companyState) {
@@ -85,27 +91,44 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
 
         return BlocListener<RegisterCubit, RegisterState>(
           listener: (context, state) {
-            if (state is VerifyEmailSuccess) {
-              BlocProvider(
-                create: (_) => RegisterCubit(),
-                child: VerifyEmailScreen(email: widget.email)
-              );
+            // ✅ Fixed: navigate to HomeScreen on success
+            if (state is  CheckEmailVerifiedSuccess ) {
+              if (state is BackToLogin) {
+                navigateTo(
+                  context: context,
+                  replace: true,
+                  page: BlocProvider(
+                    create: (_) => HomeCubit(),
+                    child:  const HomeScreen(),
+                  ),
+                );
+                return;
+              }
+              return;
             }
             if (state is VerifyEmailFailed) {
-             showSnackBar(context: context, message: state.message,success: false);
+              showSnackBar(context: context, message: state.message, success: false);
+            }
+            if (state is RegisterFailed) {
+              showSnackBar(context: context, message: state.message, success: false);
+            }
+            if (state is RegisterUnverified) {
+              showSnackBar(
+                context: context,
+                message: 'email_not_verified_yet'.tr(),
+                success: false,
+              );
             }
             if (state is VerifyEmailResendSuccess) {
-
-              showSnackBar(context: context, message:'resend_success'.tr(),success: false);
-
-
+              showSnackBar(context: context, message: 'resend_success'.tr(), success: true);
             }
           },
 
           child: BlocBuilder<RegisterCubit, RegisterState>(
             builder: (context, state) {
-              final cubit     = context.read<RegisterCubit>();
-              final isLoading = state is VerifyEmailResendLoading;
+              final cubit        = context.read<RegisterCubit>();
+              final isResending  = state is VerifyEmailResendLoading;
+              final isChecking   = state is RegisterLoading;
 
               return Scaffold(
                 backgroundColor: c.card,
@@ -209,12 +232,11 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                             ),
                             SizedBox(height: 40.h),
 
-                            // ── Single step card ───────────────
+                            // ── Card ───────────────────────────
                             glassCard(
                               c: c,
                               child: Column(
                                 children: [
-                                  // Step
                                   _StepRow(
                                     icon:  Icons.touch_app_outlined,
                                     color: c.main,
@@ -223,14 +245,26 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                                   ),
                                   SizedBox(height: 28.h),
 
+                                  // ✅ Check Verification button
+                                  primaryButton(
+                                    label:           'check_verification'.tr(),
+                                    loading:         isChecking,
+                                    backgroundColor: c.button,
+                                    foregroundColor: c.buttonText,
+                                    onPressed: isChecking
+                                        ? null
+                                        : () => _checkVerification(cubit),
+                                  ),
+                                  SizedBox(height: 16.h),
+
                                   // ── Resend button / countdown ──
                                   _canResend
                                       ? primaryButton(
                                     label:           'resend_code'.tr(),
-                                    loading:         isLoading,
-                                    backgroundColor: c.button,
-                                    foregroundColor: c.buttonText,
-                                    onPressed: isLoading
+                                    loading:         isResending,
+                                    backgroundColor: c.main.withOpacity(0.12),
+                                    foregroundColor: c.main,
+                                    onPressed: isResending
                                         ? null
                                         : () => _resend(cubit),
                                   )
@@ -239,13 +273,11 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                                       primaryButton(
                                         label:           'resend_code'.tr(),
                                         loading:         false,
-                                        backgroundColor:
-                                        c.main.withOpacity(0.08),
+                                        backgroundColor: c.main.withOpacity(0.08),
                                         foregroundColor: c.hint,
                                         onPressed:       null,
                                       ),
                                       SizedBox(height: 12.h),
-
                                       RichText(
                                         text: TextSpan(
                                           style: TextStyle(
@@ -253,14 +285,12 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                                               color:    c.hint),
                                           children: [
                                             TextSpan(
-                                                text:
-                                                '${'resend_in'.tr()} '),
+                                                text: '${'resend_in'.tr()} '),
                                             TextSpan(
                                               text: '$_secondsLeft s',
                                               style: TextStyle(
                                                 color:      c.main,
-                                                fontWeight:
-                                                FontWeight.w700,
+                                                fontWeight: FontWeight.w700,
                                               ),
                                             ),
                                           ],
@@ -291,7 +321,6 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
 }
 
 // ── Step row ──────────────────────────────────────────────────────────────────
-
 class _StepRow extends StatelessWidget {
   const _StepRow({
     required this.icon,

@@ -45,7 +45,7 @@ mixin UiUtility {
   // COMPANY INFO
   // ════════════════════════════════════════════════════════════════
 
-  CompanyColors companyColors(CompanyInfoState state) {
+  CompanyColors companyColors(AppMainState state) {
     final company = state is CompanyInfoLoaded
         ? state.company.company
         : state is CompanyInfoUpdated

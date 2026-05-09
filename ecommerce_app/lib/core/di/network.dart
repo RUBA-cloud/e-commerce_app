@@ -1,20 +1,22 @@
+
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:ecommerce_app/constant/api_constants.dart';
+import 'package:ecommerce_app/constant/shared_prefence_keys.dart' show SharedPrefKeys;
 import 'package:ecommerce_app/core/di/network_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TokenInterceptor extends QueuedInterceptor {
 
-  // ── onRequest — attach token to every request ──────────────────────
+  // ── onRequest — attach token + headers to every request ───────────
   @override
   Future<void> onRequest(
       RequestOptions options,
       RequestInterceptorHandler handler,
       ) async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString(ApiConstants.accessTokenKey);
+    final token = prefs.getString(SharedPrefKeys.accessToken);
 
     options.headers[HttpHeaders.acceptHeader]      = ApiConstants.acceptHeader;
     options.headers[HttpHeaders.contentTypeHeader] = ApiConstants.contentType;
@@ -27,7 +29,7 @@ class TokenInterceptor extends QueuedInterceptor {
     handler.next(options);
   }
 
-  // ── onError — handle 401 → refresh → retry ─────────────────────────
+  // ── onError — handle 401 → refresh → retry ────────────────────────
   @override
   Future<void> onError(
       DioException err,
@@ -36,7 +38,6 @@ class TokenInterceptor extends QueuedInterceptor {
     final statusCode = err.response?.statusCode;
     final path       = err.requestOptions.uri.path;
 
-    // only handle 401; skip refresh/login endpoints to avoid loops
     if (statusCode != 401 ||
         path.contains(ApiConstants.refresh) ||
         path.contains(ApiConstants.login)) {
@@ -51,14 +52,21 @@ class TokenInterceptor extends QueuedInterceptor {
       return;
     }
 
-    // refresh succeeded → retry original request with new token
     try {
       final prefs    = await SharedPreferences.getInstance();
-      final newToken = prefs.getString(ApiConstants.accessTokenKey);
+      final newToken = prefs.getString(SharedPrefKeys.accessToken);
+print("enenne" +newToken!);
+      if (newToken == null || newToken.isEmpty) {
+        handler.next(err);
+        return;
+      }
 
       final opts = err.requestOptions;
-      opts.headers[HttpHeaders.authorizationHeader] =
-      '${ApiConstants.bearerPrefix}$newToken';
+
+      // ✅ Re-attach all headers on retry
+      opts.headers[HttpHeaders.acceptHeader]       = ApiConstants.acceptHeader;
+      opts.headers[HttpHeaders.contentTypeHeader]  = ApiConstants.contentType;
+      opts.headers[HttpHeaders.authorizationHeader] = '${ApiConstants.bearerPrefix}$newToken';
 
       final response = await NetworkClient.dio.fetch(opts);
       handler.resolve(response);
@@ -67,7 +75,7 @@ class TokenInterceptor extends QueuedInterceptor {
     }
   }
 
-  // ── _tryRefresh ────────────────────────────────────────────────────
+  // ── _tryRefresh ───────────────────────────────────────────────────
   Future<bool> _tryRefresh() async {
     try {
       final prefs        = await SharedPreferences.getInstance();
@@ -75,7 +83,6 @@ class TokenInterceptor extends QueuedInterceptor {
 
       if (refreshToken == null || refreshToken.isEmpty) return false;
 
-      // Separate Dio instance — must NOT go through TokenInterceptor again
       final refreshDio = Dio(
         BaseOptions(
           baseUrl:        ApiConstants.baseUrl,
@@ -83,8 +90,10 @@ class TokenInterceptor extends QueuedInterceptor {
           receiveTimeout: ApiConstants.receiveTimeout,
           sendTimeout:    ApiConstants.sendTimeout,
           headers: {
-            'Content-Type': ApiConstants.contentType,
-            'Accept':        ApiConstants.acceptHeader,
+            HttpHeaders.contentTypeHeader: ApiConstants.contentType,
+            HttpHeaders.acceptHeader:      ApiConstants.acceptHeader,
+            HttpHeaders.authorizationHeader:
+            '${ApiConstants.bearerPrefix}$refreshToken',
           },
         ),
       );

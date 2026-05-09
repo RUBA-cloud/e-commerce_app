@@ -1,13 +1,17 @@
 import 'dart:convert';
 
 import 'package:easy_localization/easy_localization.dart';
+import 'package:ecommerce_app/constant/shared_prefence_keys.dart' show SharedPrefKeys;
 import 'package:ecommerce_app/core/di/api_result.dart';
 import 'package:ecommerce_app/core/di/configure_dependency.dart';
 import 'package:ecommerce_app/data/model/request/email_request.dart';
 import 'package:ecommerce_app/data/model/request/register_request.dart';
+import 'package:ecommerce_app/data/model/response/email_verified_entity.dart';
 import 'package:ecommerce_app/data/model/response/register_entity.dart';
+import 'package:ecommerce_app/domain/usecases/check_verify_email_use_case.dart';
 import 'package:ecommerce_app/domain/usecases/register_use_case.dart';
 import 'package:ecommerce_app/domain/usecases/resend_verify_email.dart';
+import 'package:ecommerce_app/domain/usecases/shared_prefs_string_use_case.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geocoding/geocoding.dart';
@@ -23,6 +27,7 @@ class RegisterCubit extends Cubit<RegisterState> {
   // ── Use-case (correctly initialised after super()) ────────
   final RegisterUseCase _registerUseCase = getIt<RegisterUseCase>();
   final ResendVerifyEmailUseCase _resendVerifyEmail = getIt<ResendVerifyEmailUseCase>();
+  final CheckVerifyEmailUseCase _checkVerifyEmailUseCase =getIt<CheckVerifyEmailUseCase>();
   // ── Location fallbacks ────────────────────────────────────
   String country = 'Jordan';
   String city    = 'Amman';
@@ -71,7 +76,9 @@ class RegisterCubit extends Cubit<RegisterState> {
       // Non-fatal — registration still works with fallback values
     }
   }
-
+  void reset(){
+    emit(RegisterInitial());
+  }
   // ── Submit ────────────────────────────────────────────────
   Future<void> submit(RegisterRequest request) async {
     if (state is RegisterLoading) return;
@@ -135,5 +142,86 @@ class RegisterCubit extends Cubit<RegisterState> {
 
   void goToLogin() { emit(const BackToLogin());}
 
+  // ── Validators (pure functions, no state emitted) ─────────────────────────
+
+  String? validateName(String? v) {
+    final val = (v ?? '').trim();
+    if (val.isEmpty) return 'name_required'.tr();
+    if (val.length < 2) return 'name_too_short'.tr();
+    return null;
+  }
+
+  String? validateEmail(String? v) {
+    final val = (v ?? '').trim();
+    if (val.isEmpty) return 'email_required'.tr();
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(val)) {
+      return 'enter_valid_email'.tr();
+    }
+    return null;
+  }
+
+  String? validatePhone(String? v) {
+    final val = (v ?? '').trim();
+    if (val.isEmpty) return 'phone_required'.tr();
+    if (!RegExp(r'^\+?[0-9]{7,15}$').hasMatch(val)) {
+      return 'enter_valid_phone'.tr();
+    }
+    return null;
+  }
+
+  String? validatePassword(String? v) {
+    if (v == null || v.isEmpty) return 'password_is_required'.tr();
+    if (v.length < 8) return 'password_too_short'.tr();
+    return null;
+  }
+
+// confirmPassword needs the original password value to compare against
+  String? validateConfirmPassword(String? v, String password) {
+    if (v == null || v.isEmpty) return 'confirm_password_required'.tr();
+    if (v != password) return 'passwords_do_not_match'.tr();
+    return null;
+  }
+
+  String? validateCountry(String? v) {
+    if ((v ?? '').trim().isEmpty) return 'country_required'.tr();
+    return null;
+  }
+
+  String? validateCity(String? v) {
+    if ((v ?? '').trim().isEmpty) return 'city_required'.tr();
+    return null;
+  }
+
+  Future<void> checkEmailVerified({required String email}) async {
+    if (state is RegisterLoading) return;
+    emit(const RegisterLoading());
+
+    try {
+      final result = await _checkVerifyEmailUseCase.execute(EmailRequest(email: email));
+
+      switch (result) {
+        case Success():
+          fromEmailVerified(result.data);
+          emit( CheckEmailVerifiedSuccess(result.data));
+        case Failure():
+          if (result.statusCode == 403) {
+            emit(const RegisterUnverified());
+          } else {
+            emit(RegisterFailed(result.message));
+          }
+      }
+    } catch (e) {
+      emit(RegisterFailed(e.toString()));
+    }
+  }
+  late final SharedPrefsStringUseCase _sharedPrefsStringUseCase= getIt<SharedPrefsStringUseCase>();
+  Future<void> fromEmailVerified(EmailVerifiedEntity entity) async {
+    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.accessToken, entity.accessToken);
+    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.userId,      entity.user.id.toString());
+    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.userEmail,   entity.user.email);
+    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.userName,    entity.user.name);
+    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.language,    entity.user.language);
+    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.theme,       entity.user.theme);
+  }
 
 }

@@ -13,6 +13,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../../constant/shared_prefence_keys.dart' show SharedPrefKeys;
+import '../../domain/usecases/shared_prefs_string_use_case.dart' show SharedPrefsStringUseCase;
+
 class LoginCubit extends Cubit<LoginState> {
   LoginCubit() : super(const LoginInitial());
   static LoginCubit get(BuildContext context) => BlocProvider.of(context);
@@ -22,7 +25,7 @@ class LoginCubit extends Cubit<LoginState> {
 
   late final LoginUseCase          _loginUseCase          = getIt<LoginUseCase>();
   late final ForgetPasswordUseCase _forgetPasswordUseCase = getIt<ForgetPasswordUseCase>();
-
+  late final SharedPrefsStringUseCase _sharedPrefsStringUseCase= getIt<SharedPrefsStringUseCase>();
   // ── Get country & city from GPS ──────────────────────────────────────
   Future<void> getCountryAndCity() async {
     try {
@@ -65,7 +68,8 @@ class LoginCubit extends Cubit<LoginState> {
 
       switch (result) {
         case Success<LoginEntity>():
-          emit(LoginSuccess());
+        await  fromLogin(result.data);
+
 
         case Failure():
           final code = result.statusCode;
@@ -78,6 +82,16 @@ class LoginCubit extends Cubit<LoginState> {
     } catch (e) {
       emit(LoginFailed(e.toString()));
     }
+  }
+  Future<void> fromLogin(LoginEntity entity) async {
+    await _sharedPrefsStringUseCase.execute(SharedPrefKeys.accessToken, entity.data.accessToken);
+    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.userId,      entity.data.id.toString());
+    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.userEmail,   entity.data.email);
+    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.userName,    entity.data.name);
+    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.language,    entity.data.language);
+    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.theme,       entity.data.theme);
+
+    emit(LoginSuccess());
   }
 
   // ── Forgot Password ───────────────────────────────────────────────────

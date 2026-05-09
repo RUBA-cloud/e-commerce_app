@@ -43,7 +43,7 @@ class _ForgotPasswordState extends State<ForgotPassword> with UiUtility {
 
   @override
   Widget build(BuildContext context) {
-    final companyState = context.watch<CompanyInfoCubit>().state;
+    final companyState = context.watch<AppMainCubit>().state;
     final c            = companyColors(companyState);
 
     return BlocListener<LoginCubit, LoginState>(

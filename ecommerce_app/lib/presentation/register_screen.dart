@@ -26,12 +26,13 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
   final _passwordCtrl = TextEditingController();
   final _phoneCtrl    = TextEditingController();
   final _formKey      = GlobalKey<FormState>();
+  late RegisterCubit cubit;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // FIX: moved from initState — context is safe here
-    RegisterCubit.get(context).getCountryAndCity();
+    cubit = RegisterCubit.get(context);
+    cubit.getCountryAndCity();
   }
 
   @override
@@ -43,12 +44,10 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
     super.dispose();
   }
 
-  // FIX: pass all field values to submit so cubit doesn't need
-  // to hold controller references
   void _submit(RegisterCubit cubit) {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     cubit.submit(
-       RegisterRequest(
+      RegisterRequest(
         name:     _nameCtrl.text.trim(),
         email:    _emailCtrl.text.trim(),
         phone:    _phoneCtrl.text.trim(),
@@ -61,7 +60,7 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CompanyInfoCubit, CompanyInfoState>(
+    return BlocBuilder<AppMainCubit, AppMainState>(
       buildWhen: (prev, curr) =>
       curr is CompanyInfoLoaded || curr is CompanyInfoUpdated,
       builder: (context, companyState) {
@@ -83,17 +82,18 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
               return;
             }
             if (state is EmailAlreadyExist) {
-              showSnackBar(context: context,success: false, message: "email_already_exists".tr());
+              showSnackBar(context: context, success: false, message: "email_already_exists".tr());
               return;
             }
             if (state is PhoneAlreadyExist) {
-              showSnackBar(context: context,success: false, message: "phone_already_exists".tr());
+              showSnackBar(context: context, success: false, message: "phone_already_exists".tr());
               return;
             }
+
             if (state is BackToLogin) {
               navigateTo(
-                context:  context,
-                replace:  true,
+                context: context,
+                replace: true,
                 page: BlocProvider(
                   create: (_) => LoginCubit(),
                   child:  const LoginScreen(),
@@ -101,11 +101,8 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
               );
               return;
             }
-
             if (state is RegisterFailed) {
-              // FIX: showSnackBar doesn't exist in UiUtility —
-              // use ScaffoldMessenger directly
-            showSnackBar(context: context, message: state.message,success: false);
+              showSnackBar(context: context, message: state.message, success: false);
             }
           },
 
@@ -131,21 +128,18 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
                         padding: EdgeInsets.symmetric(horizontal: 28.w),
                         child: Form(
                           key: _formKey,
-                          autovalidateMode:
-                          AutovalidateMode.onUserInteraction,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               SizedBox(height: 20.h),
 
-                              // Back button
                               backButton(
                                 c:     c,
                                 onTap: () => cubit.goToLogin(),
                               ),
                               SizedBox(height: 28.h),
 
-                              // Brand logo
                               Center(
                                 child: brandLogo(
                                   c:    c,
@@ -154,7 +148,6 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
                               ),
                               SizedBox(height: 28.h),
 
-                              // Headline
                               screenHeadline(
                                 title:    'create_account'.tr(),
                                 subtitle: 'register_subtitle'.tr(),
@@ -162,13 +155,11 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
                               ),
                               SizedBox(height: 36.h),
 
-                              // Form card
                               formCard(
                                 surfaceColor: surface,
                                 shadowColor:  c.main,
                                 child: Column(
-                                  crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     // Name
                                     fieldLabel('name'.tr(), c.label),
@@ -178,17 +169,11 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
                                       hintText:   'enter_name'.tr(),
                                       isBorder:   false,
                                       radius:     14,
-                                      prefixIcon: Icon(
-                                          Icons.person_outline,
-                                          color: c.main),
+                                      prefixIcon: Icon(Icons.person_outline, color: c.main),
                                       validator: (v) {
                                         final val = (v ?? '').trim();
-                                        if (val.isEmpty) {
-                                          return 'name_required'.tr();
-                                        }
-                                        if (val.length < 2) {
-                                          return 'name_too_short'.tr();
-                                        }
+                                        if (val.isEmpty) return 'name_required'.tr();
+                                        if (val.length < 2) return 'name_too_short'.tr();
                                         return null;
                                       },
                                     ),
@@ -199,21 +184,15 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
                                     SizedBox(height: 8.h),
                                     BasicInput(
                                       controller:   _emailCtrl,
-                                      hintText:     'enter.tr()${'email'.tr()}',
+                                      hintText:     '${'enter'.tr()} ${'email'.tr()}',
                                       isBorder:     false,
                                       radius:       14,
                                       keyboardType: TextInputType.emailAddress,
-                                      prefixIcon: Icon(
-                                          Icons.email_outlined,
-                                          color: c.main),
+                                      prefixIcon: Icon(Icons.email_outlined, color: c.main),
                                       validator: (v) {
                                         final val = (v ?? '').trim();
-                                        if (val.isEmpty) {
-                                          return 'email_required'.tr();
-                                        }
-                                        if (!RegExp(
-                                            r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
-                                            .hasMatch(val)) {
+                                        if (val.isEmpty) return 'email_required'.tr();
+                                        if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(val)) {
                                           return 'enter_valid_email'.tr();
                                         }
                                         return null;
@@ -230,15 +209,8 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
                                       isBorder:     false,
                                       radius:       14,
                                       keyboardType: TextInputType.phone,
-                                      prefixIcon: Icon(
-                                          Icons.phone_outlined,
-                                          color: c.main),
-                                      validator: (v) {
-                                        if ((v ?? '').trim().isEmpty) {
-                                          return 'phone_required'.tr();
-                                        }
-                                        return null;
-                                      },
+                                      prefixIcon: Icon(Icons.phone_outlined, color: c.main),
+                                      validator:  (v) => cubit.validatePhone(v),
                                     ),
                                     SizedBox(height: 20.h),
 
@@ -251,16 +223,10 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
                                       isBorder:   false,
                                       radius:     14,
                                       isPassword: true,
-                                      prefixIcon: Icon(
-                                          Icons.lock_outline,
-                                          color: c.main),
+                                      prefixIcon: Icon(Icons.lock_outline, color: c.main),
                                       validator: (v) {
-                                        if (v == null || v.isEmpty) {
-                                          return 'password_is_required'.tr();
-                                        }
-                                        if (v.length < 8) {
-                                          return 'password_too_short'.tr();
-                                        }
+                                        if (v == null || v.isEmpty) return 'password_is_required'.tr();
+                                        if (v.length < 8) return 'password_too_short'.tr();
                                         return null;
                                       },
                                     ),
@@ -269,23 +235,19 @@ class _RegisterScreenState extends State<RegisterScreen> with UiUtility {
                                     // Submit button
                                     primaryButton(
                                       label:           'register'.tr(),
-                                      loading:         cubit.state  is RegisterLoading,
+                                      loading:         cubit.state is RegisterLoading,
                                       backgroundColor: c.button,
                                       foregroundColor: c.buttonText,
-                                      // FIX: disabled while loading
-                                      onPressed: isLoading
-                                          ? null
-                                          : () => _submit(cubit),
+                                      onPressed: isLoading ? null : () => _submit(cubit),
                                     ),
                                   ],
                                 ),
                               ),
-                              SizedBox(height: 28.h),
 
+                              SizedBox(height: 28.h),
                               orDivider(c: c),
                               SizedBox(height: 28.h),
 
-                              // Login CTA
                               Center(
                                 child: authLink(
                                   question: 'have_account'.tr(),

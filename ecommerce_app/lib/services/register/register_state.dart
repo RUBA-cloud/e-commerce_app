@@ -50,6 +50,14 @@ class VerifyEmailFailed extends RegisterState {
 class VerifyEmailResendLoading extends RegisterState {
   const VerifyEmailResendLoading();
 }
+class CheckEmailVerifiedSuccess extends RegisterState {
+ final EmailVerifiedEntity emailVerifiedEntity;
+ CheckEmailVerifiedSuccess(this.emailVerifiedEntity);
+}
+class CheckEmailVerifiedFailed extends RegisterState {
+
+}
+
 
 class VerifyEmailResendSuccess extends RegisterState {
   const VerifyEmailResendSuccess();

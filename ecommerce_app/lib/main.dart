@@ -5,8 +5,8 @@ import 'package:ecommerce_app/presentation/home_screen.dart';
 import 'package:ecommerce_app/presentation/login_screen.dart';
 import 'package:ecommerce_app/services/company_info/company_info_cubit.dart';
 import 'package:ecommerce_app/services/company_info/company_info_state.dart';
+import 'package:ecommerce_app/services/home/home_cubit.dart';
 import 'package:ecommerce_app/services/login/login_cubit.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -32,7 +32,6 @@ class AppRoot extends StatelessWidget with UiUtility {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Read locale HERE — EasyLocalization is in context at this level
     final locale           = context.locale;
     final supportedLocales = context.supportedLocales;
     final delegates        = context.localizationDelegates;
@@ -43,15 +42,26 @@ class AppRoot extends StatelessWidget with UiUtility {
       splitScreenMode: true,
       builder: (ctx, child) {
         return BlocProvider(
-          create: (_) => CompanyInfoCubit()..init(),
-          child: BlocBuilder<CompanyInfoCubit, CompanyInfoState>(
+          create: (_) => AppMainCubit()..init(),
+          child: BlocBuilder<AppMainCubit, AppMainState>(
             buildWhen: (previous, current) =>
-                current is CompanyInfoLoaded || current is CompanyInfoUpdated,
+            current is CompanyInfoLoaded   ||
+                current is CompanyInfoUpdated  ||
+                current is UserAlreadySigned   ||
+                current is UserNotSignedIn,
             builder: (context, state) {
-              // ✅ Single call — all colors extracted + defaulted in UiUtility
               final c = companyColors(state);
 
               debugPrint('mainColor: ${c.main}');
+
+              // ✅ Decide home widget based on login state
+              final Widget homeWidget = state is UserAlreadySigned
+                  ? BlocProvider(
+                  create: (_) => HomeCubit(), child: const HomeScreen())
+                  : BlocProvider(
+                create: (_) => LoginCubit(),
+                child: const LoginScreen(),
+              );
 
               return MaterialApp(
                 debugShowCheckedModeBanner: false,
@@ -66,17 +76,11 @@ class AppRoot extends StatelessWidget with UiUtility {
                 supportedLocales: supportedLocales,
                 locale: locale,
 
-                // ✅ buildTheme is now in UiUtility
                 theme: buildTheme(c),
 
-                initialRoute: '/',
-                routes: {
-                  '/': (context) => BlocProvider(
-                        create: (_) => LoginCubit(),
-                        child: const LoginScreen(),
-                      ),
-                  '/home': (context) => const HomeScreen(),
-                },
+                // ✅ home takes a Widget, not a String
+                home: homeWidget,
+
                 builder: (context, child) => child ?? const SizedBox.shrink(),
               );
             },
