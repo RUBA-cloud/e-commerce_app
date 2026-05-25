@@ -1,10 +1,9 @@
-// login_cubit.dart
-import 'package:easy_localization/easy_localization.dart';
+
 import 'package:ecommerce_app/core/di/api_result.dart';
 import 'package:ecommerce_app/core/di/configure_dependency.dart';
 import 'package:ecommerce_app/data/model/request/email_request.dart';
 import 'package:ecommerce_app/data/model/request/login_request.dart';
-import 'package:ecommerce_app/data/model/response/login_entity.dart';
+import 'package:ecommerce_app/data/model/response/login_user_entity.dart';
 import 'package:ecommerce_app/domain/usecases/forget_password_use_case.dart';
 import 'package:ecommerce_app/domain/usecases/login_use_case.dart';
 import 'package:ecommerce_app/services/login/login_state.dart';
@@ -67,8 +66,11 @@ class LoginCubit extends Cubit<LoginState> {
       final result = await _loginUseCase.execute(loginRequest);
 
       switch (result) {
-        case Success<LoginEntity>():
-        await  fromLogin(result.data);
+        case Success<LoginUserEntity>():
+          entity = result.data;
+          await fromLogin();
+     
+       break;
 
 
         case Failure():
@@ -76,20 +78,22 @@ class LoginCubit extends Cubit<LoginState> {
           if (code == 403) {
             emit(LoginUnverified());
           } else {
-            emit(LoginFailed(result.error ?? 'login_failed'.tr()));
+            emit(LoginFailed(result.error));
           }
       }
     } catch (e) {
       emit(LoginFailed(e.toString()));
     }
   }
-  Future<void> fromLogin(LoginEntity entity) async {
-    await _sharedPrefsStringUseCase.execute(SharedPrefKeys.accessToken, entity.data.accessToken);
-    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.userId,      entity.data.id.toString());
-    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.userEmail,   entity.data.email);
-    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.userName,    entity.data.name);
-    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.language,    entity.data.language);
-    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.theme,       entity.data.theme);
+ LoginUserEntity? entity;
+  Future<void> fromLogin() async {
+    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.isSaved,"true");
+    await _sharedPrefsStringUseCase.execute(SharedPrefKeys.accessToken, entity!.data.accessToken);
+    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.userId,      entity!.data.id.toString());
+    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.userEmail,   entity!.data.email);
+    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.userName,    entity!.data.name);
+    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.language,    entity!.data.language);
+    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.theme,       entity!.data.theme);
 
     emit(LoginSuccess());
   }
@@ -124,7 +128,7 @@ class LoginCubit extends Cubit<LoginState> {
           } else {
             // FIX: result.error is nullable — added ?? fallback to avoid
             // passing null into ForgetPasswordFail which expects a String
-            emit(ForgetPasswordFail(result.error ?? 'unknown_error'));
+            emit(ForgetPasswordFail(result.error));
           }
       }
     } catch (e) {

@@ -2,19 +2,20 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
 import 'package:ecommerce_app/data/model/request/login_request.dart';
 import 'package:ecommerce_app/presentation/forgot_password_screen.dart';
-import 'package:ecommerce_app/presentation/home_screen.dart';
 import 'package:ecommerce_app/presentation/register_screen.dart';
 import 'package:ecommerce_app/presentation/verify_email_screen.dart';
 import 'package:ecommerce_app/presentation/widgets/basic_form_filed.dart';
+import 'package:ecommerce_app/services/cart/cart_cubit.dart';
 import 'package:ecommerce_app/services/company_info/company_info_cubit.dart';
 import 'package:ecommerce_app/services/company_info/company_info_state.dart';
-import 'package:ecommerce_app/services/home/home_cubit.dart';
 import 'package:ecommerce_app/services/login/login_cubit.dart';
 import 'package:ecommerce_app/services/login/login_state.dart';
 import 'package:ecommerce_app/services/register/register_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+import 'home/home_buttom_navigation.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -72,13 +73,13 @@ class _LoginScreenState extends State<LoginScreen> with UiUtility {
             }
 
             if (state is LoginSuccess) {
-              navigateTo(
-                context: context,
-                page: BlocProvider(
-                  create: (_) => HomeCubit(),
-                  child: const HomeScreen(),
-                ),
-              );
+
+              navigateTo(context: context, page: BlocProvider(create: (_)=>CartCubit(),
+
+                  child:  const ButtonHomeNavigationScreen()
+
+              ), replace: true,);
+        
               return;
             }
             if (state is GoToForgotPassword) {

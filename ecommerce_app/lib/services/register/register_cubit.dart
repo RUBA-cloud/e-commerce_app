@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/constant/shared_prefence_keys.dart' show SharedPrefKeys;
@@ -132,7 +131,7 @@ class RegisterCubit extends Cubit<RegisterState> {
           emit(const VerifyEmailResendSuccess());
         case Failure():
           emit(VerifyEmailFailed(
-            result.error ?? 'unknown_error'.tr(),
+            result.error,
           ));
       }
     } catch (e) {

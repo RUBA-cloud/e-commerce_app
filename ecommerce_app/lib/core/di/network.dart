@@ -1,9 +1,8 @@
-
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:ecommerce_app/constant/api_constants.dart';
-import 'package:ecommerce_app/constant/shared_prefence_keys.dart' show SharedPrefKeys;
+import 'package:ecommerce_app/constant/shared_prefence_keys.dart';
 import 'package:ecommerce_app/core/di/network_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,6 +15,7 @@ class TokenInterceptor extends QueuedInterceptor {
       RequestInterceptorHandler handler,
       ) async {
     final prefs = await SharedPreferences.getInstance();
+    // FIX 1: Use a single consistent key everywhere
     final token = prefs.getString(SharedPrefKeys.accessToken);
 
     options.headers[HttpHeaders.acceptHeader]      = ApiConstants.acceptHeader;
@@ -38,6 +38,7 @@ class TokenInterceptor extends QueuedInterceptor {
     final statusCode = err.response?.statusCode;
     final path       = err.requestOptions.uri.path;
 
+    // Skip refresh for non-401s and for auth endpoints (avoid loops)
     if (statusCode != 401 ||
         path.contains(ApiConstants.refresh) ||
         path.contains(ApiConstants.login)) {
@@ -48,27 +49,41 @@ class TokenInterceptor extends QueuedInterceptor {
     final refreshed = await _tryRefresh();
 
     if (!refreshed) {
+      // FIX 2: Clear stale tokens on permanent auth failure
+      await _clearTokens();
       handler.next(err);
       return;
     }
 
     try {
       final prefs    = await SharedPreferences.getInstance();
+      // FIX 1: Read with the same key used in onRequest and _tryRefresh
       final newToken = prefs.getString(SharedPrefKeys.accessToken);
-print("enenne" +newToken!);
+
       if (newToken == null || newToken.isEmpty) {
         handler.next(err);
         return;
       }
 
-      final opts = err.requestOptions;
+      // FIX 3: Clone options to avoid mutating the original request
+      final opts = err.requestOptions.copyWith(
+        headers: {
+          ...err.requestOptions.headers,
+          HttpHeaders.acceptHeader:        ApiConstants.acceptHeader,
+          HttpHeaders.contentTypeHeader:   ApiConstants.contentType,
+          HttpHeaders.authorizationHeader: '${ApiConstants.bearerPrefix}$newToken',
+        },
+      );
 
-      // ✅ Re-attach all headers on retry
-      opts.headers[HttpHeaders.acceptHeader]       = ApiConstants.acceptHeader;
-      opts.headers[HttpHeaders.contentTypeHeader]  = ApiConstants.contentType;
-      opts.headers[HttpHeaders.authorizationHeader] = '${ApiConstants.bearerPrefix}$newToken';
+      // FIX 4: Use a fresh Dio to avoid re-triggering this interceptor
+      final retryDio = Dio(BaseOptions(
+        baseUrl:        ApiConstants.baseUrl,
+        connectTimeout: ApiConstants.connectTimeout,
+        receiveTimeout: ApiConstants.receiveTimeout,
+        sendTimeout:    ApiConstants.sendTimeout,
+      ));
 
-      final response = await NetworkClient.dio.fetch(opts);
+      final response = await retryDio.fetch(opts);
       handler.resolve(response);
     } catch (e) {
       handler.next(err);
@@ -79,24 +94,21 @@ print("enenne" +newToken!);
   Future<bool> _tryRefresh() async {
     try {
       final prefs        = await SharedPreferences.getInstance();
-      final refreshToken = prefs.getString(ApiConstants.refreshTokenKey);
+      final refreshToken = prefs.getString(SharedPrefKeys.accessToken); // FIX 1
 
       if (refreshToken == null || refreshToken.isEmpty) return false;
 
-      final refreshDio = Dio(
-        BaseOptions(
-          baseUrl:        ApiConstants.baseUrl,
-          connectTimeout: ApiConstants.connectTimeout,
-          receiveTimeout: ApiConstants.receiveTimeout,
-          sendTimeout:    ApiConstants.sendTimeout,
-          headers: {
-            HttpHeaders.contentTypeHeader: ApiConstants.contentType,
-            HttpHeaders.acceptHeader:      ApiConstants.acceptHeader,
-            HttpHeaders.authorizationHeader:
-            '${ApiConstants.bearerPrefix}$refreshToken',
-          },
-        ),
-      );
+      final refreshDio = Dio(BaseOptions(
+        baseUrl:        ApiConstants.baseUrl,
+        connectTimeout: ApiConstants.connectTimeout,
+        receiveTimeout: ApiConstants.receiveTimeout,
+        sendTimeout:    ApiConstants.sendTimeout,
+        headers: {
+          HttpHeaders.contentTypeHeader:   ApiConstants.contentType,
+          HttpHeaders.acceptHeader:        ApiConstants.acceptHeader,
+          HttpHeaders.authorizationHeader: '${ApiConstants.bearerPrefix}$refreshToken',
+        },
+      ));
 
       final res = await refreshDio.post(
         ApiConstants.refresh,
@@ -107,14 +119,20 @@ print("enenne" +newToken!);
           ? jsonDecode(res.data as String) as Map<String, dynamic>
           : res.data as Map<String, dynamic>;
 
-      await prefs.setString(
-          ApiConstants.accessTokenKey,  data['access_token']  as String);
-      await prefs.setString(
-          ApiConstants.refreshTokenKey, data['refresh_token'] as String);
+      // FIX 1: Save with the same keys used to read them
+      await prefs.setString(SharedPrefKeys.accessToken,  data['access_token']  as String);
+      await prefs.setString(SharedPrefKeys.refreshToken, data['refresh_token'] as String);
 
       return true;
     } catch (_) {
       return false;
     }
+  }
+
+  // ── _clearTokens — wipe tokens on unrecoverable auth failure ──────
+  Future<void> _clearTokens() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(SharedPrefKeys.accessToken);
+    await prefs.remove(SharedPrefKeys.refreshToken);
   }
 }

@@ -1,11 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/core/di/configure_dependency.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
-import 'package:ecommerce_app/presentation/home_screen.dart';
+import 'package:ecommerce_app/presentation/home/home_buttom_navigation.dart';
 import 'package:ecommerce_app/presentation/login_screen.dart';
 import 'package:ecommerce_app/services/company_info/company_info_cubit.dart';
 import 'package:ecommerce_app/services/company_info/company_info_state.dart';
-import 'package:ecommerce_app/services/home/home_cubit.dart';
+import 'package:ecommerce_app/services/cart/cart_cubit.dart';
 import 'package:ecommerce_app/services/login/login_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -51,13 +51,13 @@ class AppRoot extends StatelessWidget with UiUtility {
                 current is UserNotSignedIn,
             builder: (context, state) {
               final c = companyColors(state);
-
-              debugPrint('mainColor: ${c.main}');
-
+              buildTheme(c,brightness: Brightness.dark);
               // ✅ Decide home widget based on login state
               final Widget homeWidget = state is UserAlreadySigned
                   ? BlocProvider(
-                  create: (_) => HomeCubit(), child: const HomeScreen())
+                      create: (_) => CartCubit()..loadCart(),
+                      child: const ButtonHomeNavigationScreen(),
+                    )
                   : BlocProvider(
                 create: (_) => LoginCubit(),
                 child: const LoginScreen(),
@@ -80,6 +80,7 @@ class AppRoot extends StatelessWidget with UiUtility {
 
                 // ✅ home takes a Widget, not a String
                 home: homeWidget,
+
 
                 builder: (context, child) => child ?? const SizedBox.shrink(),
               );

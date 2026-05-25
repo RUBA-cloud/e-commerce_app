@@ -8,7 +8,7 @@ import 'package:ecommerce_app/data/model/request/login_request.dart';
 import 'package:ecommerce_app/data/model/request/register_request.dart';
 import 'package:ecommerce_app/data/model/response/email_entity.dart';
 import 'package:ecommerce_app/data/model/response/email_verified_entity.dart';
-import 'package:ecommerce_app/data/model/response/login_entity.dart';
+import 'package:ecommerce_app/data/model/response/login_user_entity.dart';
 import 'package:ecommerce_app/data/model/response/register_entity.dart';
 import 'package:ecommerce_app/domain/repoistery/auth_repoistery.dart';
 import 'package:injectable/injectable.dart';
@@ -22,10 +22,10 @@ class AuthRepoisteryImpl implements AuthRepoistery {
 
   // ── Login ──────────────────────────────────────────────────────────────────
   @override
-  Future<ApiResult<LoginEntity>> login(LoginRequest loginRequest) async {
+  Future<ApiResult<LoginUserEntity>> login(LoginRequest loginRequest) async {
     try {
       final entity = await _apiService.login(loginRequest);
-      return Success(data: entity, statusCode: 200);
+      return Success(data: entity);
     } on DioException catch (e) {
       return Failure(
         error:      _encodeError(e),

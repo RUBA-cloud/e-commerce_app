@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
-import 'package:ecommerce_app/presentation/home_screen.dart';
+import 'package:ecommerce_app/presentation/home/home_buttom_navigation.dart';
+
 import 'package:ecommerce_app/services/company_info/company_info_cubit.dart';
 import 'package:ecommerce_app/services/company_info/company_info_state.dart';
 import 'package:ecommerce_app/services/home/home_cubit.dart';
@@ -99,7 +100,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                   replace: true,
                   page: BlocProvider(
                     create: (_) => HomeCubit(),
-                    child:  const HomeScreen(),
+                    child:  const ButtonHomeNavigationScreen(),
                   ),
                 );
                 return;

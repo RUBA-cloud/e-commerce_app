@@ -2,9 +2,14 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:easy_localization/easy_localization.dart';
+import 'package:ecommerce_app/constant/app_theme.dart';
+import 'package:ecommerce_app/data/model/response/PromoSlide.dart';
+import 'package:ecommerce_app/data/model/response/brand_entity.dart';
 import 'package:ecommerce_app/services/company_info/company_info_state.dart';
 import 'package:flutter/material.dart' hide Size;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+import '../../presentation/home/widgets/home_shared.dart';
 
 mixin UiUtility {
 
@@ -25,7 +30,7 @@ mixin UiUtility {
 
   void navigateTo({
     required BuildContext context,
-    required Widget page,
+    required Widget       page,
     bool replace = false,
   }) {
     if (replace) {
@@ -51,6 +56,7 @@ mixin UiUtility {
         : state is CompanyInfoUpdated
         ? state.company.company
         : null;
+    // FIX: removed stray double semicolon ;;
 
     return CompanyColors(
       main:       hexColor(company?.mainColor,       '#1D5D9B'),
@@ -87,7 +93,7 @@ mixin UiUtility {
         backgroundColor: c.main,
         foregroundColor: c.buttonText,
         iconTheme:       IconThemeData(color: c.icon),
-        titleTextStyle:  TextStyle(
+        titleTextStyle: TextStyle(
             color: c.buttonText, fontSize: 18, fontWeight: FontWeight.w600),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -99,8 +105,8 @@ mixin UiUtility {
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        filled:     true,
-        fillColor:  c.textField,
+        filled:    true,
+        fillColor: c.textField,
         hintStyle:  TextStyle(color: c.hint),
         labelStyle: TextStyle(color: c.label),
         border: OutlineInputBorder(
@@ -189,7 +195,7 @@ mixin UiUtility {
   ];
 
   // ════════════════════════════════════════════════════════════════
-  // AUTH WIDGETS — delegates to top-level widget classes
+  // AUTH WIDGETS
   // ════════════════════════════════════════════════════════════════
 
   Widget brandLogo({
@@ -207,15 +213,12 @@ mixin UiUtility {
 
   Widget orDivider({required CompanyColors c}) => _OrDivider(c: c);
 
-  // FIX: backButton was inlined with widget/context/animation references
-  // that don't exist in a mixin — replaced with delegation to _AuthBackButton
   Widget backButton({
     required CompanyColors c,
     VoidCallback?          onTap,
   }) =>
       _AuthBackButton(color: c.main, onTap: onTap);
 
-  // FIX: authLink now delegates to AuthLink (public top-level widget)
   Widget authLink({
     required String        question,
     required String        action,
@@ -280,13 +283,172 @@ mixin UiUtility {
 
   Widget trustBadges({required CompanyColors c}) => _TrustBadges(c: c);
 
-  // FIX: successCard now delegates to SuccessCard (public top-level widget)
   Widget successCard({
     required CompanyColors c,
     required String        email,
     required VoidCallback  onTap,
   }) =>
       SuccessCard(c: c, email: email, onTap: onTap);
+
+  // ════════════════════════════════════════════════════════════════
+  // PROMO SLIDE
+  // FIX: moved OUT of SuccessCard.build() where it was incorrectly nested.
+  // Now a proper mixin method, accessible from _PromoCarouselState.
+  // ════════════════════════════════════════════════════════════════
+
+  Widget promoSlide({
+    required BuildContext  context,
+    required PromoSlideData data,
+  }) {
+    // c is read from the data's own gradient colors — no AppColors needed here.
+    // The buttonText color is approximated as white since we don't have direct
+    // AppColors access in the mixin; callers using CompanyColors can override.
+    const buttonText = Colors.white;
+
+    return Container(
+      margin: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 0),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: data.gradient,
+          begin:  Alignment.topLeft,
+          end:    Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(28.r),
+        boxShadow: [
+          BoxShadow(
+            color:      data.gradient.first.withOpacity(0.40),
+            blurRadius: 20,
+            offset:     const Offset(0, 10),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Positioned(
+            top: -30, right: -20,
+            child: Container(
+              width: 120.r, height: 120.r,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: buttonText.withOpacity(0.08),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -40, left: -30,
+            child: Container(
+              width: 100.r, height: 100.r,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: buttonText.withOpacity(0.06),
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.all(20.r),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment:  MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 10.w, vertical: 3.h),
+                        decoration: BoxDecoration(
+                          color:        buttonText.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(20.r),
+                        ),
+                        child: Text(
+                          data.badge,
+                          style: TextStyle(
+                              fontSize: 10.sp,
+                              color: buttonText.withOpacity(0.85)),
+                        ),
+                      ),
+                      SizedBox(height: 8.h),
+                      Text(
+                        data.title,
+                        style: TextStyle(
+                          fontSize:   20.sp,
+                          fontWeight: FontWeight.w600,
+                          color:      buttonText,
+                          height:     1.2,
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        data.subtitle,
+                        style: TextStyle(
+                            fontSize: 11.sp,
+                            color: buttonText.withOpacity(0.70)),
+                      ),
+                      SizedBox(height: 12.h),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 14.w, vertical: 8.h),
+                        decoration: BoxDecoration(
+                          color:        buttonText.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(20.r),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'shop_now'.tr(),
+                              style: TextStyle(
+                                fontSize:   12.sp,
+                                color:      buttonText,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(width: 4.w),
+                            Icon(Icons.arrow_forward,
+                                size: 14.r, color: buttonText),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: 16.w, vertical: 14.h),
+                  decoration: BoxDecoration(
+                    color:        buttonText.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16.r),
+                  ),
+                  child: Column(
+                    children: [
+                      Text('up_to'.tr(),
+                          style: TextStyle(
+                              fontSize: 10.sp,
+                              color: buttonText.withOpacity(0.75))),
+                      Text(
+                        data.discount,
+                        style: TextStyle(
+                          fontSize:   28.sp,
+                          fontWeight: FontWeight.w700,
+                          color:      buttonText,
+                        ),
+                      ),
+                      Text('off'.tr(),
+                          style: TextStyle(
+                              fontSize:   10.sp,
+                              color:      buttonText,
+                              fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -320,7 +482,7 @@ class CompanyColors {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// PRIVATE SUB-WIDGETS  (file-private, used only by the mixin above)
+// PRIVATE SUB-WIDGETS
 // ════════════════════════════════════════════════════════════════════════════
 
 class _FieldLabel extends StatelessWidget {
@@ -497,10 +659,6 @@ class _FormCard extends StatelessWidget {
   );
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// AUTH WIDGETS — private implementations
-// ════════════════════════════════════════════════════════════════════════════
-
 // ── Animated Brand Logo ──────────────────────────────────────────────────────
 
 class _AnimatedBrandLogo extends StatefulWidget {
@@ -672,8 +830,8 @@ class _OrDivider extends StatelessWidget {
             child: Text(
               'or',
               style: TextStyle(
-                  fontSize: 12.sp,
-                  color:    c.hint,
+                  fontSize:   12.sp,
+                  color:      c.hint,
                   fontWeight: FontWeight.w600),
             ),
           ),
@@ -693,12 +851,10 @@ class _OrDivider extends StatelessWidget {
 }
 
 // ── Back Button ───────────────────────────────────────────────────────────────
-// FIX: was inlined inside the mixin using widget/context/_ctrl/_scale which
-// don't exist there. Now a proper StatefulWidget with its own animation state.
 
 class _AuthBackButton extends StatefulWidget {
   const _AuthBackButton({required this.color, this.onTap});
-  final Color        color;
+  final Color         color;
   final VoidCallback? onTap;
 
   @override
@@ -728,12 +884,9 @@ class _AuthBackButtonState extends State<_AuthBackButton>
       onTapDown:   (_) => _ctrl.forward(),
       onTapUp:     (_) {
         _ctrl.reverse();
-        // FIX: use custom onTap if provided, otherwise default to maybePop
-        if (widget.onTap != null) {
-          widget.onTap!();
-        } else {
-          Navigator.maybePop(context);
-        }
+        widget.onTap != null
+            ? widget.onTap!()
+            : Navigator.maybePop(context);
       },
       onTapCancel: ()  => _ctrl.reverse(),
       child: ScaleTransition(
@@ -758,10 +911,7 @@ class _AuthBackButtonState extends State<_AuthBackButton>
   }
 }
 
-// ── Auth Link — PUBLIC top-level widget ──────────────────────────────────────
-// FIX: promoted from private _AuthLink to public AuthLink so it can be
-// used directly in screens (e.g. ForgotPassword) without going through
-// the mixin, while still being accessible via mixin's authLink() helper.
+// ── Auth Link ─────────────────────────────────────────────────────────────────
 
 class AuthLink extends StatelessWidget {
   const AuthLink({
@@ -1239,25 +1389,123 @@ class _TrustBadges extends StatelessWidget {
     );
   }
 }
-void showSnackBar({required BuildContext context, required String message, bool success =true}){
+
+// ════════════════════════════════════════════════════════════════════════════
+// TOP-LEVEL HELPERS
+// ════════════════════════════════════════════════════════════════════════════
+
+Widget emptyWidget({required AppColors c}) => Padding(
+  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 32.h),
+  child: Column(
+    children: [
+      Icon(Icons.inventory_2_outlined, size: 48.r, color: c.hint),
+      SizedBox(height: 12.h),
+      Text(
+        'no_products'.tr(),
+        style: TextStyle(fontSize: 14.sp, color: c.hint),
+      ),
+    ],
+  ),
+);
+
+void showSnackBar({
+  required BuildContext context,
+  required String       message,
+  bool success = true,
+}) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content:         Text(message),
-      backgroundColor:success?Colors.green: Colors.red.shade700,
+      backgroundColor: success ? Colors.green : Colors.red.shade700,
       behavior:        SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12)),
     ),
   );
 }
-// ════════════════════════════════════════════════════════════════════════════
-// PUBLIC WIDGETS — usable directly in screens OR via mixin helpers
-// ════════════════════════════════════════════════════════════════════════════
+ Widget brandWidget({required BuildContext context,required BrandDataDataEntity brand, required AppColors c}){
+   final name = localizedEnAr(
+   context: context,
+   nameEn: brand.nameEn,
+   nameAr: brand.nameAr,
+   );
 
-// ── Auth Link — PUBLIC ────────────────────────────────────────────────────────
-// (implementation above — AuthLink class)
+   return Container(
+   width: 108.w,
+   decoration: BoxDecoration(
+   color:        c.card,
+   borderRadius: BorderRadius.circular(20.r),
+   boxShadow: [
+   BoxShadow(
+   color:      c.main.withOpacity(0.08),
+   blurRadius: 14,
+   offset:     const Offset(0, 6),
+   ),
+   ],
+   ),
+   child: Column(
+   children: [
+   Expanded(
+   child: Container(
+   width:  double.infinity,
+   margin: EdgeInsets.all(10.r),
+   decoration: BoxDecoration(
+   color:        c.textField,
+   borderRadius: BorderRadius.circular(14.r),
+   ),
+   clipBehavior: Clip.antiAlias,
+   child: Padding(
+   padding: EdgeInsets.all(8.r),
+   child: brandNetworkImage(brand, c),
+   ),
+   ),
+   ),
+   Padding(
+   padding: EdgeInsets.fromLTRB(8.w, 0, 8.w, 10.h),
+   child: Text(
+   name,
+   textAlign: TextAlign.center,
+   maxLines:  1,
+   overflow:  TextOverflow.ellipsis,
+   style: TextStyle(
+   fontSize:   11.sp,
+   fontWeight: FontWeight.w700,
+   color:      c.bodyText,
+   ),
+   ),
+   ),
+   ],
+   ),
+   );
+   }
 
-// ── Success Card — PUBLIC ─────────────────────────────────────────────────────
+Widget getErrorView({
+  required BuildContext  context,
+  required String?       message,
+  required AppColors     c,
+  required VoidCallback  onRetry,
+}) =>
+    Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.error_outline, size: 48.r, color: c.hint),
+          SizedBox(height: 12.h),
+          Text(
+            message ?? 'something_went_wrong'.tr(),
+            style:
+            Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.hint),
+          ),
+          SizedBox(height: 16.h),
+          ElevatedButton(
+            onPressed: onRetry,
+            child: Text('retry'.tr()),
+          ),
+        ],
+      ),
+    );
+
+// ── Success Card ──────────────────────────────────────────────────────────────
 
 class SuccessCard extends StatelessWidget with UiUtility {
   const SuccessCard({
@@ -1305,11 +1553,7 @@ class SuccessCard extends StatelessWidget with UiUtility {
             child: Text(
               '${'reset_link_sent_to'.tr()} $email',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize:      13.sp,
-                color:         c.hint,
-                height:        1.5,
-              ),
+              style: TextStyle(fontSize: 13.sp, color: c.hint, height: 1.5),
             ),
           ),
           SizedBox(height: 20.h),

@@ -34,21 +34,25 @@ class AppMainCubit extends Cubit<AppMainState> {
   Future<void> init() async {
     await fetchCompanyInfo();
     await _subscribePusher();
+    await checkUserLoggedIn();
   }
 
   // ── Check if user is logged in ────────────────────────────
-  bool get isLoggedIn => _getSharedPref.execute(SharedPrefKeys.accessToken) != null;
+  Future<String?> get isLoggedIn => _getSharedPref.execute(SharedPrefKeys.accessToken);
 
   Future<String?> get savedToken  => _getSharedPref.execute(SharedPrefKeys.accessToken);
   Future<String?> get savedEmail  =>  _getSharedPref.execute(SharedPrefKeys.userEmail);
   Future<String?> get savedName   => _getSharedPref.execute(SharedPrefKeys.userName);
   Future<String?> get savedUserId => _getSharedPref.execute(SharedPrefKeys.userId);
 
-
-void checkUserLoggedIn()async {
-  if(isLoggedIn){ emit(UserAlreadySigned()); return;}
-  emit(UserNotSignedIn());
-}
+  Future<void> checkUserLoggedIn() async {
+    final token = await isLoggedIn;
+    if (token != null && token.isNotEmpty) {
+      emit(UserAlreadySigned());
+    } else {
+      emit(UserNotSignedIn());
+    }
+  }
   // ── Fetch company info ────────────────────────────────────
   Future<void> fetchCompanyInfo() async {
     emit(CompanyInfoLoading());

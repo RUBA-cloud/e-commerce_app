@@ -1,0 +1,21 @@
+{
+  "good_morning":            "Good morning",
+  "search_hint":             "Search products, brands...",
+  "limited_offer":           "Limited time offer",
+  "summer_collection":       "Summer\nCollection",
+  "free_delivery_notice":    "Free delivery on orders above $30",
+  "shop_now":                "Shop now",
+  "up_to":                   "Up to",
+  "off":                     "OFF",
+  "categories":              "Categories",
+  "see_all":                 "See all",
+  "flash_sale":              "Flash sale",
+  "ends_today":              "Ends today",
+  "products":                "Products",
+  "no_products_in_category": "No products in this category",
+  "retry":                   "Retry",
+  "something_went_wrong":    "Something went wrong",
+  "no_internet_connection": "No Internet connection",
+  "search_category": "Search Category",
+  "similar_product": "Similar Product"
+}

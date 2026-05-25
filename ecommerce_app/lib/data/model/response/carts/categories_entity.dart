@@ -12,7 +12,6 @@ class CategoriesEntity {
 
   factory CategoriesEntity.fromJson(Map<String, dynamic> json) =>
       _$CategoriesEntityFromJson(json);
-
   Map<String, dynamic> toJson() => _$CategoriesEntityToJson(this);
 }
 
@@ -40,24 +39,13 @@ class CategoriesDataEntity {
   int total;
 
   CategoriesDataEntity(
-    this.currentPage,
-    this.data,
-    this.firstPageUrl,
-    this.from,
-    this.lastPage,
-    this.lastPageUrl,
-    this.links,
-    this.nextPageUrl,
-    this.path,
-    this.perPage,
-    this.prevPageUrl,
-    this.to,
-    this.total,
-  );
+      this.currentPage, this.data, this.firstPageUrl, this.from,
+      this.lastPage, this.lastPageUrl, this.links, this.nextPageUrl,
+      this.path, this.perPage, this.prevPageUrl, this.to, this.total,
+      );
 
   factory CategoriesDataEntity.fromJson(Map<String, dynamic> json) =>
       _$CategoriesDataEntityFromJson(json);
-
   Map<String, dynamic> toJson() => _$CategoriesDataEntityToJson(this);
 }
 
@@ -80,20 +68,12 @@ class CategoriesDataDataEntity {
   List<CategoriesDataDataProductsEntity> products;
 
   CategoriesDataDataEntity(
-    this.id,
-    this.nameEn,
-    this.nameAr,
-    this.isActive,
-    this.image,
-    this.userId,
-    this.createdAt,
-    this.updatedAt,
-    this.products,
-  );
+      this.id, this.nameEn, this.nameAr, this.isActive, this.image,
+      this.userId, this.createdAt, this.updatedAt, this.products,
+      );
 
   factory CategoriesDataDataEntity.fromJson(Map<String, dynamic> json) =>
       _$CategoriesDataDataEntityFromJson(json);
-
   Map<String, dynamic> toJson() => _$CategoriesDataDataEntityToJson(this);
 }
 
@@ -119,6 +99,8 @@ class CategoriesDataDataProductsEntity {
   String createdAt;
   @JsonKey(name: 'updated_at')
   String updatedAt;
+  @JsonKey(name: 'deleted_at')
+  String? deletedAt;                // ✅ nullable
   @JsonKey(name: 'type_id')
   int typeId;
   List<String> colors;
@@ -133,34 +115,15 @@ class CategoriesDataDataProductsEntity {
   CategoriesDataDataProductsTypeEntity type;
 
   CategoriesDataDataProductsEntity(
-    this.id,
-    this.nameEn,
-    this.nameAr,
-    this.descriptionEn,
-    this.descriptionAr,
-    this.price,
-    this.isActive,
-    this.userId,
-    this.categoryId,
-    this.createdAt,
-    this.updatedAt,
-    this.typeId,
-    this.colors,
-    this.mainImage,
-    this.sizeId,
-    this.images,
-    this.sizes,
-    this.additionals,
-    this.category,
-    this.type,
-  );
+      this.id, this.nameEn, this.nameAr, this.descriptionEn, this.descriptionAr,
+      this.price, this.isActive, this.userId, this.categoryId, this.createdAt,
+      this.updatedAt, this.deletedAt, this.typeId, this.colors, this.mainImage,
+      this.sizeId, this.images, this.sizes, this.additionals, this.category, this.type,
+      );
 
-  factory CategoriesDataDataProductsEntity.fromJson(
-    Map<String, dynamic> json,
-  ) => _$CategoriesDataDataProductsEntityFromJson(json);
-
-  Map<String, dynamic> toJson() =>
-      _$CategoriesDataDataProductsEntityToJson(this);
+  factory CategoriesDataDataProductsEntity.fromJson(Map<String, dynamic> json) =>
+      _$CategoriesDataDataProductsEntityFromJson(json);
+  Map<String, dynamic> toJson() => _$CategoriesDataDataProductsEntityToJson(this);
 }
 
 @JsonSerializable()
@@ -176,19 +139,12 @@ class CategoriesDataDataProductsImagesEntity {
   String updatedAt;
 
   CategoriesDataDataProductsImagesEntity(
-    this.id,
-    this.productId,
-    this.imagePath,
-    this.createdAt,
-    this.updatedAt,
-  );
+      this.id, this.productId, this.imagePath, this.createdAt, this.updatedAt,
+      );
 
-  factory CategoriesDataDataProductsImagesEntity.fromJson(
-    Map<String, dynamic> json,
-  ) => _$CategoriesDataDataProductsImagesEntityFromJson(json);
-
-  Map<String, dynamic> toJson() =>
-      _$CategoriesDataDataProductsImagesEntityToJson(this);
+  factory CategoriesDataDataProductsImagesEntity.fromJson(Map<String, dynamic> json) =>
+      _$CategoriesDataDataProductsImagesEntityFromJson(json);
+  Map<String, dynamic> toJson() => _$CategoriesDataDataProductsImagesEntityToJson(this);
 }
 
 @JsonSerializable()
@@ -206,31 +162,20 @@ class CategoriesDataDataProductsSizesEntity {
   String createdAt;
   @JsonKey(name: 'updated_at')
   String updatedAt;
-  dynamic image;
-  String descripation;
+  String? image;                    // ✅ nullable — API sends null for some sizes
+  String? descripation;             // ✅ nullable — API sends null for some sizes
   int price;
   CategoriesDataDataProductsSizesPivotEntity pivot;
 
   CategoriesDataDataProductsSizesEntity(
-    this.id,
-    this.nameEn,
-    this.nameAr,
-    this.isActive,
-    this.userId,
-    this.createdAt,
-    this.updatedAt,
-    this.image,
-    this.descripation,
-    this.price,
-    this.pivot,
-  );
+      this.id, this.nameEn, this.nameAr, this.isActive, this.userId,
+      this.createdAt, this.updatedAt, this.image, this.descripation,
+      this.price, this.pivot,
+      );
 
-  factory CategoriesDataDataProductsSizesEntity.fromJson(
-    Map<String, dynamic> json,
-  ) => _$CategoriesDataDataProductsSizesEntityFromJson(json);
-
-  Map<String, dynamic> toJson() =>
-      _$CategoriesDataDataProductsSizesEntityToJson(this);
+  factory CategoriesDataDataProductsSizesEntity.fromJson(Map<String, dynamic> json) =>
+      _$CategoriesDataDataProductsSizesEntityFromJson(json);
+  Map<String, dynamic> toJson() => _$CategoriesDataDataProductsSizesEntityToJson(this);
 }
 
 @JsonSerializable()
@@ -242,12 +187,9 @@ class CategoriesDataDataProductsSizesPivotEntity {
 
   CategoriesDataDataProductsSizesPivotEntity(this.productId, this.sizeId);
 
-  factory CategoriesDataDataProductsSizesPivotEntity.fromJson(
-    Map<String, dynamic> json,
-  ) => _$CategoriesDataDataProductsSizesPivotEntityFromJson(json);
-
-  Map<String, dynamic> toJson() =>
-      _$CategoriesDataDataProductsSizesPivotEntityToJson(this);
+  factory CategoriesDataDataProductsSizesPivotEntity.fromJson(Map<String, dynamic> json) =>
+      _$CategoriesDataDataProductsSizesPivotEntityFromJson(json);
+  Map<String, dynamic> toJson() => _$CategoriesDataDataProductsSizesPivotEntityToJson(this);
 }
 
 @JsonSerializable()
@@ -268,22 +210,13 @@ class CategoriesDataDataProductsCategoryEntity {
   String updatedAt;
 
   CategoriesDataDataProductsCategoryEntity(
-    this.id,
-    this.nameEn,
-    this.nameAr,
-    this.isActive,
-    this.image,
-    this.userId,
-    this.createdAt,
-    this.updatedAt,
-  );
+      this.id, this.nameEn, this.nameAr, this.isActive, this.image,
+      this.userId, this.createdAt, this.updatedAt,
+      );
 
-  factory CategoriesDataDataProductsCategoryEntity.fromJson(
-    Map<String, dynamic> json,
-  ) => _$CategoriesDataDataProductsCategoryEntityFromJson(json);
-
-  Map<String, dynamic> toJson() =>
-      _$CategoriesDataDataProductsCategoryEntityToJson(this);
+  factory CategoriesDataDataProductsCategoryEntity.fromJson(Map<String, dynamic> json) =>
+      _$CategoriesDataDataProductsCategoryEntityFromJson(json);
+  Map<String, dynamic> toJson() => _$CategoriesDataDataProductsCategoryEntityToJson(this);
 }
 
 @JsonSerializable()
@@ -303,21 +236,13 @@ class CategoriesDataDataProductsTypeEntity {
   String updatedAt;
 
   CategoriesDataDataProductsTypeEntity(
-    this.id,
-    this.nameEn,
-    this.nameAr,
-    this.isActive,
-    this.userId,
-    this.createdAt,
-    this.updatedAt,
-  );
+      this.id, this.nameEn, this.nameAr, this.isActive,
+      this.userId, this.createdAt, this.updatedAt,
+      );
 
-  factory CategoriesDataDataProductsTypeEntity.fromJson(
-    Map<String, dynamic> json,
-  ) => _$CategoriesDataDataProductsTypeEntityFromJson(json);
-
-  Map<String, dynamic> toJson() =>
-      _$CategoriesDataDataProductsTypeEntityToJson(this);
+  factory CategoriesDataDataProductsTypeEntity.fromJson(Map<String, dynamic> json) =>
+      _$CategoriesDataDataProductsTypeEntityFromJson(json);
+  Map<String, dynamic> toJson() => _$CategoriesDataDataProductsTypeEntityToJson(this);
 }
 
 @JsonSerializable()
@@ -331,6 +256,5 @@ class CategoriesDataLinksEntity {
 
   factory CategoriesDataLinksEntity.fromJson(Map<String, dynamic> json) =>
       _$CategoriesDataLinksEntityFromJson(json);
-
   Map<String, dynamic> toJson() => _$CategoriesDataLinksEntityToJson(this);
 }

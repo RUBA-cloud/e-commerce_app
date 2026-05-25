@@ -1,10 +1,10 @@
 import 'package:json_annotation/json_annotation.dart';
 
-part 'login_entity.g.dart';
+part 'login_user_entity.g.dart';
 
 @JsonSerializable()
-class LoginEntity {
-  LoginDataEntity data;
+class LoginUserEntity {
+  LoginUserDataEntity data;
   String country;
   String city;
   @JsonKey(name: 'token_type')
@@ -12,7 +12,7 @@ class LoginEntity {
   @JsonKey(name: 'expires_in')
   int expiresIn;
 
-  LoginEntity(
+  LoginUserEntity(
     this.data,
     this.country,
     this.city,
@@ -20,14 +20,14 @@ class LoginEntity {
     this.expiresIn,
   );
 
-  factory LoginEntity.fromJson(Map<String, dynamic> json) =>
-      _$LoginEntityFromJson(json);
+  factory LoginUserEntity.fromJson(Map<String, dynamic> json) =>
+      _$LoginUserEntityFromJson(json);
 
-  Map<String, dynamic> toJson() => _$LoginEntityToJson(this);
+  Map<String, dynamic> toJson() => _$LoginUserEntityToJson(this);
 }
 
 @JsonSerializable()
-class LoginDataEntity {
+class LoginUserDataEntity {
   int id;
   String name;
   String email;
@@ -55,10 +55,10 @@ class LoginDataEntity {
   int cityId;
   @JsonKey(name: 'access_token')
   String accessToken;
-  LoginDataCountryEntity country;
-  LoginDataCityEntity city;
+  LoginUserDataCountryEntity country;
+  LoginUserDataCityEntity city;
 
-  LoginDataEntity(
+  LoginUserDataEntity(
     this.id,
     this.name,
     this.email,
@@ -81,14 +81,14 @@ class LoginDataEntity {
     this.city,
   );
 
-  factory LoginDataEntity.fromJson(Map<String, dynamic> json) =>
-      _$LoginDataEntityFromJson(json);
+  factory LoginUserDataEntity.fromJson(Map<String, dynamic> json) =>
+      _$LoginUserDataEntityFromJson(json);
 
-  Map<String, dynamic> toJson() => _$LoginDataEntityToJson(this);
+  Map<String, dynamic> toJson() => _$LoginUserDataEntityToJson(this);
 }
 
 @JsonSerializable()
-class LoginDataCountryEntity {
+class LoginUserDataCountryEntity {
   int id;
   @JsonKey(name: 'name_en')
   String nameEn;
@@ -103,7 +103,7 @@ class LoginDataCountryEntity {
   @JsonKey(name: 'updated_at')
   String updatedAt;
 
-  LoginDataCountryEntity(
+  LoginUserDataCountryEntity(
     this.id,
     this.nameEn,
     this.nameAr,
@@ -113,14 +113,14 @@ class LoginDataCountryEntity {
     this.updatedAt,
   );
 
-  factory LoginDataCountryEntity.fromJson(Map<String, dynamic> json) =>
-      _$LoginDataCountryEntityFromJson(json);
+  factory LoginUserDataCountryEntity.fromJson(Map<String, dynamic> json) =>
+      _$LoginUserDataCountryEntityFromJson(json);
 
-  Map<String, dynamic> toJson() => _$LoginDataCountryEntityToJson(this);
+  Map<String, dynamic> toJson() => _$LoginUserDataCountryEntityToJson(this);
 }
 
 @JsonSerializable()
-class LoginDataCityEntity {
+class LoginUserDataCityEntity {
   int id;
   @JsonKey(name: 'name_en')
   String nameEn;
@@ -137,7 +137,7 @@ class LoginDataCityEntity {
   @JsonKey(name: 'updated_at')
   String updatedAt;
 
-  LoginDataCityEntity(
+  LoginUserDataCityEntity(
     this.id,
     this.nameEn,
     this.nameAr,
@@ -148,8 +148,8 @@ class LoginDataCityEntity {
     this.updatedAt,
   );
 
-  factory LoginDataCityEntity.fromJson(Map<String, dynamic> json) =>
-      _$LoginDataCityEntityFromJson(json);
+  factory LoginUserDataCityEntity.fromJson(Map<String, dynamic> json) =>
+      _$LoginUserDataCityEntityFromJson(json);
 
-  Map<String, dynamic> toJson() => _$LoginDataCityEntityToJson(this);
+  Map<String, dynamic> toJson() => _$LoginUserDataCityEntityToJson(this);
 }

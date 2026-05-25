@@ -1,10 +1,27 @@
-import 'package:ecommerce_app/data/model/response/categories_entity.dart';
-import 'package:ecommerce_app/presentation/product_details.dart';
+// lib/presentation/home/main_home_screen.dart
+
+import 'package:easy_localization/easy_localization.dart';
+import 'package:ecommerce_app/constant/app_theme.dart';
+import 'package:ecommerce_app/core/utility/ui_utility.dart';
+import 'package:ecommerce_app/data/model/response/PromoSlide.dart';
+import 'package:ecommerce_app/presentation/home/home_buttom_navigation.dart';
+import 'package:ecommerce_app/presentation/home/see_all_brands_screen.dart';
+import 'package:ecommerce_app/presentation/home/see_all_categories_screen.dart';
+import 'package:ecommerce_app/presentation/home/see_all_products_screen.dart';
+import 'package:ecommerce_app/presentation/home/widgets/home_decorations.dart';
+import 'package:ecommerce_app/presentation/widgets/accent_section_title.dart';
+import 'package:ecommerce_app/presentation/widgets/categories_card.dart';
 import 'package:ecommerce_app/services/home/home_cubit.dart';
 import 'package:ecommerce_app/services/home/home_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+import 'home/widgets/home_product_card.dart';
+
+// ═══════════════════════════════════════════════════════
+// HomeScreen
+// ═══════════════════════════════════════════════════════
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,18 +31,24 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedNav  = 0;
-  int _hours   = 2;
-  int _minutes = 14;
-  int _seconds = 37;
-  late HomeCubit homeCubit;
+  int  _hours   = 2;
+  int  _minutes = 14;
+  int  _seconds = 37;
+  bool _homeRequested = false;
 
   @override
   void initState() {
     super.initState();
     _startTimer();
-    homeCubit = HomeCubit.get(context);
-    homeCubit.fetchCategories();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_homeRequested) {
+      _homeRequested = true;
+      HomeCubit.get(context).loadHome();
+    }
   }
 
   void _startTimer() {
@@ -33,708 +56,601 @@ class _HomeScreenState extends State<HomeScreen> {
       await Future.delayed(const Duration(seconds: 1));
       if (!mounted) return false;
       setState(() {
+        if (_hours == 0 && _minutes == 0 && _seconds == 0) return;
         _seconds--;
         if (_seconds < 0) { _seconds = 59; _minutes--; }
         if (_minutes < 0) { _minutes = 59; _hours--;   }
         if (_hours   < 0) { _hours = _minutes = _seconds = 0; }
       });
-      return _hours > 0 || _minutes > 0 || _seconds > 0;
+      return mounted && (_hours > 0 || _minutes > 0 || _seconds > 0);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).appColors;
+
     return BlocBuilder<HomeCubit, HomeState>(
       builder: (context, state) {
         final cubit = HomeCubit.get(context);
         return Scaffold(
-          backgroundColor: const Color(0xFFF7F6F2),
-          body: SafeArea(
-            child: Column(
-              children: [
-                _buildTopBar(),
-                _buildSearchRow(),
-                Expanded(
-                  child: state is HomeLoading
-                      ? const Center(child: CircularProgressIndicator(
-                      color: Color(0xFF534AB7)))
-                      : state is HomeFailed
-                      ? _buildError(state.message, cubit)
-                      : _buildBody(cubit),
+          backgroundColor: c.textField,
+          body: Stack(
+            children: [
+              HomeBackgroundDecor(colors: c),
+              SafeArea(
+                child: Column(
+                  children: [
+                    _HomeHeader(
+                      c: c,
+                      userName:''?? '',
+                    ),
+                    Expanded(
+                      child: state is HomeLoading
+                          ? Center(child: CircularProgressIndicator(color: c.main))
+                          : state is HomeFailed
+                          ? getErrorView(
+                        context: context,
+                        message: state.message,
+                        c: c,
+                        onRetry: cubit.loadHome,
+                      )
+                          : RefreshIndicator(
+                        color: c.main,
+                        onRefresh: cubit.loadHome,
+                        child: _Body(
+                          cubit: cubit,
+                          c: c,
+                          hours: _hours,
+                          minutes: _minutes,
+                          seconds: _seconds,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                _buildBottomNav(),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
     );
   }
+}
 
-  // ── Error ─────────────────────────────────────────────────
-  Widget _buildError(String? message, HomeCubit cubit) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.error_outline, size: 48.r, color: Colors.grey[400]),
-          SizedBox(height: 12.h),
-          Text(message ?? 'Something went wrong',
-              style: TextStyle(fontSize: 14.sp, color: Colors.grey[600])),
-          SizedBox(height: 16.h),
-          GestureDetector(
-            onTap: cubit.fetchCategories,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-              decoration: BoxDecoration(
-                color: const Color(0xFF534AB7),
-                borderRadius: BorderRadius.circular(12.r),
+// ═══════════════════════════════════════════════════════
+// _Body
+// ═══════════════════════════════════════════════════════
+
+class _Body extends StatelessWidget {
+  const _Body({
+    required this.cubit,
+    required this.c,
+    required this.hours,
+    required this.minutes,
+    required this.seconds,
+  });
+
+  final HomeCubit cubit;
+  final AppColors c;
+  final int       hours;
+  final int       minutes;
+  final int       seconds;
+
+  @override
+  Widget build(BuildContext context) {
+    final products = cubit.selectedProducts;
+
+    return ListView(
+      padding: EdgeInsets.zero,
+
+      children: [
+        _PromoCarousel(c: c),
+        SizedBox(height: 20.h),
+
+        // ── Categories ────────────────────────────────────────
+        AccentSectionTitle(
+          title: 'categories'.tr(),
+          subtitle: 'explore_collections'.tr(),
+          accentColor: c.main,
+          accentSecondaryColor: c.sub,
+          seeAllLabel: 'see_all'.tr(),
+          onSeeAll: () {
+            final cats = cubit.categoriesEntity?.data.data;
+            if (cats == null || cats.isEmpty) return;
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => SeeAllCategoriesScreen(
+                  categories: cats,
+                  selectedIndex: cubit.selectedCategoryIndex,
+                ),
               ),
-              child: Text('Retry',
-                  style: TextStyle(fontSize: 13.sp, color: Colors.white)),
+            );
+          },
+        ),
+        SizedBox(height: 12.h),
+        CategoryCard(cubit: cubit, c: c),
+        SizedBox(height: 16.h),
+
+        // ── Flash sale bar ────────────────────────────────────
+        _FlashBar(c: c, hours: hours, minutes: minutes, seconds: seconds),
+        SizedBox(height: 20.h),
+
+        // ── Brands ────────────────────────────────────────────
+        if (cubit.brandEntity?.data != null &&
+            cubit.brandEntity!.data.data.isNotEmpty) ...[
+          AccentSectionTitle(
+            title: 'top_brands'.tr(),
+            subtitle: 'trusted_partners'.tr(),
+            accentColor: c.main,
+            accentSecondaryColor: c.sub,
+            seeAllLabel: 'see_all'.tr(),
+            onSeeAll: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => SeeAllBrandsScreen(
+                  brands: cubit.brandEntity!.data.data,
+                ),
+              ),
             ),
           ),
+          SizedBox(height: 12.h),
+          _BrandsRow(cubit: cubit, c: c),
+          SizedBox(height: 20.h),
         ],
-      ),
+
+        // ── Products ──────────────────────────────────────────
+        AccentSectionTitle(
+          title: 'products'.tr(),
+          subtitle: 'handpicked_for_you'.tr(),
+          accentColor: c.main,
+          accentSecondaryColor: c.sub,
+          seeAllLabel: 'see_all'.tr(),
+          onSeeAll: () {
+            final cats = cubit.categoriesEntity?.data.data;
+            if (cats == null || cats.isEmpty) return;
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => SeeAllProductsScreen(
+                  categories: cats,
+                  initialCategoryIndex: cubit.selectedCategoryIndex,
+                ),
+              ),
+            );
+          },
+        ),
+        SizedBox(height: 12.h),
+        if (products.isEmpty)
+          emptyWidget(c: c)
+        else
+          ProductsGrid(products: products, c: c),
+
+        SizedBox(height: 100.h),
+      ],
     );
   }
+}
 
-  // ── Body ──────────────────────────────────────────────────
-  Widget _buildBody(HomeCubit cubit) {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
+// ═══════════════════════════════════════════════════════
+// _HomeHeader
+// ═══════════════════════════════════════════════════════
+
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader({required this.c, required this.userName});
+
+  final AppColors c;
+  final String    userName;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 12.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildBanner(),
-          SizedBox(height: 20.h),
-          _buildSectionHeader('Categories', onTap: () {}),
-          SizedBox(height: 12.h),
-          _buildCategories(cubit),
-          SizedBox(height: 16.h),
-          _buildFlashBar(),
-          SizedBox(height: 16.h),
-          _buildSectionHeader('Products', onTap: () {}),
-          SizedBox(height: 12.h),
-          _buildProductsGrid(cubit),
-          SizedBox(height: 24.h),
-        ],
-      ),
-    );
-  }
-
-  // ── Top bar ───────────────────────────────────────────────
-  Widget _buildTopBar() {
-    return Container(
-      color: Colors.white,
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-      child: Row(
-        children: [
-          Container(
-            width: 38.r, height: 38.r,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEEEDFE),
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            alignment: Alignment.center,
-            child: Text('AR',
-                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w500,
-                    color: const Color(0xFF3C3489))),
-          ),
-          SizedBox(width: 10.w),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             children: [
-              Text('Good morning',
-                  style: TextStyle(fontSize: 11.sp, color: Colors.grey[500])),
-              Text('Ahmad Al-Rashid',
-                  style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500)),
+              // ── Avatar ──────────────────────────────────────
+              Container(
+                width: 48.r,
+                height: 48.r,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [c.main, c.sub],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: c.main.withOpacity(0.35),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(Icons.person_rounded, color: c.buttonText, size: 26.r),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'good_morning'.tr(),
+                      style: TextStyle(fontSize: 12.sp, color: c.hint),
+                    ),
+                    Text(
+                      userName.isEmpty ? 'guest'.tr() : userName,
+                      style: TextStyle(
+                        fontSize:      18.sp,
+                        fontWeight:    FontWeight.w800,
+                        color:         c.bodyText,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _HeaderIcon(
+                c: c,
+                icon: Icons.notifications_none_rounded,
+                badge: true,
+              ),
+              SizedBox(width: 8.w),
+              GestureDetector(
+                onTap: () => ButtonHomeNavigationScreen.goToCart(context),
+                child: _HeaderIcon(c: c, icon: Icons.shopping_bag_outlined),
+              ),
             ],
           ),
-          const Spacer(),
-          _iconBtn(Icons.notifications_outlined, badge: true),
-          SizedBox(width: 8.w),
-          _iconBtn(Icons.shopping_bag_outlined),
+          SizedBox(height: 14.h),
+          // ── Search bar ─────────────────────────────────────
+          GlassSurface(
+            colors: c,
+            radius: 18.r,
+            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 4.h),
+            child: Row(
+              children: [
+                Container(
+                  width: 36.r,
+                  height: 36.r,
+                  decoration: BoxDecoration(
+                    color: c.main.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Icon(Icons.search_rounded, size: 20.r, color: c.main),
+                ),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: Text(
+                    'search_hint'.tr(),
+                    style: TextStyle(fontSize: 13.sp, color: c.hint),
+                  ),
+                ),
+                Container(
+                  width: 40.r,
+                  height: 40.r,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [c.main, c.sub]),
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
+                  child: Icon(
+                    Icons.tune_rounded,
+                    size:  20.r,
+                    color: c.buttonText,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _iconBtn(IconData icon, {bool badge = false}) {
+// ═══════════════════════════════════════════════════════
+// _HeaderIcon
+// ═══════════════════════════════════════════════════════
+
+class _HeaderIcon extends StatelessWidget {
+  const _HeaderIcon({
+    required this.c,
+    required this.icon,
+    this.badge = false,
+  });
+
+  final AppColors c;
+  final IconData  icon;
+  final bool      badge;
+
+  @override
+  Widget build(BuildContext context) {
     return Stack(
       children: [
         Container(
-          width: 38.r, height: 38.r,
+          width: 42.r,
+          height: 42.r,
           decoration: BoxDecoration(
-            color: const Color(0xFFF1EFE8),
-            borderRadius: BorderRadius.circular(10.r),
+            color: c.card,
+            borderRadius: BorderRadius.circular(14.r),
+            boxShadow: [
+              BoxShadow(
+                color:      c.hint.withOpacity(0.10),
+                blurRadius: 8,
+                offset:     const Offset(0, 2),
+              ),
+            ],
           ),
-          child: Icon(icon, size: 20.r, color: Colors.grey[600]),
+          child: Icon(icon, size: 22.r, color: c.icon),
         ),
         if (badge)
           Positioned(
-            top: 7, right: 7,
+            top: 8, right: 8,
             child: Container(
-              width: 7, height: 7,
+              width: 8, height: 8,
               decoration: BoxDecoration(
-                color: const Color(0xFFD85A30),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.5),
+                color:  c.sub,
+                shape:  BoxShape.circle,
+                border: Border.all(color: c.card, width: 1.5),
               ),
             ),
           ),
       ],
     );
   }
+}
 
-  // ── Search ────────────────────────────────────────────────
-  Widget _buildSearchRow() {
-    return Container(
-      color: Colors.white,
-      padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+// ═══════════════════════════════════════════════════════
+// _PromoCarousel
+// ═══════════════════════════════════════════════════════
+
+class _PromoCarousel extends StatefulWidget {
+  const _PromoCarousel({required this.c});
+  final AppColors c;
+
+  @override
+  State<_PromoCarousel> createState() => _PromoCarouselState();
+}
+
+class _PromoCarouselState extends State<_PromoCarousel> with UiUtility {
+  final _controller = PageController();
+  int _page = 0;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.c;
+    final slides = [
+      PromoSlideData(
+        badge:    'limited_offer'.tr(),
+        title:    'summer_collection'.tr(),
+        subtitle: 'free_delivery_notice'.tr(),
+        discount: '50%',
+        gradient: [c.main, c.sub],
+      ),
+      PromoSlideData(
+        badge:    'new_arrivals'.tr(),
+        title:    'fresh_styles'.tr(),
+        subtitle: 'trending_now'.tr(),
+        discount: '30%',
+        gradient: [c.sub, c.button],
+      ),
+    ];
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 180.h,
+          child: PageView.builder(
+            controller:    _controller,
+            onPageChanged: (i) => setState(() => _page = i),
+            itemCount:     slides.length,
+            itemBuilder:   (ctx, i) =>
+                promoSlide(context: ctx, data: slides[i]),
+          ),
+        ),
+        SizedBox(height: 10.h),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(slides.length, (i) {
+            final active = _page == i;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: EdgeInsets.symmetric(horizontal: 3.w),
+              width:  active ? 18.w : 6.w,
+              height: 6.h,
               decoration: BoxDecoration(
-                color: const Color(0xFFF1EFE8),
-                borderRadius: BorderRadius.circular(12.r),
+                color: active ? c.main : c.hint.withOpacity(0.35),
+                borderRadius: BorderRadius.circular(4.r),
               ),
-              child: Row(
-                children: [
-                  Icon(Icons.search, size: 18.r, color: Colors.grey[500]),
-                  SizedBox(width: 8.w),
-                  Text('Search products, brands...',
-                      style: TextStyle(fontSize: 13.sp, color: Colors.grey[500])),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(width: 8.w),
-          Container(
-            width: 42.r, height: 42.r,
-            decoration: BoxDecoration(
-              color: const Color(0xFF3C3489),
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            child: Icon(Icons.tune_rounded, size: 20.r, color: Colors.white),
-          ),
-        ],
-      ),
+            );
+          }),
+        ),
+      ],
     );
   }
+}
 
-  // ── Banner ────────────────────────────────────────────────
-  Widget _buildBanner() {
-    return Container(
-      margin: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 0),
-      decoration: BoxDecoration(
-        color: const Color(0xFF26215C),
-        borderRadius: BorderRadius.circular(20.r),
-      ),
-      padding: EdgeInsets.all(18.r),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 3.h),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20.r),
-                  ),
-                  child: Text('Limited time offer',
-                      style: TextStyle(fontSize: 10.sp,
-                          color: const Color(0xFFAFA9EC))),
-                ),
-                SizedBox(height: 8.h),
-                Text('Summer\nCollection',
-                    style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w500,
-                        color: Colors.white, height: 1.2)),
-                SizedBox(height: 4.h),
-                Text('Free delivery on orders above \$30',
-                    style: TextStyle(fontSize: 11.sp,
-                        color: const Color(0xFFAFA9EC))),
-                SizedBox(height: 12.h),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF7F77DD),
-                    borderRadius: BorderRadius.circular(20.r),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Shop now',
-                          style: TextStyle(fontSize: 12.sp, color: Colors.white,
-                              fontWeight: FontWeight.w500)),
-                      SizedBox(width: 4.w),
-                      Icon(Icons.arrow_forward, size: 14.r, color: Colors.white),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(width: 12.w),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-            decoration: BoxDecoration(
-              color: const Color(0xFF534AB7),
-              borderRadius: BorderRadius.circular(16.r),
-            ),
-            child: Column(
-              children: [
-                Text('Up to',
-                    style: TextStyle(fontSize: 10.sp,
-                        color: const Color(0xFFAFA9EC))),
-                Text('50%',
-                    style: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.w500,
-                        color: Colors.white)),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1D9E75).withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(20.r),
-                  ),
-                  child: Text('OFF',
-                      style: TextStyle(fontSize: 10.sp,
-                          color: const Color(0xFF9FE1CB),
-                          fontWeight: FontWeight.w500)),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+// ═══════════════════════════════════════════════════════
+// _FlashBar
+// ═══════════════════════════════════════════════════════
 
-  // ── Section header ────────────────────────────────────────
-  Widget _buildSectionHeader(String title,
-      {VoidCallback? onTap, bool showLink = true}) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.w),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title,
-              style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w500)),
-          if (showLink)
-            GestureDetector(
-              onTap: onTap,
-              child: Row(
-                children: [
-                  Text('See all',
-                      style: TextStyle(fontSize: 12.sp,
-                          color: const Color(0xFF1D9E75))),
-                  Icon(Icons.chevron_right, size: 16.r,
-                      color: const Color(0xFF1D9E75)),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
+class _FlashBar extends StatelessWidget {
+  const _FlashBar({
+    required this.c,
+    required this.hours,
+    required this.minutes,
+    required this.seconds,
+  });
 
-  // ── Categories from API ───────────────────────────────────
-  Widget _buildCategories(HomeCubit cubit) {
-    final cats = cubit.categories;
-    if (cats.isEmpty) return const SizedBox.shrink();
+  final AppColors c;
+  final int       hours;
+  final int       minutes;
+  final int       seconds;
 
-    return SizedBox(
-      height: 80.h,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: 16.w),
-        itemCount: cats.length,
-        separatorBuilder: (_, __) => SizedBox(width: 10.w),
-        itemBuilder: (_, i) {
-          final cat      = cats[i];
-          final selected = cubit.selectedCategoryIndex == i;
-          return GestureDetector(
-            onTap: () => cubit.selectCategory(i),
-            child: Column(
-              children: [
-                Container(
-                  width: 52.r, height: 52.r,
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? const Color(0xFFEEEDFE)
-                        : const Color(0xFFF1EFE8),
-                    borderRadius: BorderRadius.circular(16.r),
-                    border: Border.all(
-                      color: selected
-                          ? const Color(0xFF534AB7)
-                          : Colors.transparent,
-                      width: selected ? 2 : 0,
-                    ),
-                  ),
-                  child: cat.image != null
-                      ? ClipRRect(
-                    borderRadius: BorderRadius.circular(14.r),
-                    child: Image.network(cat.image.toString(),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Icon(
-                          Icons.category_outlined, size: 24.r,
-                          color: selected
-                              ? const Color(0xFF534AB7)
-                              : Colors.grey[500]),
-                    ),
-                  )
-                      : Icon(Icons.category_outlined, size: 24.r,
-                      color: selected
-                          ? const Color(0xFF534AB7)
-                          : Colors.grey[500]),
-                ),
-                SizedBox(height: 6.h),
-                Text(cat.nameEn,
-                  style: TextStyle(
-                    fontSize: 10.sp,
-                    color: selected
-                        ? const Color(0xFF534AB7)
-                        : Colors.grey[500],
-                    fontWeight: selected
-                        ? FontWeight.w500
-                        : FontWeight.normal,
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
+  String _pad(int v) => v.toString().padLeft(2, '0');
 
-  // ── Flash bar ─────────────────────────────────────────────
-  Widget _buildFlashBar() {
-    String pad(int v) => v.toString().padLeft(2, '0');
+  @override
+  Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16.w),
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
       decoration: BoxDecoration(
-        color: const Color(0xFF3C3489),
-        borderRadius: BorderRadius.circular(16.r),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 34.r, height: 34.r,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10.r),
-            ),
-            child: Icon(Icons.bolt, size: 20.r,
-                color: const Color(0xFFFAC775)),
-          ),
-          SizedBox(width: 10.w),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Flash sale',
-                  style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w500,
-                      color: Colors.white)),
-              Text('Ends today',
-                  style: TextStyle(fontSize: 10.sp,
-                      color: const Color(0xFFAFA9EC))),
-            ],
-          ),
-          const Spacer(),
-          Row(
-            children: [
-              _timerBox(pad(_hours)),
-              Text(' : ', style: TextStyle(color: const Color(0xFFAFA9EC),
-                  fontSize: 13.sp)),
-              _timerBox(pad(_minutes)),
-              Text(' : ', style: TextStyle(color: const Color(0xFFAFA9EC),
-                  fontSize: 13.sp)),
-              _timerBox(pad(_seconds)),
-            ],
+        gradient: LinearGradient(
+          colors: [c.sub, c.main],
+          begin: Alignment.centerLeft,
+          end:   Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(22.r),
+        boxShadow: [
+          BoxShadow(
+            color:      c.sub.withOpacity(0.35),
+            blurRadius: 16,
+            offset:     const Offset(0, 6),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _timerBox(String val) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 4.h),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(6.r),
-      ),
-      child: Text(val,
-          style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w500,
-              color: Colors.white)),
-    );
-  }
-
-  // ── Products grid from API ────────────────────────────────
-  Widget _buildProductsGrid(HomeCubit cubit) {
-    final products = cubit.selectedProducts;
-    if (products.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: EdgeInsets.all(32.r),
-          child: Text('No products in this category',
-              style: TextStyle(fontSize: 13.sp, color: Colors.grey[500])),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.w),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount:   2,
-          crossAxisSpacing: 10.w,
-          mainAxisSpacing:  10.h,
-          childAspectRatio: 0.72,
-        ),
-        itemCount: products.length,
-        itemBuilder: (_, i) => _buildProductCard(products[i]),
-      ),
-    );
-  }
-
-  Widget _buildProductCard(CategoriesDataDataProductsEntity p) {
-    final isFav = ValueNotifier<bool>(false);
-    return ValueListenableBuilder<bool>(
-      valueListenable: isFav,
-      builder: (_, fav, __) {
-        return GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ProductDetailsScreen(product: p),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Positioned(
+            right: -20, top: -20,
+            child: Icon(
+              Icons.bolt_rounded,
+              size:  100.r,
+              color: c.buttonText.withOpacity(0.08),
             ),
           ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18.r),
-              border: Border.all(color: Colors.grey.withOpacity(0.12)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+            child: Row(
               children: [
-                // ── Image ─────────────────────────────────
-                ClipRRect(
-                  borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(18.r)),
-                  child: SizedBox(
-                    height: 120.h,
-                    width: double.infinity,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // ✅ removed Expanded — invalid inside Stack
-                        p.mainImage.isNotEmpty
-                            ? Image.network(
-                          p.mainImage,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _placeholderImg(),
-                        )
-                            : _placeholderImg(),
-
-                        // Favourite btn
-                        Positioned(
-                          top: 8, right: 8,
-                          child: GestureDetector(
-                            onTap: () => isFav.value = !isFav.value,
-                            child: Container(
-                              width: 28.r, height: 28.r,
-                              decoration: BoxDecoration(
-                                color: fav
-                                    ? const Color(0xFFFBEAF0)
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(8.r),
-                                border: Border.all(
-                                  color: fav
-                                      ? const Color(0xFFED93B1)
-                                      : Colors.grey.withOpacity(0.2),
-                                ),
-                              ),
-                              child: Icon(
-                                fav ? Icons.favorite : Icons.favorite_border,
-                                size: 15.r,
-                                color: fav
-                                    ? const Color(0xFF993556)
-                                    : Colors.grey[400],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Colors row
-                        if (p.colors.isNotEmpty)
-                          Positioned(
-                            bottom: 6, left: 8,
-                            child: Row(
-                              children: p.colors.take(3).map((hex) {
-                                return Container(
-                                  width: 12.r, height: 12.r,
-                                  margin: EdgeInsets.only(right: 3.w),
-                                  decoration: BoxDecoration(
-                                    color: _hexToColor(hex),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                        color: Colors.white, width: 1),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                      ],
-                    ),
+                Container(
+                  padding: EdgeInsets.all(10.r),
+                  decoration: BoxDecoration(
+                    color:        c.buttonText.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
+                  child: Icon(
+                    Icons.bolt_rounded,
+                    size:  22.r,
+                    color: c.buttonText,
                   ),
                 ),
-
-                // ── Body ──────────────────────────────────
-                Padding(
-                  padding: EdgeInsets.all(10.r),
+                SizedBox(width: 12.w),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(p.category.nameEn,
-                          style: TextStyle(fontSize: 10.sp,
-                              color: const Color(0xFF1D9E75))),
-                      SizedBox(height: 2.h),
-                      Text(p.nameEn,
-                          style: TextStyle(fontSize: 12.sp,
-                              fontWeight: FontWeight.w500),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis),
-                      SizedBox(height: 6.h),
-
-                      if (p.sizes.isNotEmpty)
-                        Wrap(
-                          spacing: 4.w,
-                          children: p.sizes.take(3).map((s) =>
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 6.w, vertical: 2.h),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF1EFE8),
-                                  borderRadius: BorderRadius.circular(4.r),
-                                ),
-                                child: Text(s.nameEn,
-                                    style: TextStyle(fontSize: 9.sp,
-                                        color: Colors.grey[600])),
-                              ),
-                          ).toList(),
+                      Text(
+                        'flash_sale'.tr(),
+                        style: TextStyle(
+                          fontSize:   15.sp,
+                          fontWeight: FontWeight.w800,
+                          color:      c.buttonText,
                         ),
-                      SizedBox(height: 8.h),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('\$${p.price}',
-                              style: TextStyle(fontSize: 14.sp,
-                                  fontWeight: FontWeight.w500,
-                                  color: const Color(0xFF085041))),
-                          Container(
-                            width: 28.r, height: 28.r,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1D9E75),
-                              borderRadius: BorderRadius.circular(8.r),
-                            ),
-                            child: Icon(Icons.add, size: 16.r,
-                                color: Colors.white),
-                          ),
-                        ],
+                      ),
+                      Text(
+                        'ends_today'.tr(),
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          color:    c.buttonText.withOpacity(0.75),
+                        ),
                       ),
                     ],
                   ),
                 ),
+                Row(
+                  children: [
+                    _TimerBox(val: _pad(hours),   c: c),
+                    _timerSep(c),
+                    _TimerBox(val: _pad(minutes), c: c),
+                    _timerSep(c),
+                    _TimerBox(val: _pad(seconds), c: c),
+                  ],
+                ),
               ],
             ),
           ),
-        );
-      },
-    );
-  }
-
-  Widget _placeholderImg() {
-    return Container(
-      color: const Color(0xFFF1EFE8),
-      child: Icon(Icons.image_outlined, size: 40.r,
-          color: Colors.grey[400]),
-    );
-  }
-
-  Color _hexToColor(String hex) {
-    try {
-      final h = hex.replaceAll('#', '');
-      return Color(int.parse('FF$h', radix: 16));
-    } catch (_) {
-      return Colors.grey;
-    }
-  }
-
-  // ── Bottom nav ────────────────────────────────────────────
-  Widget _buildBottomNav() {
-    final items = [
-      {'icon': Icons.home_outlined,          'label': 'Home'},
-      {'icon': Icons.category_outlined,      'label': 'Explore'},
-      {'icon': Icons.favorite_border,        'label': 'Wishlist'},
-      {'icon': Icons.shopping_cart_outlined, 'label': 'Cart'},
-      {'icon': Icons.person_outline,         'label': 'Profile'},
-    ];
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-            top: BorderSide(color: Colors.grey.withOpacity(0.12))),
+        ],
       ),
-      padding: EdgeInsets.only(
-          top: 10.h, bottom: 16.h, left: 8.w, right: 8.w),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: items.asMap().entries.map((e) {
-          final selected = _selectedNav == e.key;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedNav = e.key),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(e.value['icon'] as IconData,
-                    size: 24.r,
-                    color: selected
-                        ? const Color(0xFF534AB7)
-                        : Colors.grey[400]),
-                SizedBox(height: 4.h),
-                Text(e.value['label'] as String,
-                    style: TextStyle(
-                      fontSize: 10.sp,
-                      color: selected
-                          ? const Color(0xFF534AB7)
-                          : Colors.grey[400],
-                      fontWeight: selected
-                          ? FontWeight.w500
-                          : FontWeight.normal,
-                    )),
-                if (selected) ...[
-                  SizedBox(height: 3.h),
-                  Container(
-                    width: 5, height: 5,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF534AB7),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          );
-        }).toList(),
+    );
+  }
+
+  Widget _timerSep(AppColors c) => Padding(
+    padding: EdgeInsets.symmetric(horizontal: 4.w),
+    child: Text(
+      ':',
+      style: TextStyle(
+        fontSize:   14.sp,
+        fontWeight: FontWeight.w700,
+        color:      c.buttonText.withOpacity(0.6),
+      ),
+    ),
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// _TimerBox
+// ═══════════════════════════════════════════════════════
+
+class _TimerBox extends StatelessWidget {
+  const _TimerBox({required this.val, required this.c});
+
+  final String    val;
+  final AppColors c;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color:        c.buttonText.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Text(
+        val,
+        style: TextStyle(
+          fontSize:   13.sp,
+          fontWeight: FontWeight.w500,
+          color:      c.buttonText,
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// _BrandsRow
+// ═══════════════════════════════════════════════════════
+
+class _BrandsRow extends StatelessWidget {
+  const _BrandsRow({required this.cubit, required this.c});
+
+  final HomeCubit cubit;
+  final AppColors c;
+
+  @override
+  Widget build(BuildContext context) {
+    final brands = cubit.brandEntity!.data.data;
+
+    return SizedBox(
+      height: 118.h,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding:         EdgeInsets.symmetric(horizontal: 16.w),
+        itemCount:       brands.length,
+        separatorBuilder: (_, __) => SizedBox(width: 14.w),
+        itemBuilder: (_, i) =>
+            brandWidget(brand: brands[i], c: c, context: context),
       ),
     );
   }
