@@ -45,7 +45,6 @@ class CartCubit extends Cubit<CartState> {
         _lastCart = cart;
         emit(CartLoaded(cart));
       case Failure<CartsEntity>(error: final err):
-        print("Failed: $err");
         emit(CartFailed(err));
     }
   }
@@ -65,11 +64,11 @@ class CartCubit extends Cubit<CartState> {
   }
 
   Future<void> updateQuantity(CartsDataEntity item, int quantity) async {
-    if (quantity < 1) return;
+
     emit(CartActionLoading(_lastCart));
     final result = await _updateCart.execute(
       UpdateCartRequest(
-        id: item.id!,         // ✅ nullable int? — update your request model too
+        id: item.id!,
         quantity: quantity,
         sizeId: item.sizeId!,
       ),
@@ -91,9 +90,9 @@ class CartCubit extends Cubit<CartState> {
     switch (result) {
       case Success<CartsEntity>(data: final cart):
         _lastCart = cart;
-        emit(CartLoaded(cart));
+        emit(CartDeletedSuccess());
       case Failure<CartsEntity>(error: final err):
-        emit(CartFailed(err));
+        emit(CartDeletedFailed());
     }
   }
 }

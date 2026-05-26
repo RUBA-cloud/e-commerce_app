@@ -1,11 +1,14 @@
 // lib/presentation/home/widgets/home_product_card.dart
 
 import 'package:ecommerce_app/constant/app_theme.dart';
+import 'package:ecommerce_app/core/utility/ui_utility.dart';
 import 'package:ecommerce_app/data/model/response/carts/categories_entity.dart';
 import 'package:ecommerce_app/presentation/home/widgets/app_network_image.dart';
 import 'package:ecommerce_app/presentation/home/widgets/home_shared.dart';
 import 'package:ecommerce_app/presentation/product_details.dart';
+import 'package:ecommerce_app/services/product_details/product_details_cubit.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // ═══════════════════════════════════════════════════════
@@ -59,7 +62,7 @@ class HomeProductCard extends StatefulWidget {
   State<HomeProductCard> createState() => _HomeProductCardState();
 }
 
-class _HomeProductCardState extends State<HomeProductCard> {
+class _HomeProductCardState extends State<HomeProductCard> with UiUtility {
   bool _fav = false;
 
   // ── Per-category accent colour ─────────────────────────────────────────────
@@ -116,25 +119,10 @@ class _HomeProductCardState extends State<HomeProductCard> {
     final accentBg = _accentBgFor(p.category.nameEn, c);
 
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => ProductDetailsScreen(product: p),
-          transitionsBuilder: (_, anim, __, child) => FadeTransition(
-            opacity: anim,
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0, 0.06),
-                end:   Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: anim,
-                curve:  Curves.easeOutCubic,
-              )),
-              child: child,
-            ),
-          ),
-        ),
-      ),
+      onTap: () =>navigateTo(context: context, page: BlocProvider(create:(c)=> ProductDetailsCubit(widget.product),child: ProductDetailsScreen(product: widget.product),)),
+         
+        
+      
       child: Container(
         decoration: BoxDecoration(
           color:        c.card,

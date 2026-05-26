@@ -13,7 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class ProductDetailsScreen extends StatefulWidget with UiUtility {
+class ProductDetailsScreen extends StatefulWidget {
   const ProductDetailsScreen({super.key, required this.product});
 
   final CategoriesDataDataProductsEntity product;
@@ -22,7 +22,7 @@ class ProductDetailsScreen extends StatefulWidget with UiUtility {
   State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
 }
 
-class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
+class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtility {
   // ── helpers ───────────────────────────────────────────────────────────────
   List<String> get _imageUrls {
     if (widget.product.images.isNotEmpty) {
@@ -69,31 +69,28 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _cubit, // ✅ use .value since we created it in initState
-      child: BlocBuilder<ProductDetailsCubit, ProductDetailsState>(
-        builder: (context, state) {
-          final c = Theme.of(context).appColors;
-          return Scaffold(
-            backgroundColor: c.textField,
-            extendBody: true,
-            body: Stack(
-              children: [
-                CustomScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  slivers: [
-                    _gallerySliver(context, c, state),
-                    SliverToBoxAdapter(
-                        child: _contentSheet(context, c, state)),
-                  ],
-                ),
-                _topBar(context, c, state),
-                _bottomDock(context, c, state),
-              ],
-            ),
-          );
-        },
-      ),
+    return BlocBuilder<ProductDetailsCubit, ProductDetailsState>(
+      builder: (context, state) {
+        final c = Theme.of(context).appColors;
+        return Scaffold(
+          backgroundColor: c.textField,
+          extendBody: true,
+          body: Stack(
+            children: [
+              CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  _gallerySliver(context, c, state),
+                  SliverToBoxAdapter(
+                      child: _contentSheet(context, c, state)),
+                ],
+              ),
+              _topBar(context, c, state),
+              _bottomDock(context, c, state),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -486,7 +483,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           state.similarCategory?.products !=null?  SimilarProductsSection(
               similarProducts: state.similarCategory!,
               currentProduct:widget.product,
-              onProductTap: (p) => {},
+              onProductTap: (p) => navigateTo(context: context, page: BlocProvider.value(value:_cubit  ,child: ProductDetailsScreen(product:widget.product),))
             ):SizedBox(),
             SizedBox(height: 120.h),
           ],

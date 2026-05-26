@@ -11,6 +11,9 @@ class CartLoaded extends CartState {
   final CartsEntity cart;
 }
 
+class CartDeletedSuccess extends CartState {}
+class CartDeletedFailed extends CartState {}
+
 class CartActionLoading extends CartState {
   CartActionLoading(this.cart);
   final CartsEntity? cart;

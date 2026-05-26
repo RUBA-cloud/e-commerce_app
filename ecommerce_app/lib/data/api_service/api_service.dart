@@ -62,7 +62,7 @@ abstract class ApiService {
   @GET('/cart')
   Future<CartsEntity> getCart();
 
-  @DELETE('/cart/{id}')
+  @DELETE('/remove-from-cart/{id}')
   Future<CartsEntity> deleteCartItem(@Path('id') int id);
 
 
