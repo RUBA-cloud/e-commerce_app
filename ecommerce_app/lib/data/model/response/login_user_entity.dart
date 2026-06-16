@@ -84,6 +84,7 @@ class LoginUserDataEntity {
   factory LoginUserDataEntity.fromJson(Map<String, dynamic> json) =>
       _$LoginUserDataEntityFromJson(json);
 
+
   Map<String, dynamic> toJson() => _$LoginUserDataEntityToJson(this);
 }
 

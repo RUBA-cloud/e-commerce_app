@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:ecommerce_app/constant/api_constants.dart';
 import 'package:ecommerce_app/constant/shared_prefence_keys.dart';
-import 'package:ecommerce_app/core/di/network_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TokenInterceptor extends QueuedInterceptor {

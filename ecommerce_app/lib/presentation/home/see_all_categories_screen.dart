@@ -35,8 +35,8 @@ class _SeeAllCategoriesScreenState extends State<SeeAllCategoriesScreen> {
     if (_query.isEmpty) return widget.categories;
     final q = _query.toLowerCase();
     return widget.categories.where((c) {
-      return (c.nameEn?.toLowerCase().contains(q) ?? false) ||
-          (c.nameAr?.toLowerCase().contains(q) ?? false);
+      return (c.nameEn.toLowerCase().contains(q)) ||
+          (c.nameAr.toLowerCase().contains(q));
     }).toList();
   }
 

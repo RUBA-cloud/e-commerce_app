@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/constant/app_theme.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
-import 'package:ecommerce_app/data/model/request/add_to_cart_request.dart';
 import 'package:ecommerce_app/data/model/response/carts/categories_entity.dart';
 import 'package:ecommerce_app/presentation/home/home_buttom_navigation.dart';
 import 'package:ecommerce_app/presentation/home/widgets/app_network_image.dart';
@@ -22,7 +21,8 @@ class ProductDetailsScreen extends StatefulWidget {
   State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
 }
 
-class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtility {
+class _ProductDetailsScreenState extends State<ProductDetailsScreen>
+    with UiUtility {
   // ── helpers ───────────────────────────────────────────────────────────────
   List<String> get _imageUrls {
     if (widget.product.images.isNotEmpty) {
@@ -33,19 +33,22 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
   }
 
   String _name(BuildContext ctx) => localizedEnAr(
-      context: ctx,
-      nameEn: widget.product.nameEn,
-      nameAr: widget.product.nameAr);
+    context: ctx,
+    nameEn: widget.product.nameEn,
+    nameAr: widget.product.nameAr,
+  );
 
   String _category(BuildContext ctx) => localizedEnAr(
-      context: ctx,
-      nameEn: widget.product.category.nameEn,
-      nameAr: widget.product.category.nameAr);
+    context: ctx,
+    nameEn: widget.product.category.nameEn,
+    nameAr: widget.product.category.nameAr,
+  );
 
   String _description(BuildContext ctx) => localizedEnAr(
-      context: ctx,
-      nameEn: widget.product.descriptionEn,
-      nameAr: widget.product.descriptionAr);
+    context: ctx,
+    nameEn: widget.product.descriptionEn,
+    nameAr: widget.product.descriptionAr,
+  );
 
   double get _unitPrice => double.tryParse(widget.product.price) ?? 0;
 
@@ -55,42 +58,53 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
   @override
   void initState() {
     super.initState();
-    // ✅ create cubit first, then call fetch
     _cubit = ProductDetailsCubit(widget.product);
     _cubit.fetchSelectedCategory(widget.product.categoryId);
   }
 
   @override
   void dispose() {
-    _cubit.close(); // ✅ close cubit manually since we own it
+    _cubit.close();
     super.dispose();
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ProductDetailsCubit, ProductDetailsState>(
-      builder: (context, state) {
-        final c = Theme.of(context).appColors;
-        return Scaffold(
-          backgroundColor: c.textField,
-          extendBody: true,
-          body: Stack(
-            children: [
-              CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  _gallerySliver(context, c, state),
-                  SliverToBoxAdapter(
-                      child: _contentSheet(context, c, state)),
+    return BlocProvider.value(
+      value: _cubit,
+      child: BlocListener<ProductDetailsCubit, ProductDetailsState>(
+        listener: (context, state) {
+          // Navigate to cart tab on successful add
+          if (state is AddProductsToCartsSuccess) {
+            ButtonHomeNavigationScreen.goToCart(context);
+          }
+        },
+        child: BlocBuilder<ProductDetailsCubit, ProductDetailsState>(
+          builder: (context, state) {
+            final c = Theme.of(context).appColors;
+            return Scaffold(
+              backgroundColor: c.textField,
+              extendBody: true,
+              body: Stack(
+                children: [
+                  CustomScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    slivers: [
+                      _gallerySliver(context, c, state),
+                      SliverToBoxAdapter(
+                        child: _contentSheet(context, c, state),
+                      ),
+                    ],
+                  ),
+                  _topBar(context, c, state),
+                  _bottomDock(context, c, state),
                 ],
               ),
-              _topBar(context, c, state),
-              _bottomDock(context, c, state),
-            ],
-          ),
-        );
-      },
+            );
+          },
+        ),
+      ),
     );
   }
 
@@ -171,9 +185,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
                 child: Text(
                   '${state.selectedImageIndex + 1} / ${urls.length}',
                   style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w700,
-                      color: c.bodyText),
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w700,
+                    color: c.bodyText,
+                  ),
                 ),
               ),
             ),
@@ -203,8 +218,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(14.r),
                           border: Border.all(
-                            color:
-                            selected ? c.main : Colors.transparent,
+                            color: selected ? c.main : Colors.transparent,
                             width: 2,
                           ),
                           boxShadow: selected
@@ -213,7 +227,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
                               color: c.main.withOpacity(0.28),
                               blurRadius: 8,
                               offset: const Offset(0, 3),
-                            )
+                            ),
                           ]
                               : null,
                         ),
@@ -236,8 +250,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
   Widget _emptyGallery(AppColors c) => Container(
     color: c.main.withOpacity(0.06),
     alignment: Alignment.center,
-    child: Icon(Icons.shopping_bag_outlined,
-        size: 80.r, color: c.main.withOpacity(0.30)),
+    child: Icon(
+      Icons.shopping_bag_outlined,
+      size: 80.r,
+      color: c.main.withOpacity(0.30),
+    ),
   );
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -278,9 +295,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w700,
-                    color: c.bodyText),
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w700,
+                  color: c.bodyText,
+                ),
               ),
             ),
             _circleBtn(
@@ -296,7 +314,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
             ),
             SizedBox(width: 8.w),
             _circleBtn(
-                icon: Icons.ios_share_rounded, c: c, onTap: () {}),
+              icon: Icons.ios_share_rounded,
+              c: c,
+              onTap: () {},
+            ),
           ],
         ),
       ),
@@ -321,9 +342,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
             border: Border.all(color: c.hint.withOpacity(0.14)),
             boxShadow: [
               BoxShadow(
-                  color: c.hint.withOpacity(0.10),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3))
+                color: c.hint.withOpacity(0.10),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
             ],
           ),
           child: Icon(icon, size: 18.r, color: iconColor ?? c.icon),
@@ -345,9 +367,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
           borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
           boxShadow: [
             BoxShadow(
-                color: c.main.withOpacity(0.08),
-                blurRadius: 24,
-                offset: const Offset(0, -4))
+              color: c.main.withOpacity(0.08),
+              blurRadius: 24,
+              offset: const Offset(0, -4),
+            ),
           ],
         ),
         child: Column(
@@ -365,23 +388,30 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
               ),
             ),
             Padding(
-              padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 120.h),
+              padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Pills
                   Wrap(
                     spacing: 6.w,
                     runSpacing: 6.h,
                     children: [
                       _pill(_category(context), c),
-                      _pill('in_stock'.tr(), c,
-                          color: const Color(0xFF0F6E56),
-                          bg: const Color(0xFFE1F5EE),
-                          borderColor: const Color(0xFF9FE1CB)),
-                      _pill('new_arrival'.tr(), c,
-                          color: c.main,
-                          bg: c.main.withOpacity(0.10),
-                          borderColor: c.main.withOpacity(0.3)),
+                      _pill(
+                        'in_stock'.tr(),
+                        c,
+                        color: const Color(0xFF0F6E56),
+                        bg: const Color(0xFFE1F5EE),
+                        borderColor: const Color(0xFF9FE1CB),
+                      ),
+                      _pill(
+                        'new_arrival'.tr(),
+                        c,
+                        color: c.main,
+                        bg: c.main.withOpacity(0.10),
+                        borderColor: c.main.withOpacity(0.3),
+                      ),
                     ],
                   ),
                   SizedBox(height: 14.h),
@@ -416,6 +446,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
                   SizedBox(height: 22.h),
                   _sectionLabel('description'.tr(), c),
                   SizedBox(height: 10.h),
+                  // Description card
                   GestureDetector(
                     onTap: ProductDetailsCubit.get(context).toggleDesc,
                     child: Container(
@@ -435,9 +466,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
                                 ? TextOverflow.visible
                                 : TextOverflow.ellipsis,
                             style: TextStyle(
-                                fontSize: 13.sp,
-                                color: c.bodyText.withOpacity(0.85),
-                                height: 1.65),
+                              fontSize: 13.sp,
+                              color: c.bodyText.withOpacity(0.85),
+                              height: 1.65,
+                            ),
                           ),
                           if (desc.length > 100) ...[
                             SizedBox(height: 6.h),
@@ -449,9 +481,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
                                       ? 'show_less'.tr()
                                       : 'read_more'.tr(),
                                   style: TextStyle(
-                                      fontSize: 11.sp,
-                                      fontWeight: FontWeight.w700,
-                                      color: c.main),
+                                    fontSize: 11.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: c.main,
+                                  ),
                                 ),
                                 SizedBox(width: 2.w),
                                 Icon(
@@ -472,19 +505,25 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
                   _sectionLabel('product_info'.tr(), c),
                   SizedBox(height: 10.h),
                   _highlights(context, c),
+                  SizedBox(height: 22.h),
                 ],
               ),
             ),
 
-            // ── Similar products ─────────────────────────────────────────
-            // ✅ No similarProducts param needed — SimilarProductsSection
-            //    reads HomeCubit internally and filters by category itself
-            SizedBox(height: 22.h),
-          state.similarCategory?.products !=null?  SimilarProductsSection(
-              similarProducts: state.similarCategory!,
-              currentProduct:widget.product,
-              onProductTap: (p) => navigateTo(context: context, page: BlocProvider.value(value:_cubit  ,child: ProductDetailsScreen(product:widget.product),))
-            ):SizedBox(),
+            // ── Similar products ──────────────────────────────────────────
+            if (state.similarCategory?.products != null)
+              SimilarProductsSection(
+                similarProducts: state.similarCategory!,
+                currentProduct: widget.product,
+                onProductTap: (product) => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        ProductDetailsScreen(product: widget.product),
+                  ),
+                ),
+              ),
+
             SizedBox(height: 120.h),
           ],
         ),
@@ -493,8 +532,13 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
   }
 
   // ── Pill ──────────────────────────────────────────────────────────────────
-  Widget _pill(String text, AppColors c,
-      {Color? color, Color? bg, Color? borderColor}) {
+  Widget _pill(
+      String text,
+      AppColors c, {
+        Color? color,
+        Color? bg,
+        Color? borderColor,
+      }) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 5.h),
       decoration: BoxDecoration(
@@ -505,9 +549,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
       child: Text(
         text,
         style: TextStyle(
-            fontSize: 10.sp,
-            fontWeight: FontWeight.w600,
-            color: color ?? c.hint),
+          fontSize: 10.sp,
+          fontWeight: FontWeight.w600,
+          color: color ?? c.hint,
+        ),
       ),
     );
   }
@@ -517,20 +562,26 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
     return Row(
       children: [
         ...List.generate(
-            5,
-                (i) => Icon(
-              i < 4 ? Icons.star_rounded : Icons.star_half_rounded,
-              size: 18.r,
-              color: Colors.amber[600],
-            )),
+          5,
+              (i) => Icon(
+            i < 4 ? Icons.star_rounded : Icons.star_half_rounded,
+            size: 18.r,
+            color: Colors.amber[600],
+          ),
+        ),
         SizedBox(width: 8.w),
-        Text('4.8',
-            style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w800,
-                color: c.bodyText)),
-        Text(' · 128 ${'reviews'.tr()}',
-            style: TextStyle(fontSize: 11.sp, color: c.hint)),
+        Text(
+          '4.8',
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w800,
+            color: c.bodyText,
+          ),
+        ),
+        Text(
+          ' · 128 ${'reviews'.tr()}',
+          style: TextStyle(fontSize: 11.sp, color: c.hint),
+        ),
       ],
     );
   }
@@ -549,8 +600,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
         return Expanded(
           child: Container(
             margin: EdgeInsets.only(right: last ? 0 : 8.w),
-            padding:
-            EdgeInsets.symmetric(vertical: 10.h, horizontal: 4.w),
+            padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 4.w),
             decoration: BoxDecoration(
               color: c.textField,
               borderRadius: BorderRadius.circular(14.r),
@@ -574,9 +624,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                      fontSize: 8.sp,
-                      fontWeight: FontWeight.w600,
-                      color: c.bodyText),
+                    fontSize: 8.sp,
+                    fontWeight: FontWeight.w600,
+                    color: c.bodyText,
+                  ),
                 ),
               ],
             ),
@@ -595,18 +646,22 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
           height: 18.h,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [c.main, c.sub]),
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [c.main, c.sub],
+            ),
             borderRadius: BorderRadius.circular(2.r),
           ),
         ),
         SizedBox(width: 8.w),
-        Text(text,
-            style: TextStyle(
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w800,
-                color: c.bodyText)),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 15.sp,
+            fontWeight: FontWeight.w800,
+            color: c.bodyText,
+          ),
+        ),
       ],
     );
   }
@@ -619,15 +674,17 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
       padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-            colors: [c.main, c.sub],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight),
+          colors: [c.main, c.sub],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(22.r),
         boxShadow: [
           BoxShadow(
-              color: c.main.withOpacity(0.35),
-              blurRadius: 18,
-              offset: const Offset(0, 8))
+            color: c.main.withOpacity(0.35),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
         ],
       ),
       child: Column(
@@ -639,18 +696,22 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('price'.tr(),
-                        style: TextStyle(
-                            fontSize: 11.sp,
-                            color: c.buttonText.withOpacity(0.75))),
+                    Text(
+                      'price'.tr(),
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        color: c.buttonText.withOpacity(0.75),
+                      ),
+                    ),
                     SizedBox(height: 2.h),
                     Text(
                       '\$${widget.product.price}',
                       style: TextStyle(
-                          fontSize: 30.sp,
-                          fontWeight: FontWeight.w900,
-                          color: c.buttonText,
-                          height: 1),
+                        fontSize: 30.sp,
+                        fontWeight: FontWeight.w900,
+                        color: c.buttonText,
+                        height: 1,
+                      ),
                     ),
                   ],
                 ),
@@ -658,16 +719,16 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
               Text(
                 '× ${state.quantity}',
                 style: TextStyle(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w600,
-                    color: c.buttonText.withOpacity(0.85)),
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w600,
+                  color: c.buttonText.withOpacity(0.85),
+                ),
               ),
             ],
           ),
           SizedBox(height: 12.h),
           Container(
-            padding:
-            EdgeInsets.symmetric(horizontal: 6.w, vertical: 5.h),
+            padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 5.h),
             decoration: BoxDecoration(
               color: c.buttonText.withOpacity(0.14),
               borderRadius: BorderRadius.circular(14.r),
@@ -676,11 +737,14 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _qtyBtn(Icons.remove_rounded, c, cubit.decrement),
-                Text('${state.quantity}',
-                    style: TextStyle(
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.w800,
-                        color: c.buttonText)),
+                Text(
+                  '${state.quantity}',
+                  style: TextStyle(
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.w800,
+                    color: c.buttonText,
+                  ),
+                ),
                 _qtyBtn(Icons.add_rounded, c, cubit.increment),
               ],
             ),
@@ -733,15 +797,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
                 boxShadow: selected
                     ? [
                   BoxShadow(
-                      color: _hexColor(hex).withOpacity(0.45),
-                      blurRadius: 10,
-                      spreadRadius: 1)
+                    color: _hexColor(hex).withOpacity(0.45),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  ),
                 ]
                     : null,
               ),
               child: selected
-                  ? Icon(Icons.check_rounded,
-                  color: Colors.white, size: 20.r)
+                  ? Icon(Icons.check_rounded, color: Colors.white, size: 20.r)
                   : null,
             ),
           );
@@ -762,48 +826,54 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
         final size = e.value;
         final selected = state.selectedSizeIndex == i;
         final label = localizedEnAr(
-            context: context, nameEn: size.nameEn, nameAr: size.nameAr);
+          context: context,
+          nameEn: size.nameEn,
+          nameAr: size.nameAr,
+        );
         return GestureDetector(
-          onTap: () => cubit.selectSize(i),
+          onTap: () => cubit.selectSize(size.id),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             constraints: BoxConstraints(minWidth: 64.w),
-            padding:
-            EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
+            padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
             decoration: BoxDecoration(
-              gradient: selected
-                  ? LinearGradient(colors: [c.main, c.sub])
-                  : null,
+              gradient:
+              selected ? LinearGradient(colors: [c.main, c.sub]) : null,
               color: selected ? null : c.textField,
               borderRadius: BorderRadius.circular(14.r),
               border: Border.all(
-                  color: selected
-                      ? Colors.transparent
-                      : c.hint.withOpacity(0.18)),
+                color: selected ? Colors.transparent : c.hint.withOpacity(0.18),
+              ),
               boxShadow: selected
                   ? [
                 BoxShadow(
-                    color: c.main.withOpacity(0.30),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4))
+                  color: c.main.withOpacity(0.30),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
               ]
                   : null,
             ),
             child: Column(
               children: [
-                Text(label,
-                    style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w700,
-                        color:
-                        selected ? c.buttonText : c.bodyText)),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
+                    color: selected ? c.buttonText : c.bodyText,
+                  ),
+                ),
                 if (size.price > 0)
-                  Text('+\$${size.price}',
-                      style: TextStyle(
-                          fontSize: 10.sp,
-                          color: selected
-                              ? c.buttonText.withOpacity(0.85)
-                              : c.main)),
+                  Text(
+                    '+\$${size.price}',
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      color: selected
+                          ? c.buttonText.withOpacity(0.85)
+                          : c.main,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -815,9 +885,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
   // ── Product info ──────────────────────────────────────────────────────────
   Widget _highlights(BuildContext context, AppColors c) {
     final type = localizedEnAr(
-        context: context,
-        nameEn: widget.product.type.nameEn,
-        nameAr: widget.product.type.nameAr);
+      context: context,
+      nameEn: widget.product.type.nameEn,
+      nameAr: widget.product.type.nameAr,
+    );
     return Column(
       children: [
         _infoTile(Icons.category_rounded, 'categories'.tr(),
@@ -826,8 +897,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
         _infoTile(Icons.style_rounded, 'type'.tr(), type, c),
         if (widget.product.colors.isNotEmpty) ...[
           SizedBox(height: 8.h),
-          _infoTile(Icons.palette_rounded, 'color'.tr(),
-              '${widget.product.colors.length} colors', c),
+          _infoTile(
+            Icons.palette_rounded,
+            'color'.tr(),
+            '${widget.product.colors.length} colors',
+            c,
+          ),
         ],
       ],
     );
@@ -860,11 +935,14 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
               children: [
                 Text(label,
                     style: TextStyle(fontSize: 10.sp, color: c.hint)),
-                Text(value,
-                    style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w600,
-                        color: c.bodyText)),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w600,
+                    color: c.bodyText,
+                  ),
+                ),
               ],
             ),
           ),
@@ -885,6 +963,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
         ? '\$${total.toInt()}'
         : '\$${total.toStringAsFixed(2)}';
 
+    final isAdding = state is AddProductCartsLoading;
+
     return Positioned(
       left: 16.w,
       right: 16.w,
@@ -897,13 +977,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
           border: Border.all(color: c.hint.withOpacity(0.12)),
           boxShadow: [
             BoxShadow(
-                color: c.main.withOpacity(0.14),
-                blurRadius: 22,
-                offset: const Offset(0, 6))
+              color: c.main.withOpacity(0.14),
+              blurRadius: 22,
+              offset: const Offset(0, 6),
+            ),
           ],
         ),
         child: Row(
           children: [
+            // Total
             Expanded(
               child: Padding(
                 padding: EdgeInsets.only(left: 4.w),
@@ -912,73 +994,87 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with UiUtil
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text('total'.tr(),
-                        style:
-                        TextStyle(fontSize: 10.sp, color: c.hint)),
+                        style: TextStyle(fontSize: 10.sp, color: c.hint)),
                     Text(
                       totalStr,
                       style: TextStyle(
-                          fontSize: 19.sp,
-                          fontWeight: FontWeight.w900,
-                          color: c.bodyText),
+                        fontSize: 19.sp,
+                        fontWeight: FontWeight.w900,
+                        color: c.bodyText,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
+
+            // Cart shortcut
             GestureDetector(
-              onTap: () =>
-                  ButtonHomeNavigationScreen.goToCart(context),
+              onTap: () => ButtonHomeNavigationScreen.goToCart(context),
               child: Container(
                 width: 44.r,
                 height: 44.r,
                 decoration: BoxDecoration(
                   color: c.textField,
                   borderRadius: BorderRadius.circular(13.r),
-                  border:
-                  Border.all(color: c.hint.withOpacity(0.14)),
+                  border: Border.all(color: c.hint.withOpacity(0.14)),
                 ),
                 child: Icon(Icons.shopping_bag_outlined,
                     color: c.icon, size: 20.r),
               ),
             ),
             SizedBox(width: 8.w),
+
+            // Add to cart
             Expanded(
               flex: 2,
               child: GestureDetector(
-                // ✅ no product param — cubit uses this.entity
-                onTap: () =>
-                   _cubit.addToCart(context),
+                onTap: isAdding ? null : () => _cubit.addToCart(context),
                 child: Container(
                   height: 44.h,
                   decoration: BoxDecoration(
-                    gradient:
-                    LinearGradient(colors: [c.main, c.sub]),
+                    gradient: LinearGradient(colors: [c.main, c.sub]),
                     borderRadius: BorderRadius.circular(13.r),
                     boxShadow: [
                       BoxShadow(
-                          color: c.main.withOpacity(0.30),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4))
+                        color: c.main.withOpacity(0.30),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
                     ],
                   ),
                   alignment: Alignment.center,
-                  child: Row(
+                  child: isAdding
+                      ? SizedBox(
+                    width: 20.r,
+                    height: 20.r,
+                    child: CircularProgressIndicator(
+                      color: c.buttonText,
+                      strokeWidth: 2,
+                    ),
+                  )
+                      : Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.shopping_cart_outlined,
                           color: c.buttonText, size: 16.r),
                       SizedBox(width: 5.w),
-                      Text('add_to_cart'.tr(),
-                          style: TextStyle(
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w800,
-                              color: c.buttonText)),
+                      Text(
+                        'add_to_cart'.tr(),
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w800,
+                          color: c.buttonText,
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
             ),
             SizedBox(width: 8.w),
+
+            // Buy now
             GestureDetector(
               onTap: () {},
               child: Container(
