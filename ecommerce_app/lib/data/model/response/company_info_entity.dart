@@ -36,13 +36,16 @@ class CompanyInfoCompanyEntity {
   String visionEn;
   @JsonKey(name: 'vision_ar')
   String visionAr;
-  dynamic phone;
+  String phone;
   String email;
   @JsonKey(name: 'address_en')
   String addressEn;
   @JsonKey(name: 'address_ar')
   String addressAr;
   dynamic location;
+  dynamic facebook;
+  dynamic instagram;
+  dynamic twitter;
   @JsonKey(name: 'main_color')
   String mainColor;
   @JsonKey(name: 'sub_color')
@@ -63,19 +66,35 @@ class CompanyInfoCompanyEntity {
   String cardColor;
   @JsonKey(name: 'label_color')
   String labelColor;
+  @JsonKey(name: 'main_color_dark')
+  dynamic mainColorDark;
+  @JsonKey(name: 'sub_color_dark')
+  dynamic subColorDark;
+  @JsonKey(name: 'text_color_dark')
+  dynamic textColorDark;
+  @JsonKey(name: 'button_color_dark')
+  dynamic buttonColorDark;
+  @JsonKey(name: 'icon_color_dark')
+  dynamic iconColorDark;
+  @JsonKey(name: 'text_filed_color_dark')
+  dynamic textFiledColorDark;
+  @JsonKey(name: 'hint_color_dark')
+  dynamic hintColorDark;
+  @JsonKey(name: 'button_text_color_dark')
+  dynamic buttonTextColorDark;
+  bool dark;
+  @JsonKey(name: 'country_id')
+  int countryId;
+  @JsonKey(name: 'city_id')
+  int cityId;
+  @JsonKey(name: 'is_active')
+  int isActive;
   @JsonKey(name: 'user_id')
   dynamic userId;
   @JsonKey(name: 'created_at')
   String createdAt;
   @JsonKey(name: 'updated_at')
   String updatedAt;
-  dynamic facebook;
-  dynamic instagram;
-  dynamic twitter;
-  @JsonKey(name: 'country_id')
-  int countryId;
-  @JsonKey(name: 'city_id')
-  int cityId;
 
   CompanyInfoCompanyEntity(
     this.id,
@@ -93,6 +112,9 @@ class CompanyInfoCompanyEntity {
     this.addressEn,
     this.addressAr,
     this.location,
+    this.facebook,
+    this.instagram,
+    this.twitter,
     this.mainColor,
     this.subColor,
     this.textColor,
@@ -103,14 +125,21 @@ class CompanyInfoCompanyEntity {
     this.buttonTextColor,
     this.cardColor,
     this.labelColor,
+    this.mainColorDark,
+    this.subColorDark,
+    this.textColorDark,
+    this.buttonColorDark,
+    this.iconColorDark,
+    this.textFiledColorDark,
+    this.hintColorDark,
+    this.buttonTextColorDark,
+    this.dark,
+    this.countryId,
+    this.cityId,
+    this.isActive,
     this.userId,
     this.createdAt,
     this.updatedAt,
-    this.facebook,
-    this.instagram,
-    this.twitter,
-    this.countryId,
-    this.cityId,
   );
 
   factory CompanyInfoCompanyEntity.fromJson(Map<String, dynamic> json) =>

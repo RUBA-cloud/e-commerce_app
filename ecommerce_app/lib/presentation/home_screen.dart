@@ -4,6 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/constant/app_theme.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
 import 'package:ecommerce_app/data/model/response/PromoSlide.dart';
+import 'package:ecommerce_app/presentation/home/fliter_dialog.dart';
 import 'package:ecommerce_app/presentation/home/home_buttom_navigation.dart';
 import 'package:ecommerce_app/presentation/home/see_all_brands_screen.dart';
 import 'package:ecommerce_app/presentation/home/see_all_categories_screen.dart';
@@ -31,9 +32,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int  _hours   = 2;
-  int  _minutes = 14;
-  int  _seconds = 37;
+  int  _hours         = 2;
+  int  _minutes       = 14;
+  int  _seconds       = 37;
   bool _homeRequested = false;
 
   @override
@@ -81,27 +82,26 @@ class _HomeScreenState extends State<HomeScreen> {
               SafeArea(
                 child: Column(
                   children: [
-                    _HomeHeader(
-                      c: c,
-                      userName:''?? '',
-                    ),
+                    _HomeHeader(c: c, userName: '', cubit: cubit),
                     Expanded(
                       child: state is HomeLoading
-                          ? Center(child: CircularProgressIndicator(color: c.main))
+                          ? Center(
+                        child: CircularProgressIndicator(color: c.main),
+                      )
                           : state is HomeFailed
                           ? getErrorView(
                         context: context,
                         message: state.message,
-                        c: c,
+                        c:       c,
                         onRetry: cubit.loadHome,
                       )
                           : RefreshIndicator(
-                        color: c.main,
+                        color:     c.main,
                         onRefresh: cubit.loadHome,
                         child: _Body(
-                          cubit: cubit,
-                          c: c,
-                          hours: _hours,
+                          cubit:   cubit,
+                          c:       c,
+                          hours:   _hours,
                           minutes: _minutes,
                           seconds: _seconds,
                         ),
@@ -143,18 +143,17 @@ class _Body extends StatelessWidget {
 
     return ListView(
       padding: EdgeInsets.zero,
-
       children: [
         _PromoCarousel(c: c),
         SizedBox(height: 20.h),
 
-        // ── Categories ────────────────────────────────────────
+        // ── Categories ──────────────────────────────────────
         AccentSectionTitle(
-          title: 'categories'.tr(),
-          subtitle: 'explore_collections'.tr(),
-          accentColor: c.main,
+          title:               'categories'.tr(),
+          subtitle:            'explore_collections'.tr(),
+          accentColor:         c.main,
           accentSecondaryColor: c.sub,
-          seeAllLabel: 'see_all'.tr(),
+          seeAllLabel:         'see_all'.tr(),
           onSeeAll: () {
             final cats = cubit.categoriesEntity?.data.data;
             if (cats == null || cats.isEmpty) return;
@@ -162,7 +161,7 @@ class _Body extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (_) => SeeAllCategoriesScreen(
-                  categories: cats,
+                  categories:    cats,
                   selectedIndex: cubit.selectedCategoryIndex,
                 ),
               ),
@@ -173,19 +172,19 @@ class _Body extends StatelessWidget {
         CategoryCard(cubit: cubit, c: c),
         SizedBox(height: 16.h),
 
-        // ── Flash sale bar ────────────────────────────────────
+        // ── Flash sale bar ───────────────────────────────────
         _FlashBar(c: c, hours: hours, minutes: minutes, seconds: seconds),
         SizedBox(height: 20.h),
 
-        // ── Brands ────────────────────────────────────────────
+        // ── Brands ──────────────────────────────────────────
         if (cubit.brandEntity?.data != null &&
             cubit.brandEntity!.data.data.isNotEmpty) ...[
           AccentSectionTitle(
-            title: 'top_brands'.tr(),
-            subtitle: 'trusted_partners'.tr(),
-            accentColor: c.main,
+            title:               'top_brands'.tr(),
+            subtitle:            'trusted_partners'.tr(),
+            accentColor:         c.main,
             accentSecondaryColor: c.sub,
-            seeAllLabel: 'see_all'.tr(),
+            seeAllLabel:         'see_all'.tr(),
             onSeeAll: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -200,13 +199,13 @@ class _Body extends StatelessWidget {
           SizedBox(height: 20.h),
         ],
 
-        // ── Products ──────────────────────────────────────────
+        // ── Products ─────────────────────────────────────────
         AccentSectionTitle(
-          title: 'products'.tr(),
-          subtitle: 'handpicked_for_you'.tr(),
-          accentColor: c.main,
+          title:               'products'.tr(),
+          subtitle:            'handpicked_for_you'.tr(),
+          accentColor:         c.main,
           accentSecondaryColor: c.sub,
-          seeAllLabel: 'see_all'.tr(),
+          seeAllLabel:         'see_all'.tr(),
           onSeeAll: () {
             final cats = cubit.categoriesEntity?.data.data;
             if (cats == null || cats.isEmpty) return;
@@ -214,7 +213,7 @@ class _Body extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (_) => SeeAllProductsScreen(
-                  categories: cats,
+                  categories:          cats,
                   initialCategoryIndex: cubit.selectedCategoryIndex,
                 ),
               ),
@@ -222,6 +221,13 @@ class _Body extends StatelessWidget {
           },
         ),
         SizedBox(height: 12.h),
+
+        // ── Active filter chips ───────────────────────────────
+        if (cubit.activeFilter.isActive) ...[
+          _ActiveFilterBar(cubit: cubit, c: c),
+          SizedBox(height: 12.h),
+        ],
+
         if (products.isEmpty)
           emptyWidget(c: c)
         else
@@ -234,14 +240,146 @@ class _Body extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════
+// _ActiveFilterBar  — shows active filters as dismissible chips
+// ═══════════════════════════════════════════════════════
+
+class _ActiveFilterBar extends StatelessWidget {
+  const _ActiveFilterBar({required this.cubit, required this.c});
+
+  final HomeCubit cubit;
+  final AppColors c;
+
+  @override
+  Widget build(BuildContext context) {
+    final f      = cubit.activeFilter;
+    final brands = cubit.brandEntity?.data.data ?? [];
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      child: Wrap(
+        spacing:    8.w,
+        runSpacing: 6.h,
+        children: [
+
+          // Price chip
+          if (f.minPrice > 0 || f.maxPrice < 10000)
+            _FilterChip(
+              label: '\$${f.minPrice.toInt()}–\$${f.maxPrice.toInt()}',
+              c:     c,
+              onRemove: () => cubit.applyFilter(
+                f.copyWith(minPrice: 0, maxPrice: 10000),
+              ),
+            ),
+
+          // Brand chip
+          if (f.selectedBrandId != null) ...[
+            _FilterChip(
+              label: brands
+                  .firstWhere(
+                    (b) => b.id == f.selectedBrandId,
+                orElse: () => brands.first,
+              )
+                  .nameEn ?? '',
+              c:        c,
+              onRemove: () => cubit.applyFilter(
+                f.copyWith(clearBrand: true),
+              ),
+            ),
+          ],
+
+
+          // Clear all
+          GestureDetector(
+            onTap: cubit.clearFilter,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color:        c.sub.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(20.r),
+                border:       Border.all(color: c.sub.withOpacity(0.4)),
+              ),
+              child: Text(
+                'clear_all'.tr(),
+                style: TextStyle(
+                  fontSize:   11.sp,
+                  color:      c.sub,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Small dismissible chip ────────────────────────────────────────────────
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.c,
+    required this.onRemove,
+  });
+
+  final String       label;
+  final AppColors    c;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(left: 10.w, right: 4.w, top: 6.h, bottom: 6.h),
+      decoration: BoxDecoration(
+        color:        c.main.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20.r),
+        border:       Border.all(color: c.main.withOpacity(0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize:   11.sp,
+              color:      c.main,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(width: 4.w),
+          GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              width:  16.r,
+              height: 16.r,
+              decoration: BoxDecoration(
+                color:  c.main.withOpacity(0.15),
+                shape:  BoxShape.circle,
+              ),
+              child: Icon(Icons.close, size: 10.r, color: c.main),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════
 // _HomeHeader
 // ═══════════════════════════════════════════════════════
 
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({required this.c, required this.userName});
+  const _HomeHeader({
+    required this.c,
+    required this.userName,
+    required this.cubit,
+  });
 
   final AppColors c;
   final String    userName;
+  final HomeCubit cubit;
 
   @override
   Widget build(BuildContext context) {
@@ -252,28 +390,34 @@ class _HomeHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              // ── Avatar ──────────────────────────────────────
+
+              // ── Avatar ────────────────────────────────────
               Container(
-                width: 48.r,
+                width:  48.r,
                 height: 48.r,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [c.main, c.sub],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                    begin:  Alignment.topLeft,
+                    end:    Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(16.r),
                   boxShadow: [
                     BoxShadow(
-                      color: c.main.withOpacity(0.35),
+                      color:      c.main.withOpacity(0.35),
                       blurRadius: 12,
-                      offset: const Offset(0, 4),
+                      offset:     const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: Icon(Icons.person_rounded, color: c.buttonText, size: 26.r),
+                child: Icon(
+                  Icons.person_rounded,
+                  color: c.buttonText,
+                  size:  26.r,
+                ),
               ),
               SizedBox(width: 12.w),
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,9 +438,10 @@ class _HomeHeader extends StatelessWidget {
                   ],
                 ),
               ),
+
               _HeaderIcon(
-                c: c,
-                icon: Icons.notifications_none_rounded,
+                c:     c,
+                icon:  Icons.notifications_none_rounded,
                 badge: true,
               ),
               SizedBox(width: 8.w),
@@ -307,41 +452,87 @@ class _HomeHeader extends StatelessWidget {
             ],
           ),
           SizedBox(height: 14.h),
-          // ── Search bar ─────────────────────────────────────
+
+          // ── Search bar ──────────────────────────────────────
           GlassSurface(
-            colors: c,
-            radius: 18.r,
+            colors:  c,
+            radius:  18.r,
             padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 4.h),
             child: Row(
               children: [
+
+                // Search icon
                 Container(
-                  width: 36.r,
+                  width:  36.r,
                   height: 36.r,
                   decoration: BoxDecoration(
-                    color: c.main.withOpacity(0.12),
+                    color:        c.main.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(12.r),
                   ),
-                  child: Icon(Icons.search_rounded, size: 20.r, color: c.main),
+                  child: Icon(
+                    Icons.search_rounded,
+                    size:  20.r,
+                    color: c.main,
+                  ),
                 ),
                 SizedBox(width: 10.w),
+
                 Expanded(
                   child: Text(
                     'search_hint'.tr(),
                     style: TextStyle(fontSize: 13.sp, color: c.hint),
                   ),
                 ),
-                Container(
-                  width: 40.r,
-                  height: 40.r,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [c.main, c.sub]),
-                    borderRadius: BorderRadius.circular(14.r),
-                  ),
-                  child: Icon(
-                    Icons.tune_rounded,
-                    size:  20.r,
-                    color: c.buttonText,
-                  ),
+
+                // ── Filter icon with active dot ───────────────
+                BlocBuilder<HomeCubit, HomeState>(
+                  builder: (context, state) {
+                    final filterActive = cubit.activeFilter.isActive;
+                    return GestureDetector(
+                      onTap: () => showDialog(
+                        context: context,
+                        builder: (_) => BlocProvider(create: (_)=>HomeCubit(),
+                            child: FilterDialog ()),
+                      ),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            width:  40.r,
+                            height: 40.r,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [c.main, c.sub],
+                              ),
+                              borderRadius: BorderRadius.circular(14.r),
+                            ),
+                            child: Icon(
+                              Icons.tune_rounded,
+                              size:  20.r,
+                              color: c.buttonText,
+                            ),
+                          ),
+                          if (filterActive)
+                            Positioned(
+                              top:   -3,
+                              right: -3,
+                              child: Container(
+                                width:  10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color:  Colors.redAccent,
+                                  shape:  BoxShape.circle,
+                                  border: Border.all(
+                                    color: c.card,
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -372,10 +563,10 @@ class _HeaderIcon extends StatelessWidget {
     return Stack(
       children: [
         Container(
-          width: 42.r,
+          width:  42.r,
           height: 42.r,
           decoration: BoxDecoration(
-            color: c.card,
+            color:        c.card,
             borderRadius: BorderRadius.circular(14.r),
             boxShadow: [
               BoxShadow(
@@ -389,9 +580,11 @@ class _HeaderIcon extends StatelessWidget {
         ),
         if (badge)
           Positioned(
-            top: 8, right: 8,
+            top:   8,
+            right: 8,
             child: Container(
-              width: 8, height: 8,
+              width:  8,
+              height: 8,
               decoration: BoxDecoration(
                 color:  c.sub,
                 shape:  BoxShape.circle,
@@ -428,7 +621,7 @@ class _PromoCarouselState extends State<_PromoCarousel> with UiUtility {
 
   @override
   Widget build(BuildContext context) {
-    final c = widget.c;
+    final c      = widget.c;
     final slides = [
       PromoSlideData(
         badge:    'limited_offer'.tr(),
@@ -465,11 +658,11 @@ class _PromoCarouselState extends State<_PromoCarousel> with UiUtility {
             final active = _page == i;
             return AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              margin: EdgeInsets.symmetric(horizontal: 3.w),
-              width:  active ? 18.w : 6.w,
-              height: 6.h,
+              margin:   EdgeInsets.symmetric(horizontal: 3.w),
+              width:    active ? 18.w : 6.w,
+              height:   6.h,
               decoration: BoxDecoration(
-                color: active ? c.main : c.hint.withOpacity(0.35),
+                color:        active ? c.main : c.hint.withOpacity(0.35),
                 borderRadius: BorderRadius.circular(4.r),
               ),
             );
@@ -506,8 +699,8 @@ class _FlashBar extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [c.sub, c.main],
-          begin: Alignment.centerLeft,
-          end:   Alignment.centerRight,
+          begin:  Alignment.centerLeft,
+          end:    Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(22.r),
         boxShadow: [
@@ -522,7 +715,8 @@ class _FlashBar extends StatelessWidget {
       child: Stack(
         children: [
           Positioned(
-            right: -20, top: -20,
+            right: -20,
+            top:   -20,
             child: Icon(
               Icons.bolt_rounded,
               size:  100.r,
@@ -645,9 +839,9 @@ class _BrandsRow extends StatelessWidget {
     return SizedBox(
       height: 118.h,
       child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding:         EdgeInsets.symmetric(horizontal: 16.w),
-        itemCount:       brands.length,
+        scrollDirection:  Axis.horizontal,
+        padding:          EdgeInsets.symmetric(horizontal: 16.w),
+        itemCount:        brands.length,
         separatorBuilder: (_, __) => SizedBox(width: 14.w),
         itemBuilder: (_, i) =>
             brandWidget(brand: brands[i], c: c, context: context),

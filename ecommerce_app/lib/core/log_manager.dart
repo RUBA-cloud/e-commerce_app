@@ -21,6 +21,11 @@ class LogsManager {
     );
   }
 
+  static void logState(String message) {
+    _instance._logInfo(message);
+  }
+
+
   static void logSuccess(String message) {
     _instance._logSuccess(message);
   }

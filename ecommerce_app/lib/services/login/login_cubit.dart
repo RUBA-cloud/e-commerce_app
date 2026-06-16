@@ -1,4 +1,3 @@
-
 import 'package:ecommerce_app/core/di/api_result.dart';
 import 'package:ecommerce_app/core/di/configure_dependency.dart';
 import 'package:ecommerce_app/data/model/request/email_request.dart';
@@ -13,7 +12,8 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../../constant/shared_prefence_keys.dart' show SharedPrefKeys;
-import '../../domain/usecases/shared_prefs_string_use_case.dart' show SharedPrefsStringUseCase;
+import '../../domain/usecases/shared_pref_usecases/shared_prefs_string_use_case.dart'
+    show SharedPrefsStringUseCase;
 
 class LoginCubit extends Cubit<LoginState> {
   LoginCubit() : super(const LoginInitial());
@@ -22,10 +22,12 @@ class LoginCubit extends Cubit<LoginState> {
   String country = 'Jordan';
   String city    = 'Amman';
 
-  late final LoginUseCase          _loginUseCase          = getIt<LoginUseCase>();
-  late final ForgetPasswordUseCase _forgetPasswordUseCase = getIt<ForgetPasswordUseCase>();
-  late final SharedPrefsStringUseCase _sharedPrefsStringUseCase= getIt<SharedPrefsStringUseCase>();
-  // ── Get country & city from GPS ──────────────────────────────────────
+  late final LoginUseCase             _loginUseCase          = getIt<LoginUseCase>();
+  late final ForgetPasswordUseCase    _forgetPasswordUseCase = getIt<ForgetPasswordUseCase>();
+  late final SharedPrefsStringUseCase _sharedPrefsStringUseCase =
+  getIt<SharedPrefsStringUseCase>();
+
+  // ── Get country & city from GPS ──────────────────────────────
   Future<void> getCountryAndCity() async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) return;
@@ -57,7 +59,7 @@ class LoginCubit extends Cubit<LoginState> {
     }
   }
 
-  // ── Login ─────────────────────────────────────────────────────────────
+  // ── Login ─────────────────────────────────────────────────────
   Future<void> submit({required LoginRequest loginRequest}) async {
     if (state is LoginLoading) return;
     emit(LoginLoading());
@@ -69,9 +71,7 @@ class LoginCubit extends Cubit<LoginState> {
         case Success<LoginUserEntity>():
           entity = result.data;
           await fromLogin();
-     
-       break;
-
+          break;
 
         case Failure():
           final code = result.statusCode;
@@ -85,25 +85,35 @@ class LoginCubit extends Cubit<LoginState> {
       emit(LoginFailed(e.toString()));
     }
   }
- LoginUserEntity? entity;
+
+  LoginUserEntity? entity;
+
+  /// Persists ALL user fields from the login response into SharedPreferences.
+  /// This is the single source of truth that ProfileCubit reads back later.
   Future<void> fromLogin() async {
-    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.isSaved,"true");
-    await _sharedPrefsStringUseCase.execute(SharedPrefKeys.accessToken, entity!.data.accessToken);
-    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.userId,      entity!.data.id.toString());
-    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.userEmail,   entity!.data.email);
-    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.userName,    entity!.data.name);
-    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.language,    entity!.data.language);
-    await  _sharedPrefsStringUseCase.execute(SharedPrefKeys.theme,       entity!.data.theme);
+    final data = entity!.data;
+
+    // ── Core auth fields ─────────────────────────────────────
+    await _sharedPrefsStringUseCase.execute(SharedPrefKeys.isSaved,     'true');
+    await _sharedPrefsStringUseCase.execute(SharedPrefKeys.accessToken,  data.accessToken);
+    await _sharedPrefsStringUseCase.execute(SharedPrefKeys.userId,       data.id.toString());
+    await _sharedPrefsStringUseCase.execute(SharedPrefKeys.userEmail,    data.email);
+    await _sharedPrefsStringUseCase.execute(SharedPrefKeys.userName,     data.name);
+    await _sharedPrefsStringUseCase.execute(SharedPrefKeys.language,     data.language);
+    await _sharedPrefsStringUseCase.execute(SharedPrefKeys.theme,        data.theme);
+
+    // ── Profile fields (saved so ProfileCubit can pre-fill edit screen) ──
+    await _sharedPrefsStringUseCase.execute(SharedPrefKeys.userPhone,   data.phone   ?? '');
+   // await _sharedPrefsStringUseCase.execute(SharedPrefKeys.userAvatar,  data  ?? '');
+    await _sharedPrefsStringUseCase.execute(SharedPrefKeys.userCountry, data.country.nameEn);
+    await _sharedPrefsStringUseCase.execute(SharedPrefKeys.userCity,   data.city.nameEn);
+    await _sharedPrefsStringUseCase.execute(SharedPrefKeys.userStreet,  data.street  ?? '');
+    await _sharedPrefsStringUseCase.execute(SharedPrefKeys.userAddress, data.address ?? '');
 
     emit(LoginSuccess());
   }
 
-  // ── Forgot Password ───────────────────────────────────────────────────
-  // FIX: both forgetPassword and resendForgetPassword were identical —
-  // extracted shared logic into _executeForgetPassword to avoid duplication.
-  // Public methods only differ in intent (first send vs resend) but hit
-  // the same endpoint, so they both delegate to the private method.
-
+  // ── Forgot Password ───────────────────────────────────────────
   Future<void> forgetPassword(EmailRequest request) =>
       _executeForgetPassword(request);
 
@@ -126,8 +136,6 @@ class LoginCubit extends Cubit<LoginState> {
           if (code == 404) {
             emit(ForgetPasswordEmailFailedToSend());
           } else {
-            // FIX: result.error is nullable — added ?? fallback to avoid
-            // passing null into ForgetPasswordFail which expects a String
             emit(ForgetPasswordFail(result.error));
           }
       }
@@ -138,4 +146,8 @@ class LoginCubit extends Cubit<LoginState> {
 
   void goToRegister()       => emit(const GoToRegister());
   void goToForgotPassword() => emit(const GoToForgotPassword());
+bool passwordIsObscure =false;
+  void toggleObscure() {
+    passwordIsObscure =!  passwordIsObscure;
+  }
 }

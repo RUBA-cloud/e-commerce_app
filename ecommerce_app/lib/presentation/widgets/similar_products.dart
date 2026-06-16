@@ -1,3 +1,4 @@
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/constant/app_theme.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
@@ -71,7 +72,7 @@ class SimilarProductsSection extends StatelessWidget with UiUtility {
           ),
           SizedBox(width: 8.w),
           Text(
-            'similar_products'.tr(),
+            "similar_product".tr(),
             style: TextStyle(
               fontSize:   15.sp,
               fontWeight: FontWeight.w800,
@@ -108,7 +109,6 @@ class _ProductCard extends StatelessWidget with UiUtility {
     );
 
     // ✅ Fix: safe access to images list and imagePath
-    final images = product.images ?? [];
     final image=(product.mainImage ?? '');
 
     return GestureDetector(

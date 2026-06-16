@@ -3,7 +3,7 @@
 class PusherConfig {
   PusherConfig._();
 
-  static const String appKey  = 'b6ecb13acb55900e518a';
+  static const String appKey  = '33708d4364fab09314c6';
   static const String cluster = 'ap2';
 
   // If using Pusher hosted service leave host empty ('') —

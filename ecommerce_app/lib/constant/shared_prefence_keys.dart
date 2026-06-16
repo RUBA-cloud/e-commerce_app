@@ -1,10 +1,21 @@
+// ─── SharedPrefKeys ───────────────────────────────────────────
+// Add the new profile-related keys below the existing ones.
 class SharedPrefKeys {
-  static const String accessToken = 'accessToken';
-  static const String refreshToken= 'refreshToken';
-  static const String userId      = 'userId';
-  static const String userEmail   = 'userEmail';
-  static const String userName    = 'userName';
-  static const String language    = 'language';
-  static const String theme       = 'theme';
-  static const String isSaved ='saved';
- }
+  // ── Auth ─────────────────────────────────────────────────────
+  static const isSaved    = 'isSaved';
+  static const accessToken = 'accessToken';
+  static const refreshToken = 'refreshToken';
+  static const userId      = 'userId';
+  static const userEmail   = 'userEmail';
+  static const userName    = 'userName';
+  static const language    = 'language';
+  static const theme       = 'theme';
+
+  // ── Profile (added) ──────────────────────────────────────────
+  static const userPhone   = 'userPhone';
+  static const userAvatar  = 'userAvatar';
+  static const userCountry = 'userCountry';
+  static const userCity    = 'userCity';
+  static const userStreet  = 'userStreet';
+  static const userAddress = 'userAddress';
+}

@@ -23,6 +23,11 @@ class SharedPrefencesImp implements SharedPrefernceRepoistery {
    await _prefs.setString(key, value);
   }
 
+  @override
+  Future<void> clearData()async {
+   await _prefs.clear();
+  }
+
 
   
 }

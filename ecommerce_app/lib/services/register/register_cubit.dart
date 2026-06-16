@@ -10,7 +10,7 @@ import 'package:ecommerce_app/data/model/response/register_entity.dart';
 import 'package:ecommerce_app/domain/usecases/check_verify_email_use_case.dart';
 import 'package:ecommerce_app/domain/usecases/register_use_case.dart';
 import 'package:ecommerce_app/domain/usecases/resend_verify_email.dart';
-import 'package:ecommerce_app/domain/usecases/shared_prefs_string_use_case.dart';
+import 'package:ecommerce_app/domain/usecases/shared_pref_usecases/shared_prefs_string_use_case.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geocoding/geocoding.dart';

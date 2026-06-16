@@ -32,7 +32,7 @@ class ProductDetailsCubit extends Cubit<ProductDetailsState> {
 
   void _emit({
     int?            selectedImageIndex,
-    int?            selectedSizeIndex,
+    int?            selectedSizeId,
     String?         selectedColor,
     int?            quantity,
     bool?           isFav,
@@ -42,7 +42,7 @@ class ProductDetailsCubit extends Cubit<ProductDetailsState> {
   }) {
     emit(ProductDetailsUpdated(
       selectedImageIndex: selectedImageIndex ?? state.selectedImageIndex,
-      selectedSizeIndex:  selectedSizeIndex  ?? state.selectedSizeIndex,
+      selectedSizeIndex:  selectedSizeId  ?? state.selectedSizeIndex,
       selectedColor:      selectedColor      ?? state.selectedColor,
       quantity:           quantity           ?? state.quantity,
       isFav:              isFav              ?? state.isFav,
@@ -55,7 +55,7 @@ class ProductDetailsCubit extends Cubit<ProductDetailsState> {
   // ── UI actions ───────────────────────────────────────────────────────────
 
   void imageChanged(int index) => _emit(selectedImageIndex: index);
-  void selectSize(int index)   => _emit(selectedSizeIndex: index);
+  void selectSize(int index)   => _emit(selectedSizeId: index);
   void selectColor(String hex) => _emit(selectedColor: hex);
   void increment()             => _emit(quantity: state.quantity + 1);
   void toggleFav()             => _emit(isFav: !state.isFav);
@@ -64,24 +64,20 @@ class ProductDetailsCubit extends Cubit<ProductDetailsState> {
   void decrement() {
     if (state.quantity > 1) _emit(quantity: state.quantity - 1);
   }
-  CartsEntity? _lastCart;
   // ── Fetch similar products by category ───────────────────────────────────
   Future<bool> addToCart(BuildContext context) async {
 
     // ✅ use this.entity — no need to pass product as parameter
     if (entity.sizes.isNotEmpty && state.selectedSizeIndex < 0) {
       showSnackBar(context: context, message: 'select_size'.tr(),);
-
     }
-    final sizeId = entity.sizes.isNotEmpty
-        ? entity.sizes[state.selectedSizeIndex].id
-        : entity.sizeId;
 
 
    AddToCartRequest request= AddToCartRequest(
       productId: entity.id.toString(),
       quantity:  state.quantity,
-      sizeId:    sizeId,
+      sizeId:   state.selectedSizeIndex,
+     color: state.selectedColor
 
     );
 
@@ -90,7 +86,6 @@ class ProductDetailsCubit extends Cubit<ProductDetailsState> {
     final result = await _addCart.execute(request);
     switch (result) {
       case Success<CartsEntity>(data: final cart):
-        _lastCart = cart;
         emit(AddProductsToCartsSuccess());
         return true;
       case Failure<CartsEntity>(error: final err):
@@ -99,7 +94,6 @@ class ProductDetailsCubit extends Cubit<ProductDetailsState> {
     }
   }
   Future<void> fetchSelectedCategory(int categoryId) async {
-    debugPrint("ddjd");
     emit(ProductDetailsCategoryLoading(
       selectedImageIndex: state.selectedImageIndex,
       selectedSizeIndex:  state.selectedSizeIndex,
@@ -115,7 +109,6 @@ class ProductDetailsCubit extends Cubit<ProductDetailsState> {
 
     switch (result) {
       case Success<SimilarProductEntityEntity>():
-        print("object");
         emit(ProductDetailsCategoryLoaded(
           selectedImageIndex: state.selectedImageIndex,
           selectedSizeIndex:  state.selectedSizeIndex,
@@ -124,7 +117,7 @@ class ProductDetailsCubit extends Cubit<ProductDetailsState> {
           isFav:              state.isFav,
           descExpanded:       state.descExpanded,
           selectedCategory:   state.selectedCategory,
-          similarCategory:    result.data,          // ✅ unwrapped CategoryEntity
+          similarCategory:    result.data,
         ));
 
       case Failure<SimilarProductEntityEntity>():

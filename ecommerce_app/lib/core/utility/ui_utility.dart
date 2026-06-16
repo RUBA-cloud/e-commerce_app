@@ -30,7 +30,7 @@ mixin UiUtility {
 
   void navigateTo({
     required BuildContext context,
-    required Widget       page,
+    required Widget page,
     bool replace = false,
   }) {
     if (replace) {
@@ -56,7 +56,6 @@ mixin UiUtility {
         : state is CompanyInfoUpdated
         ? state.company.company
         : null;
-    // FIX: removed stray double semicolon ;;
 
     return CompanyColors(
       main:       hexColor(company?.mainColor,       '#1D5D9B'),
@@ -78,63 +77,372 @@ mixin UiUtility {
 
   ThemeData buildTheme(CompanyColors c,
       {Brightness brightness = Brightness.light}) {
+    final isDark = brightness == Brightness.dark;
+
     return ThemeData(
       useMaterial3: true,
-      brightness:   brightness,
+      brightness: brightness,
+        scaffoldBackgroundColor: Colors.transparent,
+      // ── Color Scheme ──────────────────────────────────────────
       colorScheme: ColorScheme.fromSeed(
-        seedColor:  c.main,
-        brightness: brightness,
-        primary:    c.main,
-        secondary:  c.sub,
-        surface:    c.card,
+        seedColor:   Colors.white,
+        brightness:  brightness,
+        primary:     c.main,
+        secondary:   c.sub,
+        surface:     c.card,
+        onPrimary:   c.buttonText,
+        onSecondary: c.buttonText,
+        onSurface:   c.text,
+        error:       isDark ? const Color(0xFFFF7675) : const Color(0xFFE24B4A),
       ),
-      scaffoldBackgroundColor: c.card,
+
+      // ── Scaffold & Canvas ─────────────────────────────────────
+
+      canvasColor:             c.card,
+      cardColor:               c.card,
+      dialogBackgroundColor:   c.card,
+
+      // ── AppBar ────────────────────────────────────────────────
       appBarTheme: AppBarTheme(
-        backgroundColor: c.main,
-        foregroundColor: c.buttonText,
-        iconTheme:       IconThemeData(color: c.icon),
+        backgroundColor:  c.main,
+        foregroundColor:  c.buttonText,
+        surfaceTintColor: Colors.transparent,
+        shadowColor:      c.main.withOpacity(0.3),
+        elevation:        0,
+        centerTitle:      true,
+        iconTheme:        IconThemeData(color: c.buttonText),
+        actionsIconTheme: IconThemeData(color: c.buttonText),
         titleTextStyle: TextStyle(
-            color: c.buttonText, fontSize: 18, fontWeight: FontWeight.w600),
+          color:      c.buttonText,
+          fontSize:   18,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.3,
+        ),
       ),
+
+      // ── Bottom Navigation Bar ─────────────────────────────────
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor:      c.card,
+        selectedItemColor:    c.main,
+        unselectedItemColor:  c.hint,
+        selectedLabelStyle:   TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: c.main),
+        unselectedLabelStyle: TextStyle(fontSize: 11, color: c.hint),
+        showSelectedLabels:   true,
+        showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+      ),
+
+      // ── Navigation Bar (Material 3) ───────────────────────────
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor:       c.card,
+        indicatorColor:        c.main.withOpacity(0.15),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return IconThemeData(color: c.main, size: 24);
+          }
+          return IconThemeData(color: c.hint, size: 24);
+        }),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: c.main);
+          }
+          return TextStyle(fontSize: 11, color: c.hint);
+        }),
+        elevation: 8,
+        surfaceTintColor: Colors.transparent,
+      ),
+
+      // ── Tab Bar ───────────────────────────────────────────────
+
+      // ── Elevated Button ───────────────────────────────────────
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: c.button,
           foregroundColor: c.buttonText,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8)),
+          disabledBackgroundColor: c.button.withOpacity(0.4),
+          disabledForegroundColor: c.buttonText.withOpacity(0.6),
+          elevation:   0,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
+
+      // ── Outlined Button ───────────────────────────────────────
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: c.main,
+          disabledForegroundColor: c.hint,
+          side:    BorderSide(color: c.main, width: 1.5),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      ),
+
+      // ── Text Button ───────────────────────────────────────────
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: c.main,
+          disabledForegroundColor: c.hint,
+          padding:   const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      ),
+
+      // ── FAB ───────────────────────────────────────────────────
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor:   c.button,
+        foregroundColor:   c.buttonText,
+        elevation:         4,
+        focusElevation:    6,
+        hoverElevation:    6,
+        highlightElevation: 8,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+
+      // ── Input Decoration ──────────────────────────────────────
       inputDecorationTheme: InputDecorationTheme(
         filled:    true,
         fillColor: c.textField,
-        hintStyle:  TextStyle(color: c.hint),
-        labelStyle: TextStyle(color: c.label),
+        hintStyle:  TextStyle(color: c.hint, fontSize: 14),
+        labelStyle: TextStyle(color: c.label, fontSize: 14),
+        floatingLabelStyle: TextStyle(color: c.main, fontSize: 13, fontWeight: FontWeight.w600),
+        prefixIconColor: c.icon,
+        suffixIconColor: c.hint,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide:   BorderSide(color: c.sub),
+          borderRadius: BorderRadius.circular(12),
+          borderSide:   BorderSide(color: c.sub.withOpacity(0.4)),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide:   BorderSide(color: c.sub),
+          borderRadius: BorderRadius.circular(12),
+          borderSide:   BorderSide(color: c.sub.withOpacity(0.4)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide:   BorderSide(color: c.main, width: 2),
+          borderRadius: BorderRadius.circular(12),
+          borderSide:   BorderSide(color: c.main, width: 1.8),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide:   BorderSide(color: isDark ? const Color(0xFFFF7675) : const Color(0xFFE24B4A)),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide:   BorderSide(color: isDark ? const Color(0xFFFF7675) : const Color(0xFFE24B4A), width: 1.8),
+        ),
+        errorStyle: TextStyle(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w500,
+          color: isDark ? const Color(0xFFFF7675) : const Color(0xFFE24B4A),
         ),
       ),
+
+      // ── Text Theme ────────────────────────────────────────────
       textTheme: TextTheme(
-        bodyLarge:   TextStyle(color: c.text),
-        bodyMedium:  TextStyle(color: c.text),
-        bodySmall:   TextStyle(color: c.text),
-        labelLarge:  TextStyle(color: c.label),
-        labelMedium: TextStyle(color: c.label),
-        titleLarge:  TextStyle(color: c.text),
-        titleMedium: TextStyle(color: c.text),
+        displayLarge:  TextStyle(color: c.text,  fontSize: 57, fontWeight: FontWeight.w400),
+        displayMedium: TextStyle(color: c.text,  fontSize: 45, fontWeight: FontWeight.w400),
+        displaySmall:  TextStyle(color: c.text,  fontSize: 36, fontWeight: FontWeight.w400),
+        headlineLarge:  TextStyle(color: c.text,  fontSize: 32, fontWeight: FontWeight.w600),
+        headlineMedium: TextStyle(color: c.text,  fontSize: 28, fontWeight: FontWeight.w600),
+        headlineSmall:  TextStyle(color: c.text,  fontSize: 24, fontWeight: FontWeight.w600),
+        titleLarge:  TextStyle(color: c.text,  fontSize: 22, fontWeight: FontWeight.w600),
+        titleMedium: TextStyle(color: c.text,  fontSize: 16, fontWeight: FontWeight.w600),
+        titleSmall:  TextStyle(color: c.text,  fontSize: 14, fontWeight: FontWeight.w500),
+        bodyLarge:   TextStyle(color: c.text,  fontSize: 16, fontWeight: FontWeight.w400),
+        bodyMedium:  TextStyle(color: c.text,  fontSize: 14, fontWeight: FontWeight.w400),
+        bodySmall:   TextStyle(color: c.hint,  fontSize: 12, fontWeight: FontWeight.w400),
+        labelLarge:  TextStyle(color: c.label, fontSize: 14, fontWeight: FontWeight.w600),
+        labelMedium: TextStyle(color: c.label, fontSize: 12, fontWeight: FontWeight.w500),
+        labelSmall:  TextStyle(color: c.hint,  fontSize: 11, fontWeight: FontWeight.w500),
       ),
-      iconTheme: IconThemeData(color: c.icon),
+
+      // ── Icons ─────────────────────────────────────────────────
+      iconTheme: IconThemeData(color: c.icon, size: 24),
+      primaryIconTheme: IconThemeData(color: c.buttonText, size: 24),
+
+      // ── Card ──────────────────────────────────────────────────
+cardTheme: CardThemeData(color:Colors.white),
+
+
+      // ── Chip ──────────────────────────────────────────────────
+      chipTheme: ChipThemeData(
+        backgroundColor:    c.textField,
+        selectedColor:      c.main.withOpacity(0.15),
+        disabledColor:      c.hint.withOpacity(0.1),
+        labelStyle:         TextStyle(color: c.text,  fontSize: 13),
+        secondaryLabelStyle: TextStyle(color: c.main, fontSize: 13, fontWeight: FontWeight.w600),
+        side:          BorderSide(color: c.sub.withOpacity(0.3)),
+        shape:         RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        padding:       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        checkmarkColor: c.main,
+        iconTheme:     IconThemeData(color: c.icon, size: 18),
+      ),
+
+
+
+      // ── Bottom Sheet ──────────────────────────────────────────
+      bottomSheetTheme: BottomSheetThemeData(
+
+        surfaceTintColor:     Colors.transparent,
+        modalBackgroundColor: c.card,
+        elevation:            0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        dragHandleColor: c.hint.withOpacity(0.4),
+        dragHandleSize:  const Size(40, 4),
+      ),
+
+      // ── Snack Bar ─────────────────────────────────────────────
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor:  isDark ? const Color(0xFF2A2A2A) : const Color(0xFF1A1A2E),
+        contentTextStyle: const TextStyle(color: Colors.white, fontSize: 14),
+        actionTextColor:  c.sub,
+        behavior:         SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 4,
+      ),
+
+      // ── Divider ───────────────────────────────────────────────
+      dividerTheme: DividerThemeData(
+        color:     c.sub.withOpacity(0.2),
+        thickness: 1,
+        space:     1,
+      ),
+
+      // ── List Tile ─────────────────────────────────────────────
+      listTileTheme: ListTileThemeData(
+        tileColor:         Colors.transparent,
+        selectedTileColor: c.main.withOpacity(0.08),
+        iconColor:         c.icon,
+        textColor:         c.text,
+        subtitleTextStyle: TextStyle(color: c.hint, fontSize: 13),
+        titleTextStyle:    TextStyle(color: c.text, fontSize: 15, fontWeight: FontWeight.w500),
+        selectedColor:     c.main,
+        contentPadding:    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+
+      // ── Switch ────────────────────────────────────────────────
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return c.button;
+          return c.hint;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return c.main.withOpacity(0.4);
+          return c.hint.withOpacity(0.2);
+        }),
+      ),
+
+      // ── Checkbox ─────────────────────────────────────────────
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return c.main;
+          return Colors.transparent;
+        }),
+        checkColor:   WidgetStateProperty.all(c.buttonText),
+        side:         BorderSide(color: c.sub, width: 1.5),
+        shape:        RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        overlayColor: WidgetStateProperty.all(c.main.withOpacity(0.08)),
+      ),
+
+      // ── Radio ─────────────────────────────────────────────────
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return c.main;
+          return c.hint;
+        }),
+        overlayColor: WidgetStateProperty.all(c.main.withOpacity(0.08)),
+      ),
+
+      // ── Slider ───────────────────────────────────────────────
+      sliderTheme: SliderThemeData(
+        activeTrackColor:   c.main,
+        inactiveTrackColor: c.main.withOpacity(0.2),
+        thumbColor:         c.main,
+        overlayColor:       c.main.withOpacity(0.12),
+        valueIndicatorColor: c.main,
+        valueIndicatorTextStyle: TextStyle(color: c.buttonText, fontSize: 12),
+      ),
+
+      // ── Progress Indicator ───────────────────────────────────
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color:            c.main,
+        linearTrackColor: c.main.withOpacity(0.15),
+        circularTrackColor: c.main.withOpacity(0.15),
+        linearMinHeight: 4,
+      ),
+
+      // ── Tooltip ──────────────────────────────────────────────
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color:        isDark ? Colors.white.withOpacity(0.9) : const Color(0xFF1A1A2E),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        textStyle: TextStyle(
+          color:    isDark ? const Color(0xFF1A1A2E) : Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        padding:  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        preferBelow: false,
+      ),
+
+      // ── Search Bar ───────────────────────────────────────────
+      searchBarTheme: SearchBarThemeData(
+        backgroundColor: WidgetStateProperty.all(c.textField),
+        shadowColor:     WidgetStateProperty.all(Colors.transparent),
+        overlayColor:    WidgetStateProperty.all(c.main.withOpacity(0.05)),
+        side: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.focused)) {
+            return BorderSide(color: c.main, width: 1.8);
+          }
+          return BorderSide(color: c.sub.withOpacity(0.3));
+        }),
+        shape: WidgetStateProperty.all(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        textStyle: WidgetStateProperty.all(TextStyle(color: c.text, fontSize: 14)),
+        hintStyle: WidgetStateProperty.all(TextStyle(color: c.hint, fontSize: 14)),
+      ),
+
+      // ── Badge ────────────────────────────────────────────────
+      badgeTheme: BadgeThemeData(
+        backgroundColor: c.button,
+        textColor:       c.buttonText,
+        textStyle:       const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+        padding:         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      ),
+
+      // ── Popup Menu ───────────────────────────────────────────
+      popupMenuTheme: PopupMenuThemeData(
+        color:            c.card,
+        surfaceTintColor: Colors.transparent,
+        elevation:        8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: c.sub.withOpacity(0.15)),
+        ),
+        textStyle:   TextStyle(color: c.text, fontSize: 14),
+        labelTextStyle: WidgetStateProperty.all(TextStyle(color: c.text, fontSize: 14)),
+      ),
+
+      // ── Drawer ───────────────────────────────────────────────
+      drawerTheme: DrawerThemeData(
+        backgroundColor:  c.card,
+        surfaceTintColor: Colors.transparent,
+        elevation:        16,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.horizontal(right: Radius.circular(24)),
+        ),
+      ),
     );
   }
-
   // ════════════════════════════════════════════════════════════════
   // BASE WIDGETS
   // ════════════════════════════════════════════════════════════════
@@ -146,10 +454,10 @@ mixin UiUtility {
       _Blob(size: size, color: color);
 
   Widget primaryButton({
-    required String        label,
+    required String label,
     required VoidCallback? onPressed,
-    required Color         backgroundColor,
-    required Color         foregroundColor,
+    required Color backgroundColor,
+    required Color foregroundColor,
     bool   loading = false,
     double height  = 54,
     double radius  = 14,
@@ -166,8 +474,8 @@ mixin UiUtility {
 
   Widget formCard({
     required Widget child,
-    required Color  surfaceColor,
-    required Color  shadowColor,
+    required Color surfaceColor,
+    required Color shadowColor,
     double padding = 24,
     double radius  = 24,
   }) =>
@@ -195,7 +503,7 @@ mixin UiUtility {
   ];
 
   // ════════════════════════════════════════════════════════════════
-  // AUTH WIDGETS
+  // AUTH WIDGETS  (original)
   // ════════════════════════════════════════════════════════════════
 
   Widget brandLogo({
@@ -205,8 +513,8 @@ mixin UiUtility {
       _AnimatedBrandLogo(c: c, icon: icon);
 
   Widget screenHeadline({
-    required String        title,
-    required String        subtitle,
+    required String title,
+    required String subtitle,
     required CompanyColors c,
   }) =>
       _ScreenHeadline(title: title, subtitle: subtitle, c: c);
@@ -215,15 +523,15 @@ mixin UiUtility {
 
   Widget backButton({
     required CompanyColors c,
-    VoidCallback?          onTap,
+    VoidCallback? onTap,
   }) =>
       _AuthBackButton(color: c.main, onTap: onTap);
 
   Widget authLink({
-    required String        question,
-    required String        action,
+    required String question,
+    required String action,
     required CompanyColors c,
-    required VoidCallback  onTap,
+    required VoidCallback onTap,
   }) =>
       AuthLink(
         question:  question,
@@ -234,8 +542,8 @@ mixin UiUtility {
       );
 
   Widget stepBadge({
-    required int           step,
-    required int           total,
+    required int step,
+    required int total,
     required CompanyColors c,
   }) =>
       _StepBadge(step: step, total: total, color: c.main);
@@ -248,8 +556,8 @@ mixin UiUtility {
       _SectionDivider(color: c.sub, label: label, labelStyle: labelStyle);
 
   Widget infoChip({
-    required String        label,
-    required IconData      icon,
+    required String label,
+    required IconData icon,
     required CompanyColors c,
   }) =>
       _InfoChip(label: label, icon: icon, color: c.main);
@@ -257,7 +565,7 @@ mixin UiUtility {
   Widget meshBackground({required CompanyColors c}) => _MeshBackground(c: c);
 
   Widget glassCard({
-    required Widget        child,
+    required Widget child,
     required CompanyColors c,
     double padding = 24,
     double radius  = 28,
@@ -265,7 +573,7 @@ mixin UiUtility {
       _GlassCard(child: child, c: c, padding: padding, radius: radius);
 
   Widget shimmerText({
-    required String        text,
+    required String text,
     required CompanyColors c,
     double     fontSize = 14,
     FontWeight weight   = FontWeight.w600,
@@ -273,8 +581,8 @@ mixin UiUtility {
       _ShimmerText(text: text, c: c, fontSize: fontSize, weight: weight);
 
   Widget stepProgress({
-    required int           current,
-    required int           total,
+    required int current,
+    required int total,
     required CompanyColors c,
   }) =>
       _StepProgress(current: current, total: total, c: c);
@@ -285,24 +593,122 @@ mixin UiUtility {
 
   Widget successCard({
     required CompanyColors c,
-    required String        email,
-    required VoidCallback  onTap,
+    required String email,
+    required VoidCallback onTap,
   }) =>
       SuccessCard(c: c, email: email, onTap: onTap);
 
   // ════════════════════════════════════════════════════════════════
+  // SHARED AUTH SCREEN WIDGETS
+  // Replaces private _TopBar, _Logo, _Headline, _InputField,
+  // _FieldLabel, _SubmitButton, _OrDivider, _LoginRow,
+  // _LoadingOverlay, _LangPill duplicated across every auth screen.
+  // ════════════════════════════════════════════════════════════════
+
+  /// Top bar: optional back button + language pills + theme toggle.
+  /// Pass [showBackButton: false] on the login screen.
+  Widget sharedTopBar({
+    required ColorHelper p,
+    required bool isAr,
+    required bool isDark,
+    required ValueChanged<String> onLang,
+    VoidCallback? onBack,
+    bool showBackButton = true,
+  }) =>
+      _SharedTopBar(
+        p:              p,
+        isAr:           isAr,
+        isDark:         isDark,
+        onLang:         onLang,
+        onBack:         onBack,
+        showBackButton: showBackButton,
+      );
+
+  /// Gradient icon + app-name logo tile.
+  Widget sharedLogo({
+    required ColorHelper p,
+    required CompanyColors c,
+    required IconData icon,
+    required String appName,
+  }) =>
+      _SharedLogo(p: p, c: c, icon: icon, appName: appName);
+
+  /// Left-aligned headline with accent underline bar + subtitle.
+  Widget sharedHeadline({
+    required String title,
+    required String subtitle,
+    required ColorHelper p,
+  }) =>
+      _SharedHeadline(title: title, subtitle: subtitle, p: p);
+
+  /// Styled TextFormField matching the auth design system.
+  Widget sharedInputField({
+    required TextEditingController controller,
+    required String hintText,
+    TextInputType keyboardType = TextInputType.text,
+    required IconData prefixIcon,
+    bool obscure = false,
+    Widget? suffix,
+    required ColorHelper p,
+    FormFieldValidator<String>? validator,
+  }) =>
+      _SharedInputField(
+        controller:   controller,
+        hintText:     hintText,
+        keyboardType: keyboardType,
+        prefixIcon:   prefixIcon,
+        obscure:      obscure,
+        suffix:       suffix,
+        p:            p,
+        validator:    validator,
+      );
+
+  /// Bold label above an input field.
+  Widget sharedFieldLabel({
+    required String label,
+    required ColorHelper p,
+  }) =>
+      _SharedFieldLabel(label: label, p: p);
+
+  /// Gradient submit / action button with loading state.
+  Widget sharedSubmitButton({
+    required ColorHelper p,
+    required bool loading,
+    required String label,
+    required VoidCallback onTap,
+  }) =>
+      _SharedSubmitButton(p: p, loading: loading, label: label, onTap: onTap);
+
+  /// "── or ──" divider row.
+  Widget sharedOrDivider({required ColorHelper p}) =>
+      _SharedOrDivider(p: p);
+
+  /// Two-text tap row ("Already have an account? Login").
+  Widget sharedAuthLinkRow({
+    required String question,
+    required String actionLabel,
+    required ColorHelper p,
+    required VoidCallback onTap,
+  }) =>
+      _SharedAuthLinkRow(
+        question:    question,
+        actionLabel: actionLabel,
+        p:           p,
+        onTap:       onTap,
+      );
+
+  /// Full-screen semi-transparent loading overlay with centred spinner card.
+  Widget sharedLoadingOverlay({required ColorHelper p}) =>
+      _SharedLoadingOverlay(p: p);
+
+  // ════════════════════════════════════════════════════════════════
   // PROMO SLIDE
-  // FIX: moved OUT of SuccessCard.build() where it was incorrectly nested.
-  // Now a proper mixin method, accessible from _PromoCarouselState.
   // ════════════════════════════════════════════════════════════════
 
   Widget promoSlide({
-    required BuildContext  context,
+    required BuildContext context,
     required PromoSlideData data,
   }) {
-    // c is read from the data's own gradient colors — no AppColors needed here.
-    // The buttonText color is approximated as white since we don't have direct
-    // AppColors access in the mixin; callers using CompanyColors can override.
     const buttonText = Colors.white;
 
     return Container(
@@ -365,7 +771,7 @@ mixin UiUtility {
                           data.badge,
                           style: TextStyle(
                               fontSize: 10.sp,
-                              color: buttonText.withOpacity(0.85)),
+                              color:    buttonText.withOpacity(0.85)),
                         ),
                       ),
                       SizedBox(height: 8.h),
@@ -383,7 +789,7 @@ mixin UiUtility {
                         data.subtitle,
                         style: TextStyle(
                             fontSize: 11.sp,
-                            color: buttonText.withOpacity(0.70)),
+                            color:    buttonText.withOpacity(0.70)),
                       ),
                       SizedBox(height: 12.h),
                       Container(
@@ -425,7 +831,7 @@ mixin UiUtility {
                       Text('up_to'.tr(),
                           style: TextStyle(
                               fontSize: 10.sp,
-                              color: buttonText.withOpacity(0.75))),
+                              color:    buttonText.withOpacity(0.75))),
                       Text(
                         data.discount,
                         style: TextStyle(
@@ -449,6 +855,62 @@ mixin UiUtility {
       ),
     );
   }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ColorHelper  — replaces the private _P class duplicated in every auth screen
+// ════════════════════════════════════════════════════════════════════════════
+
+class ColorHelper {
+  final Color bg;
+  final Color card;
+  final Color input;
+  final Color border;
+  final Color primary;
+  final Color blob2;
+  final Color text;
+  final Color subText;
+  final Color label;
+  final Color buttonText;
+  final Color divider;
+  final Color error;
+  final Color icon;
+
+  const ColorHelper({
+    required this.bg,
+    required this.card,
+    required this.input,
+    required this.border,
+    required this.primary,
+    required this.blob2,
+    required this.text,
+    required this.subText,
+    required this.label,
+    required this.buttonText,
+    required this.divider,
+    required this.error,
+    required this.icon,
+  });
+
+  factory ColorHelper.fromCompany(CompanyColors c, bool isDark) => ColorHelper(
+    bg: isDark
+        ? Color.lerp(c.card, Colors.black, 0.3)!
+        : Color.lerp(c.card, Colors.white, 0.6)!,
+    card:       c.card,
+    input:      c.textField,
+    border:     Color.lerp(c.sub, Colors.grey, 0.5)!.withOpacity(0.3),
+    primary:    c.main,
+    blob2:      c.sub,
+    text:       c.text,
+    subText:    c.hint,
+    label:      c.label,
+    buttonText: c.buttonText,
+    divider:    c.sub.withOpacity(0.2),
+    error: isDark
+        ? const Color(0xFFFF7675)
+        : const Color(0xFFE24B4A),
+    icon: c.icon,
+  );
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -482,7 +944,494 @@ class CompanyColors {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// PRIVATE SUB-WIDGETS
+// SHARED AUTH SCREEN PRIVATE WIDGETS
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── Top Bar ───────────────────────────────────────────────────────────────────
+
+class _SharedTopBar extends StatelessWidget {
+  final ColorHelper          p;
+  final bool                 isAr;
+  final bool                 isDark;
+  final ValueChanged<String> onLang;
+  final VoidCallback?        onBack;
+  final bool                 showBackButton;
+
+  const _SharedTopBar({
+    required this.p,
+    required this.isAr,
+    required this.isDark,
+    required this.onLang,
+    this.onBack,
+    this.showBackButton = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        // Back button (optional)
+        if (showBackButton)
+          GestureDetector(
+            onTap: onBack ?? () => Navigator.maybePop(context),
+            child: Container(
+              width:  40.r,
+              height: 40.r,
+              decoration: BoxDecoration(
+                color:        p.card,
+                borderRadius: BorderRadius.circular(12.r),
+                border:       Border.all(color: p.border),
+              ),
+              child: Icon(
+                isAr
+                    ? Icons.arrow_forward_ios_rounded
+                    : Icons.arrow_back_ios_new_rounded,
+                color: p.primary,
+                size:  16.r,
+              ),
+            ),
+          ),
+
+        const Spacer(),
+
+        // Language pills
+        Container(
+          padding:    EdgeInsets.all(3.r),
+          decoration: BoxDecoration(
+            color:        p.card,
+            borderRadius: BorderRadius.circular(32.r),
+            border:       Border.all(color: p.border),
+          ),
+          child: Row(
+            children: [
+              _SharedLangPill(
+                  label: 'EN', active: !isAr, p: p,
+                  onTap: () => onLang('en')),
+              SizedBox(width: 4.w),
+              _SharedLangPill(
+                  label: 'AR', active: isAr, p: p,
+                  onTap: () => onLang('ar')),
+            ],
+          ),
+        ),
+        SizedBox(width: 10.w),
+
+        // Theme toggle
+        Container(
+          width:  40.r,
+          height: 40.r,
+          decoration: BoxDecoration(
+            color:        p.card,
+            borderRadius: BorderRadius.circular(12.r),
+            border:       Border.all(color: p.border),
+          ),
+          child: Icon(
+            isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
+            color: p.primary,
+            size:  20.r,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SharedLangPill extends StatelessWidget {
+  final String       label;
+  final bool         active;
+  final ColorHelper  p;
+  final VoidCallback onTap;
+
+  const _SharedLangPill({
+    required this.label,
+    required this.active,
+    required this.p,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding:  EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color:        active ? p.primary : Colors.transparent,
+        borderRadius: BorderRadius.circular(28.r),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize:   13.sp,
+          fontWeight: FontWeight.w700,
+          color:      active ? p.buttonText : p.subText,
+        ),
+      ),
+    ),
+  );
+}
+
+// ── Logo ──────────────────────────────────────────────────────────────────────
+
+class _SharedLogo extends StatelessWidget {
+  final ColorHelper   p;
+  final CompanyColors c;
+  final IconData      icon;
+  final String        appName;
+
+  const _SharedLogo({
+    required this.p,
+    required this.c,
+    required this.icon,
+    required this.appName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          width:  72.r,
+          height: 72.r,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [c.main, c.sub],
+              begin:  Alignment.topLeft,
+              end:    Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(22.r),
+            boxShadow: [
+              BoxShadow(
+                color:      c.main.withOpacity(0.38),
+                blurRadius: 20,
+                offset:     const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Icon(icon, color: p.buttonText, size: 36.r),
+        ),
+        SizedBox(height: 10.h),
+        Text(
+          appName,
+          style: TextStyle(
+            fontSize:      20.sp,
+            fontWeight:    FontWeight.w800,
+            color:         p.text,
+            letterSpacing: -0.5,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Headline ──────────────────────────────────────────────────────────────────
+
+class _SharedHeadline extends StatelessWidget {
+  final String      title;
+  final String      subtitle;
+  final ColorHelper p;
+
+  const _SharedHeadline({
+    required this.title,
+    required this.subtitle,
+    required this.p,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize:      26.sp,
+            fontWeight:    FontWeight.w800,
+            color:         p.text,
+            letterSpacing: -0.8,
+            height:        1.2,
+          ),
+        ),
+        SizedBox(height: 6.h),
+        Container(
+          width:  48.w,
+          height: 3.h,
+          decoration: BoxDecoration(
+            gradient:     LinearGradient(colors: [p.primary, p.blob2]),
+            borderRadius: BorderRadius.circular(2.r),
+          ),
+        ),
+        SizedBox(height: 8.h),
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontSize:   14.sp,
+            color:      p.subText,
+            fontWeight: FontWeight.w400,
+            height:     1.5,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Field Label ───────────────────────────────────────────────────────────────
+
+class _SharedFieldLabel extends StatelessWidget {
+  final String      label;
+  final ColorHelper p;
+
+  const _SharedFieldLabel({required this.label, required this.p});
+
+  @override
+  Widget build(BuildContext context) => Text(
+    label,
+    style: TextStyle(
+      fontSize:      13.sp,
+      fontWeight:    FontWeight.w700,
+      color:         p.label,
+      letterSpacing: 0.2,
+    ),
+  );
+}
+
+// ── Input Field ───────────────────────────────────────────────────────────────
+
+class _SharedInputField extends StatelessWidget {
+  final TextEditingController       controller;
+  final String                      hintText;
+  final TextInputType               keyboardType;
+  final IconData                    prefixIcon;
+  final bool                        obscure;
+  final Widget?                     suffix;
+  final ColorHelper                 p;
+  final FormFieldValidator<String>? validator;
+
+  const _SharedInputField({
+    required this.controller,
+    required this.hintText,
+    this.keyboardType = TextInputType.text,
+    required this.prefixIcon,
+    this.obscure  = false,
+    this.suffix,
+    required this.p,
+    this.validator,
+  });
+
+  @override
+  Widget build(BuildContext context) => TextFormField(
+    controller:     controller,
+    keyboardType:   keyboardType,
+    obscureText:    obscure,
+    style: TextStyle(fontSize: 14.sp, color: p.text),
+    decoration: InputDecoration(
+      hintText:  hintText,
+      hintStyle: TextStyle(color: p.subText, fontSize: 14.sp),
+      filled:    true,
+      fillColor: p.input,
+      prefixIcon: Icon(prefixIcon, color: p.primary, size: 20.r),
+      suffixIcon: suffix,
+      contentPadding:
+      EdgeInsets.symmetric(vertical: 14.h, horizontal: 16.w),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14.r),
+        borderSide:   BorderSide(color: p.border),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14.r),
+        borderSide:   BorderSide(color: p.border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14.r),
+        borderSide:   BorderSide(color: p.primary, width: 1.8),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14.r),
+        borderSide:   BorderSide(color: p.error),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14.r),
+        borderSide:   BorderSide(color: p.error, width: 1.5),
+      ),
+      errorStyle: TextStyle(
+        color:      p.error,
+        fontSize:   11.5.sp,
+        fontWeight: FontWeight.w500,
+      ),
+    ),
+    validator: validator,
+  );
+}
+
+// ── Submit Button ─────────────────────────────────────────────────────────────
+
+class _SharedSubmitButton extends StatelessWidget {
+  final ColorHelper  p;
+  final bool         loading;
+  final String       label;
+  final VoidCallback onTap;
+
+  const _SharedSubmitButton({
+    required this.p,
+    required this.loading,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: loading ? null : onTap,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width:    double.infinity,
+      height:   52.h,
+      decoration: BoxDecoration(
+        gradient: loading
+            ? null
+            : LinearGradient(
+          colors: [p.primary, p.blob2],
+          begin:  Alignment.centerLeft,
+          end:    Alignment.centerRight,
+        ),
+        color:        loading ? p.primary.withOpacity(0.55) : null,
+        borderRadius: BorderRadius.circular(14.r),
+        boxShadow: loading
+            ? []
+            : [
+          BoxShadow(
+            color:      p.primary.withOpacity(0.38),
+            blurRadius: 18,
+            offset:     const Offset(0, 7),
+          ),
+        ],
+      ),
+      child: loading
+          ? Center(
+        child: SizedBox(
+          width:  22.r,
+          height: 22.r,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.5,
+            color:       p.buttonText,
+          ),
+        ),
+      )
+          : Center(
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize:      15.sp,
+            fontWeight:    FontWeight.w700,
+            color:         p.buttonText,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+// ── Or Divider ────────────────────────────────────────────────────────────────
+
+class _SharedOrDivider extends StatelessWidget {
+  final ColorHelper p;
+  const _SharedOrDivider({required this.p});
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(child: Divider(color: p.divider, thickness: 1)),
+      Padding(
+        padding: EdgeInsets.symmetric(horizontal: 14.w),
+        child: Text(
+          'or'.tr(),
+          style: TextStyle(
+            fontSize:   13.sp,
+            color:      p.subText,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+      Expanded(child: Divider(color: p.divider, thickness: 1)),
+    ],
+  );
+}
+
+// ── Auth Link Row ─────────────────────────────────────────────────────────────
+
+class _SharedAuthLinkRow extends StatelessWidget {
+  final String       question;
+  final String       actionLabel;
+  final ColorHelper  p;
+  final VoidCallback onTap;
+
+  const _SharedAuthLinkRow({
+    required this.question,
+    required this.actionLabel,
+    required this.p,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Text(question,
+          style: TextStyle(fontSize: 14.sp, color: p.subText)),
+      SizedBox(width: 4.w),
+      GestureDetector(
+        onTap: onTap,
+        child: Text(
+          actionLabel,
+          style: TextStyle(
+            fontSize:   14.sp,
+            color:      p.primary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+// ── Loading Overlay ───────────────────────────────────────────────────────────
+
+class _SharedLoadingOverlay extends StatelessWidget {
+  final ColorHelper p;
+  const _SharedLoadingOverlay({required this.p});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    color: Colors.black.withOpacity(0.25),
+    child: Center(
+      child: Container(
+        width:  72.r,
+        height: 72.r,
+        decoration: BoxDecoration(
+          color:        p.card,
+          borderRadius: BorderRadius.circular(20.r),
+          boxShadow: [
+            BoxShadow(
+              color:      Colors.black.withOpacity(0.12),
+              blurRadius: 20,
+            ),
+          ],
+        ),
+        child: Center(
+          child: CircularProgressIndicator(
+            color:       p.primary,
+            strokeWidth: 3,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ORIGINAL PRIVATE SUB-WIDGETS  (unchanged)
 // ════════════════════════════════════════════════════════════════════════════
 
 class _FieldLabel extends StatelessWidget {
@@ -659,7 +1608,7 @@ class _FormCard extends StatelessWidget {
   );
 }
 
-// ── Animated Brand Logo ──────────────────────────────────────────────────────
+// ── Animated Brand Logo ───────────────────────────────────────────────────────
 
 class _AnimatedBrandLogo extends StatefulWidget {
   const _AnimatedBrandLogo({required this.c, required this.icon});
@@ -741,7 +1690,7 @@ class _AnimatedBrandLogoState extends State<_AnimatedBrandLogo>
   }
 }
 
-// ── Screen Headline ──────────────────────────────────────────────────────────
+// ── Screen Headline ───────────────────────────────────────────────────────────
 
 class _ScreenHeadline extends StatelessWidget {
   const _ScreenHeadline({
@@ -799,7 +1748,7 @@ class _ScreenHeadline extends StatelessWidget {
   }
 }
 
-// ── Or Divider ────────────────────────────────────────────────────────────────
+// ── Or Divider (CompanyColors variant) ───────────────────────────────────────
 
 class _OrDivider extends StatelessWidget {
   const _OrDivider({required this.c});
@@ -1423,67 +2372,72 @@ void showSnackBar({
     ),
   );
 }
- Widget brandWidget({required BuildContext context,required BrandDataDataEntity brand, required AppColors c}){
-   final name = localizedEnAr(
-   context: context,
-   nameEn: brand.nameEn,
-   nameAr: brand.nameAr,
-   );
 
-   return Container(
-   width: 108.w,
-   decoration: BoxDecoration(
-   color:        c.card,
-   borderRadius: BorderRadius.circular(20.r),
-   boxShadow: [
-   BoxShadow(
-   color:      c.main.withOpacity(0.08),
-   blurRadius: 14,
-   offset:     const Offset(0, 6),
-   ),
-   ],
-   ),
-   child: Column(
-   children: [
-   Expanded(
-   child: Container(
-   width:  double.infinity,
-   margin: EdgeInsets.all(10.r),
-   decoration: BoxDecoration(
-   color:        c.textField,
-   borderRadius: BorderRadius.circular(14.r),
-   ),
-   clipBehavior: Clip.antiAlias,
-   child: Padding(
-   padding: EdgeInsets.all(8.r),
-   child: brandNetworkImage(brand, c),
-   ),
-   ),
-   ),
-   Padding(
-   padding: EdgeInsets.fromLTRB(8.w, 0, 8.w, 10.h),
-   child: Text(
-   name,
-   textAlign: TextAlign.center,
-   maxLines:  1,
-   overflow:  TextOverflow.ellipsis,
-   style: TextStyle(
-   fontSize:   11.sp,
-   fontWeight: FontWeight.w700,
-   color:      c.bodyText,
-   ),
-   ),
-   ),
-   ],
-   ),
-   );
-   }
+Widget brandWidget({
+  required BuildContext context,
+  required BrandDataDataEntity brand,
+  required AppColors c,
+}) {
+  final name = localizedEnAr(
+    context: context,
+    nameEn:  brand.nameEn,
+    nameAr:  brand.nameAr,
+  );
+
+  return Container(
+    width: 108.w,
+    decoration: BoxDecoration(
+      color:        c.card,
+      borderRadius: BorderRadius.circular(20.r),
+      boxShadow: [
+        BoxShadow(
+          color:      c.main.withOpacity(0.08),
+          blurRadius: 14,
+          offset:     const Offset(0, 6),
+        ),
+      ],
+    ),
+    child: Column(
+      children: [
+        Expanded(
+          child: Container(
+            width:  double.infinity,
+            margin: EdgeInsets.all(10.r),
+            decoration: BoxDecoration(
+              color:        c.textField,
+              borderRadius: BorderRadius.circular(14.r),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Padding(
+              padding: EdgeInsets.all(8.r),
+              child: brandNetworkImage(brand, c),
+            ),
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(8.w, 0, 8.w, 10.h),
+          child: Text(
+            name,
+            textAlign: TextAlign.center,
+            maxLines:  1,
+            overflow:  TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize:   11.sp,
+              fontWeight: FontWeight.w700,
+              color:      c.bodyText,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
 Widget getErrorView({
-  required BuildContext  context,
-  required String?       message,
-  required AppColors     c,
-  required VoidCallback  onRetry,
+  required BuildContext context,
+  required String?      message,
+  required AppColors    c,
+  required VoidCallback onRetry,
 }) =>
     Center(
       child: Column(
@@ -1493,8 +2447,10 @@ Widget getErrorView({
           SizedBox(height: 12.h),
           Text(
             message ?? 'something_went_wrong'.tr(),
-            style:
-            Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.hint),
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(color: c.hint),
           ),
           SizedBox(height: 16.h),
           ElevatedButton(

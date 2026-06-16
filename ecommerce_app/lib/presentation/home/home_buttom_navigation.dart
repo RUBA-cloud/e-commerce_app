@@ -1,3 +1,5 @@
+// lib/presentation/home/button_home_navigation_screen.dart
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/constant/app_theme.dart';
 import 'package:ecommerce_app/presentation/home/chat_screen.dart';
@@ -7,6 +9,7 @@ import 'package:ecommerce_app/presentation/home_screen.dart';
 import 'package:ecommerce_app/services/cart/cart_cubit.dart';
 import 'package:ecommerce_app/services/home/home_cubit.dart';
 import 'package:ecommerce_app/services/home/home_state.dart';
+import 'package:ecommerce_app/services/profile/profile_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -30,7 +33,8 @@ class _ButtonHomeNavigationScreenState
     extends State<ButtonHomeNavigationScreen> {
   late HomeCubit homeCubit;
 
-  // ✅ Declare screens as a late list, initialized after homeCubit is ready
+  // Screens initialized after homeCubit is ready.
+  // All 4 always present — IndexedStack needs a fixed length.
   late final List<Widget> _screens;
 
   @override
@@ -38,7 +42,6 @@ class _ButtonHomeNavigationScreenState
     super.initState();
     homeCubit = HomeCubit()..loadHome();
 
-    // ✅ All 4 screens always present — no conditionals — IndexedStack needs fixed length
     _screens = [
       BlocProvider.value(
         value: homeCubit,
@@ -49,7 +52,10 @@ class _ButtonHomeNavigationScreenState
         child: const CartScreen(),
       ),
       const ChatScreen(),
-      const ProfileScreen(),
+      BlocProvider(
+        create: (_) => ProfileCubit(),
+        child: const ProfileScreen(),
+      ),
     ];
   }
 
@@ -65,13 +71,13 @@ class _ButtonHomeNavigationScreenState
 
     return BlocBuilder<HomeCubit, HomeState>(
       bloc: homeCubit,
-      buildWhen: (prev, curr) {
-        final prevTab = prev is HomeLoaded ? prev.selectedTab : 0;
-        final currTab = curr is HomeLoaded ? curr.selectedTab : 0;
-        return prevTab != currTab;
-      },
+      // FIX: the old buildWhen mapped any non-HomeLoaded state to tab 0,
+      // so emitting HomeFilterLoading or HomeFailed while you were on the
+      // cart/profile tab made the UI jump back to the home tab.
+      // The cubit's `selectedTab` field is the single source of truth, so
+      // we just rebuild on every state and read it directly.
       builder: (context, state) {
-        final selectedTab = state is HomeLoaded ? state.selectedTab : 0;
+        final selectedTab = homeCubit.selectedTab;
 
         return Scaffold(
           backgroundColor: c.textField,
@@ -91,36 +97,35 @@ class _ButtonHomeNavigationScreenState
 
     final items = [
       {
-        'icon': Icons.home_outlined,
+        'icon':   Icons.home_outlined,
         'active': Icons.home_rounded,
-        'label': 'home'.tr(),
+        'label':  'home'.tr(),
       },
       {
-        'icon': Icons.shopping_bag_outlined,
+        'icon':   Icons.shopping_bag_outlined,
         'active': Icons.shopping_bag_rounded,
-        'label': 'cart'.tr(),
+        'label':  'cart'.tr(),
       },
       {
-        'icon': Icons.chat_outlined,
+        'icon':   Icons.chat_outlined,
         'active': Icons.chat_rounded,
-        'label': 'chat'.tr(),
+        'label':  'chat'.tr(),
       },
       {
-        'icon': Icons.person_outline,
+        'icon':   Icons.person_outline,
         'active': Icons.person_rounded,
-        'label': 'profile'.tr(),
+        'label':  'profile'.tr(),
       },
     ];
 
-    // ✅ Completed bottom nav implementation
     return Container(
       decoration: BoxDecoration(
         color: c.textField,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color:      Colors.black.withOpacity(0.08),
             blurRadius: 12,
-            offset: const Offset(0, -2),
+            offset:     const Offset(0, -2),
           ),
         ],
       ),
@@ -137,7 +142,15 @@ class _ButtonHomeNavigationScreenState
               final label = items[index]['label'] as String;
 
               return GestureDetector(
-                onTap: () => homeCubit.homeTabChange(index),
+                // FIX: the cubit's homeTabChange now emits again (it was
+                // commented out, so taps did nothing). The extra setState
+                // is a safety net: it keeps the nav responsive even if the
+                // home data failed to load (in that case the cubit can't
+                // emit HomeLoaded, but the IndexedStack should still switch).
+                onTap: () {
+                  homeCubit.homeTabChange(index);
+                  setState(() {});
+                },
                 behavior: HitTestBehavior.opaque,
                 child: SizedBox(
                   width: 70.w,
@@ -146,7 +159,7 @@ class _ButtonHomeNavigationScreenState
                     children: [
                       Icon(
                         icon,
-                        size: 24.sp,
+                        size:  24.sp,
                         color: isSelected ? c.main : c.hint,
                       ),
                       SizedBox(height: 4.h),
@@ -154,10 +167,9 @@ class _ButtonHomeNavigationScreenState
                         label,
                         style: TextStyle(
                           fontSize: 10.sp,
-                          color: isSelected ? c.main : c.hint,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
+                          color:    isSelected ? c.main : c.hint,
+                          fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w400,
                         ),
                       ),
                     ],

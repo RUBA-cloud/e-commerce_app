@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/constant/app_theme.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
 import 'package:ecommerce_app/data/model/response/carts/carts_entity.dart';
+import 'package:ecommerce_app/presentation/cart/checkout_order/address.dart';
 import 'package:ecommerce_app/presentation/home/widgets/app_network_image.dart';
 import 'package:ecommerce_app/presentation/home/widgets/home_shared.dart';
 import 'package:ecommerce_app/services/cart/cart_cubit.dart';
@@ -33,20 +34,37 @@ class _CartScreenState extends State<CartScreen> with UiUtility {
 
     return BlocConsumer<CartCubit, CartState>(
       listener: (context, state) {
+        // ── Step 1: go to address screen ──────────────────────────────────
+        if (state is CartGoToAddressCheckout) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BlocProvider.value(
+                value: cartCubit,
+                child: AddressPage(cartItems: state.cart.data
+                    ?.whereType<CartsDataEntity>()
+                    .toList() ?? []),
+              ),
+            ),
+          );
+        }
+
         if (state is CartFailed) {
-          showSnackBar(context: context, message: state.message ?? 'error'.tr());
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message ?? 'error'.tr())),
+          );
         }
       },
       builder: (context, state) {
         final cubit = context.read<CartCubit>();
-        final isBusy = state is CartActionLoading;
-        final cart = state is CartLoaded
-            ? state.cart
-            : state is CartActionLoading
-            ? state.cart
-            : cubit.currentCart;
 
-        // ✅ safe access on nullable data list
+        final cart = switch (state) {
+          CartLoaded() => state.cart,
+          CartActionLoading() => state.cart,
+          _ => cubit.currentCart,
+        };
+
+        final isBusy = state is CartActionLoading;
         final items = cart?.data?.whereType<CartsDataEntity>().toList() ?? [];
 
         return Scaffold(
@@ -54,10 +72,10 @@ class _CartScreenState extends State<CartScreen> with UiUtility {
           body: SafeArea(
             child: Column(
               children: [
-                _header(c, cubit, state),
+                _header(c, cubit),
                 Expanded(
                   child: state is CartLoading
-                      ? Center(child: CircularProgressIndicator(color: c.main))
+                      ? Center(child: CircularProgressIndicator.adaptive())
                       : items.isNotEmpty
                       ? _cartBody(context, c, cubit, items, isBusy)
                       : _emptyState(c, cubit),
@@ -70,7 +88,9 @@ class _CartScreenState extends State<CartScreen> with UiUtility {
     );
   }
 
-  Widget _header(AppColors c, CartCubit cubit, CartState state) {
+  // ── Header ────────────────────────────────────────────────────────────────
+
+  Widget _header(AppColors c, CartCubit cubit) {
     final count = cubit.itemCount;
     return Padding(
       padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 8.h),
@@ -83,25 +103,21 @@ class _CartScreenState extends State<CartScreen> with UiUtility {
               gradient: LinearGradient(colors: [c.main, c.sub]),
               borderRadius: BorderRadius.circular(16.r),
             ),
-            child: Icon(Icons.shopping_cart_rounded, color: c.buttonText, size: 26.r),
+            child: Icon(Icons.shopping_cart_rounded,
+                color: c.buttonText, size: 26.r),
           ),
           SizedBox(width: 14.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'my_cart'.tr(),
-                  style: TextStyle(
-                    fontSize: 22.sp,
-                    fontWeight: FontWeight.w800,
-                    color: c.bodyText,
-                  ),
-                ),
-                Text(
-                  '$count ${'items'.tr()}',
-                  style: TextStyle(fontSize: 12.sp, color: c.hint),
-                ),
+                Text('my_cart'.tr(),
+                    style: TextStyle(
+                        fontSize: 22.sp,
+                        fontWeight: FontWeight.w800,
+                        color: c.bodyText)),
+                Text('$count ${'items'.tr()}',
+                    style: TextStyle(fontSize: 12.sp, color: c.hint)),
               ],
             ),
           ),
@@ -113,6 +129,8 @@ class _CartScreenState extends State<CartScreen> with UiUtility {
       ),
     );
   }
+
+  // ── Cart body ─────────────────────────────────────────────────────────────
 
   Widget _cartBody(
       BuildContext context,
@@ -128,28 +146,43 @@ class _CartScreenState extends State<CartScreen> with UiUtility {
           onRefresh: cubit.loadCart,
           child: ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
+                parent: BouncingScrollPhysics()),
             padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 200.h),
             itemCount: items.length,
             separatorBuilder: (_, __) => SizedBox(height: 12.h),
-            itemBuilder: (_, i) => _CartItemCard(
-              item: items[i],
-              colors: c,
-              onIncrement: () => cubit.updateQuantity(
-                items[i],
-                (items[i].quantity ?? 0) + 1,  // ✅ null-safe
-              ),
-              onDecrement: () {
-                final qty = items[i].quantity ?? 0;
-                if (qty > 1) {
-                  cubit.updateQuantity(items[i], qty - 1);
-                } else {
-                  cubit.removeItem(items[i].id);
-                }
-              },
-              onDelete: () => cubit.removeItem(items[i].id),
-            ),
+            itemBuilder: (_, i) {
+              final item = items[i];
+              return Dismissible(
+                key: ValueKey(item.id),
+                direction: DismissDirection.endToStart,
+                confirmDismiss: (_) => cubit.removeItem(item.id),
+                background: Container(
+                  alignment: Alignment.centerRight,
+                  padding: EdgeInsets.only(right: 20.w),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade400,
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                  child: Icon(Icons.delete_outline_rounded,
+                      color: Colors.white, size: 28.r),
+                ),
+                child: _CartItemCard(
+                  item: item,
+                  colors: c,
+                  onIncrement: () =>
+                      cubit.updateQuantity(item, (item.quantity ?? 0) + 1),
+                  onDecrement: () {
+                    final qty = item.quantity ?? 0;
+                    if (qty > 1) {
+                      cubit.updateQuantity(item, qty - 1);
+                    } else {
+                      cubit.removeItem(item.id);
+                    }
+                  },
+                  onDelete: () => cubit.removeItem(item.id),
+                ),
+              );
+            },
           ),
         ),
         Positioned(
@@ -169,6 +202,8 @@ class _CartScreenState extends State<CartScreen> with UiUtility {
     );
   }
 
+  // ── Summary dock ─────────────────────────────────────────────────────────
+
   Widget _summaryDock(AppColors c, CartCubit cubit) {
     final subtotal = cubit.subtotal;
     const shipping = 0.0;
@@ -181,13 +216,13 @@ class _CartScreenState extends State<CartScreen> with UiUtility {
         borderRadius: BorderRadius.circular(24.r),
         boxShadow: [
           BoxShadow(
-            color: c.main.withOpacity(0.12),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
+              color: c.main.withOpacity(0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 8)),
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           _summaryRow('subtotal'.tr(), subtotal, c),
           SizedBox(height: 6.h),
@@ -195,8 +230,9 @@ class _CartScreenState extends State<CartScreen> with UiUtility {
           Divider(height: 20.h, color: c.hint.withOpacity(0.15)),
           _summaryRow('total'.tr(), total, c, bold: true),
           SizedBox(height: 14.h),
+          // ✅ Checkout button triggers Step 1
           GestureDetector(
-            onTap: () {},
+            onTap: cubit.goToCheckout,
             child: Container(
               height: 52.h,
               width: double.infinity,
@@ -205,13 +241,21 @@ class _CartScreenState extends State<CartScreen> with UiUtility {
                 borderRadius: BorderRadius.circular(16.r),
               ),
               alignment: Alignment.center,
-              child: Text(
-                'checkout'.tr(),
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w800,
-                  color: c.buttonText,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.shopping_bag_outlined,
+                      color: c.buttonText, size: 18.r),
+                  SizedBox(width: 8.w),
+                  Text(
+                    'checkout'.tr(),
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w800,
+                      color: c.buttonText,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -230,25 +274,23 @@ class _CartScreenState extends State<CartScreen> with UiUtility {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: bold ? 15.sp : 13.sp,
-            fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
-            color: muted ? c.hint : c.bodyText,
-          ),
-        ),
+        Text(label,
+            style: TextStyle(
+                fontSize: bold ? 15.sp : 13.sp,
+                fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
+                color: muted ? c.hint : c.bodyText)),
         Text(
           '\$${amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2)}',
           style: TextStyle(
-            fontSize: bold ? 18.sp : 14.sp,
-            fontWeight: bold ? FontWeight.w900 : FontWeight.w600,
-            color: bold ? c.main : c.bodyText,
-          ),
+              fontSize: bold ? 18.sp : 14.sp,
+              fontWeight: bold ? FontWeight.w900 : FontWeight.w600,
+              color: bold ? c.main : c.bodyText),
         ),
       ],
     );
   }
+
+  // ── Empty state ───────────────────────────────────────────────────────────
 
   Widget _emptyState(AppColors c, CartCubit cubit) {
     return Center(
@@ -261,31 +303,23 @@ class _CartScreenState extends State<CartScreen> with UiUtility {
               width: 100.r,
               height: 100.r,
               decoration: BoxDecoration(
-                color: c.main.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.shopping_cart_outlined, size: 48.r, color: c.main),
+                  color: c.main.withOpacity(0.1), shape: BoxShape.circle),
+              child: Icon(Icons.shopping_cart_outlined,
+                  size: 48.r, color: c.main),
             ),
             SizedBox(height: 20.h),
-            Text(
-              'cart_empty'.tr(),
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w700,
-                color: c.bodyText,
-              ),
-            ),
+            Text('cart_empty'.tr(),
+                style: TextStyle(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w700,
+                    color: c.bodyText)),
             SizedBox(height: 8.h),
-            Text(
-              'cart_empty_hint'.tr(),
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13.sp, color: c.hint),
-            ),
+            Text('cart_empty_hint'.tr(),
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13.sp, color: c.hint)),
             SizedBox(height: 24.h),
             ElevatedButton(
-              onPressed: cubit.loadCart,
-              child: Text('retry'.tr()),
-            ),
+                onPressed: cubit.loadCart, child: Text('retry'.tr())),
           ],
         ),
       ),
@@ -293,9 +327,9 @@ class _CartScreenState extends State<CartScreen> with UiUtility {
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 // CART ITEM CARD
-// ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 class _CartItemCard extends StatelessWidget {
   const _CartItemCard({
@@ -312,11 +346,19 @@ class _CartItemCard extends StatelessWidget {
   final VoidCallback onDecrement;
   final VoidCallback onDelete;
 
+  Color _hexToColor(String? hex) {
+    if (hex == null || hex.isEmpty) return Colors.transparent;
+    try {
+      return Color(int.parse(hex.replaceFirst('#', '0xFF')));
+    } catch (_) {
+      return Colors.transparent;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = colors;
 
-    // ✅ all nullable-safe accesses
     final name = localizedEnAr(
       context: context,
       nameEn: item.product?.nameEn ?? '',
@@ -329,113 +371,132 @@ class _CartItemCard extends StatelessWidget {
     );
     final unitPrice = double.tryParse(item.product?.price ?? '0') ?? 0;
     final sizeExtra = (item.size?.price ?? 0).toDouble();
-    final lineTotal = (unitPrice + sizeExtra) * (item.quantity ?? 0);
+    final qty = item.quantity ?? 0;
+    final lineTotal = (unitPrice + sizeExtra) * qty;
 
-    return Dismissible(
-      key: ValueKey(item.id),
-      direction: DismissDirection.endToStart,
-      onDismissed: (_) => onDelete(),
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: EdgeInsets.only(right: 20.w),
-        decoration: BoxDecoration(
-          color: Colors.red.shade400,
-          borderRadius: BorderRadius.circular(20.r),
-        ),
-        child: Icon(Icons.delete_outline_rounded, color: Colors.white, size: 28.r),
-      ),
-      child: Container(
-        padding: EdgeInsets.all(12.r),
-        decoration: BoxDecoration(
-          color: c.card,
-          borderRadius: BorderRadius.circular(20.r),
-          boxShadow: [
-            BoxShadow(
+    final colorHex = item.color;
+    final parsedColor = _hexToColor(colorHex);
+    final hasColor = colorHex != null && colorHex.isNotEmpty;
+
+    return Container(
+      padding: EdgeInsets.all(12.r),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
               color: c.hint.withOpacity(0.08),
               blurRadius: 12,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Image
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14.r),
+            child: SizedBox(
+              width: 88.r,
+              height: 88.r,
+              child: AppNetworkImage(
+                  url: item.product?.mainImage ?? '', fit: BoxFit.cover),
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(14.r),
-              child: SizedBox(
-                width: 88.r,
-                height: 88.r,
-                child: AppNetworkImage(
-                  url: item.product?.mainImage ?? '',  // ✅ null-safe
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
+          ),
+          SizedBox(width: 12.w),
+
+          // Details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w700,
-                      color: c.bodyText,
-                    ),
-                  ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    '$sizeName · ${item.color ?? ''}',  // ✅ null-safe
-                    style: TextStyle(fontSize: 11.sp, color: c.hint),
-                  ),
-                  SizedBox(height: 8.h),
-                  Text(
-                    '\$${lineTotal.toStringAsFixed(lineTotal % 1 == 0 ? 0 : 2)}',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w800,
-                      color: c.main,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Column(
-              children: [
-                GestureDetector(
-                  onTap: onDelete,
-                  child: Icon(Icons.close_rounded, size: 20.r, color: c.hint),
-                ),
-                SizedBox(height: 12.h),
-                Container(
-                  decoration: BoxDecoration(
-                    color: c.textField,
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  child: Row(
-                    children: [
-                      _qtyBtn(Icons.remove, onDecrement, c),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 10.w),
-                        child: Text(
-                          '${item.quantity ?? 0}',  // ✅ null-safe
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w800,
-                            color: c.bodyText,
-                          ),
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w700,
+                        color: c.bodyText)),
+                SizedBox(height: 6.h),
+                Row(
+                  children: [
+                    if (sizeName.isNotEmpty)
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 8.w, vertical: 3.h),
+                        decoration: BoxDecoration(
+                          color: c.main.withOpacity(0.09),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Text(sizeName,
+                            style: TextStyle(
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w600,
+                                color: c.main)),
+                      ),
+                    if (sizeName.isNotEmpty && hasColor) SizedBox(width: 6.w),
+                    if (hasColor)
+                      Container(
+                        width: 18.r,
+                        height: 18.r,
+                        decoration: BoxDecoration(
+                          color: parsedColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: c.hint.withOpacity(0.25), width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                                color: parsedColor.withOpacity(0.40),
+                                blurRadius: 4,
+                                spreadRadius: 0.5),
+                          ],
                         ),
                       ),
-                      _qtyBtn(Icons.add, onIncrement, c),
-                    ],
-                  ),
+                  ],
+                ),
+                SizedBox(height: 8.h),
+                Text(
+                  '\$${lineTotal.toStringAsFixed(lineTotal % 1 == 0 ? 0 : 2)}',
+                  style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w800,
+                      color: c.main),
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+
+          // Actions
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                  onTap: onDelete,
+                  child:
+                  Icon(Icons.close_rounded, size: 20.r, color: c.hint)),
+              SizedBox(height: 12.h),
+              Container(
+                decoration: BoxDecoration(
+                    color: c.textField,
+                    borderRadius: BorderRadius.circular(12.r)),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _qtyBtn(Icons.remove, onDecrement, c),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10.w),
+                      child: Text('$qty',
+                          style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w800,
+                              color: c.bodyText)),
+                    ),
+                    _qtyBtn(Icons.add, onIncrement, c),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -447,9 +508,8 @@ class _CartItemCard extends StatelessWidget {
         width: 32.r,
         height: 32.r,
         decoration: BoxDecoration(
-          color: c.main.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(10.r),
-        ),
+            color: c.main.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(10.r)),
         child: Icon(icon, size: 16.r, color: c.main),
       ),
     );

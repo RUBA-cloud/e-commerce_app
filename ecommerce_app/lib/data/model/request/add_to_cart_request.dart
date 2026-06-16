@@ -1,5 +1,6 @@
 class AddToCartRequest {
   final String productId;
+  final String color;
   final int quantity;
   final int sizeId;
 
@@ -7,6 +8,7 @@ class AddToCartRequest {
     required this.productId,
     required this.quantity,
     required this.sizeId,
+    required this.color
   });
 
   Map<String, dynamic> toJson() {
@@ -14,6 +16,7 @@ class AddToCartRequest {
       "product_id": productId,
       "quantity": quantity,
       "size_id": sizeId,
+      "color": color
     };
   }
 }

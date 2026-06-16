@@ -123,6 +123,7 @@ class CategoriesDataDataProductsEntity {
 
   factory CategoriesDataDataProductsEntity.fromJson(Map<String, dynamic> json) =>
       _$CategoriesDataDataProductsEntityFromJson(json);
+
   Map<String, dynamic> toJson() => _$CategoriesDataDataProductsEntityToJson(this);
 }
 
