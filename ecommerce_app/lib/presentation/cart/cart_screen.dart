@@ -3,7 +3,6 @@ import 'package:ecommerce_app/constant/app_theme.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
 import 'package:ecommerce_app/data/model/response/carts/carts_entity.dart';
 import 'package:ecommerce_app/presentation/cart/checkout_order/address.dart';
-import 'package:ecommerce_app/presentation/home/widgets/app_network_image.dart';
 import 'package:ecommerce_app/presentation/home/widgets/home_shared.dart';
 import 'package:ecommerce_app/services/cart/cart_cubit.dart';
 import 'package:ecommerce_app/services/cart/cart_state.dart';
@@ -398,8 +397,8 @@ class _CartItemCard extends StatelessWidget {
             child: SizedBox(
               width: 88.r,
               height: 88.r,
-              child: AppNetworkImage(
-                  url: item.product?.mainImage ?? '', fit: BoxFit.cover),
+              // child: AppNetworkImage(
+              //     url: item.product?.mainImage ?? '', fit: BoxFit.cover),
             ),
           ),
           SizedBox(width: 12.w),

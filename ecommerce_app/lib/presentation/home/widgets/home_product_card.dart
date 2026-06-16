@@ -3,7 +3,6 @@
 import 'package:ecommerce_app/constant/app_theme.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
 import 'package:ecommerce_app/data/model/response/carts/categories_entity.dart';
-import 'package:ecommerce_app/presentation/home/widgets/app_network_image.dart';
 import 'package:ecommerce_app/presentation/home/widgets/home_shared.dart';
 import 'package:ecommerce_app/presentation/product_details.dart';
 import 'package:ecommerce_app/services/product_details/product_details_cubit.dart';
@@ -150,15 +149,15 @@ class _HomeProductCardState extends State<HomeProductCard> with UiUtility {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    AppNetworkImage(
-                      url:         p.mainImage,
-                      fit:         BoxFit.cover,
-                      placeholder: HomeProductPlaceholder(
-                        colors:    c,
-                        accentBg:  accentBg,
-                        accent:    accent,
-                      ),
-                    ),
+                    // AppNetworkImage(
+                    //   url:         p.mainImage,
+                    //   fit:         BoxFit.cover,
+                    //   placeholder: HomeProductPlaceholder(
+                    //     colors:    c,
+                    //     accentBg:  accentBg,
+                    //     accent:    accent,
+                    //   ),
+                    // ),
                     // Gradient overlay
                     Positioned(
                       left: 0, right: 0, bottom: 0,

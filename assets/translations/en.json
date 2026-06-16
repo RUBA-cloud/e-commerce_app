@@ -108,7 +108,7 @@
   "logout_confirm": "Are you sure you want to log out?",
   "logout_failed": "Logout failed. Please try again.",
   "payment_options": "Payment Options",
-  "chang_password": "Change Password",
+  "change_password": "Change Password",
   "edit_profile": "Edit Profile",
   "orders": "Orders",
   "wishlist": "Wishlist",

@@ -49,18 +49,25 @@ class _AppRootState extends State<AppRoot> with UiUtility {
 
   @override
   Widget build(BuildContext context) {
+    // FIX: ScreenUtilInit must wrap MaterialApp so .sp/.w/.h work everywhere.
+    // EasyLocalization's context is AppRoot's context — read locale HERE,
+    // before any nested builder, so MaterialApp always gets the live locale.
+    final locale             = context.locale;
+    final delegates          = context.localizationDelegates;
+    final supportedLocales   = context.supportedLocales;
+
     return ScreenUtilInit(
       designSize: const Size(375, 812),
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (ctx, child) {
         return BlocListener<AppMainCubit, AppMainState>(
-          listenWhen: (previous, current) => current is CompanyInfoUpdated,
+          listenWhen: (_, current) => current is CompanyInfoUpdated,
           listener: (context, state) {
             AppMainCubit.get(context).subscribePusher();
           },
           child: BlocBuilder<AppMainCubit, AppMainState>(
-            buildWhen: (previous, current) => _isRoutable(current),
+            buildWhen: (_, current) => _isRoutable(current),
             builder: (context, state) {
               final effective =
               _isRoutable(state) ? state : _lastRoutableState;
@@ -71,23 +78,21 @@ class _AppRootState extends State<AppRoot> with UiUtility {
               final theme        = buildTheme(companyColor);
               final darkTheme    =
               buildTheme(companyColor, brightness: Brightness.dark);
-              final Widget home  = _resolveHome(effective);
 
               return MaterialApp(
                 debugShowCheckedModeBanner: false,
                 title: 'Ecommerce App',
-                localizationsDelegates: context.localizationDelegates,
-                supportedLocales:       context.supportedLocales,
-                // FIX: always read locale from EasyLocalization context,
-                // not cached — this ensures every MaterialApp rebuild picks
-                // up the latest locale immediately.
-                locale:   context.locale,
-                theme:    theme,
-                darkTheme: darkTheme,
+                // FIX: use locale captured from EasyLocalization context above,
+                // not from BlocBuilder's ctx which may not have EasyLocalization
+                // as a direct ancestor after the restructure.
+                localizationsDelegates: delegates,
+                supportedLocales:       supportedLocales,
+                locale:                 locale,
+                theme:                  theme,
+                darkTheme:              darkTheme,
                 themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-                home: home,
-                builder: (context, child) =>
-                child ?? const SizedBox.shrink(),
+                home:      _resolveHome(effective),
+                builder: (_, child) => child ?? const SizedBox.shrink(),
               );
             },
           ),
@@ -99,7 +104,6 @@ class _AppRootState extends State<AppRoot> with UiUtility {
   Widget _resolveHome(AppMainState? state) {
     if (state is UserNotSignedIn) {
       return BlocProvider(
-        // FIX: stable key prevents re-creation on locale change rebuilds
         key: const ValueKey('login'),
         create: (_) => LoginCubit(),
         child: const LoginScreen(),
@@ -108,7 +112,6 @@ class _AppRootState extends State<AppRoot> with UiUtility {
 
     if (state is CompanyInfoLoaded || state is CompanyInfoUpdated) {
       final isSignedIn = state is UserAlreadySigned;
-
       if (isSignedIn) {
         return BlocProvider(
           key: const ValueKey('home'),
@@ -116,7 +119,6 @@ class _AppRootState extends State<AppRoot> with UiUtility {
           child: const ButtonHomeNavigationScreen(),
         );
       }
-
       return BlocProvider(
         key: const ValueKey('login'),
         create: (_) => LoginCubit(),

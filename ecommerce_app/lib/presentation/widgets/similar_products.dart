@@ -4,7 +4,6 @@ import 'package:ecommerce_app/constant/app_theme.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
 import 'package:ecommerce_app/data/model/response/carts/categories_entity.dart';
 import 'package:ecommerce_app/data/model/response/similar_product_entity_entity.dart';
-import 'package:ecommerce_app/presentation/home/widgets/app_network_image.dart';
 import 'package:ecommerce_app/presentation/home/widgets/home_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -141,7 +140,7 @@ class _ProductCard extends StatelessWidget with UiUtility {
                   child: Icon(Icons.shopping_bag_outlined,
                       size: 40.r, color: c.main.withOpacity(0.30)),
                 )
-                    : AppNetworkImage(url: image, fit: BoxFit.cover),
+                    : Text("data")
               ),
             ),
             Padding(

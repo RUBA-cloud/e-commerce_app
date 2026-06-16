@@ -2,7 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/constant/app_theme.dart';
 import 'package:ecommerce_app/core/utility/image_url_helper.dart';
 import 'package:ecommerce_app/data/model/response/brand_entity.dart';
-import 'package:ecommerce_app/presentation/home/widgets/app_network_image.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -23,11 +23,7 @@ Widget brandNetworkImage(BrandDataDataEntity brand, AppColors c) {
     image: brand.image,
 
   );
-  return AppNetworkImage(
-    url: url,
-    fit: BoxFit.contain,
-    placeholder: _BrandPlaceholder(c: c),
-  );
+  return SizedBox();
 }
 
 class SeeAllScaffold extends StatelessWidget {

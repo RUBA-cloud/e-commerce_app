@@ -2,7 +2,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/constant/app_theme.dart';
 import 'package:ecommerce_app/data/model/response/carts/categories_entity.dart';
 import 'package:ecommerce_app/presentation/home/see_all_products_screen.dart';
-import 'package:ecommerce_app/presentation/home/widgets/app_network_image.dart';
 import 'package:ecommerce_app/presentation/home/widgets/home_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -226,13 +225,13 @@ class _CategoryTile extends StatelessWidget {
                     ),
                   ),
                   clipBehavior: Clip.antiAlias,
-                  child: cat.image != null
-                      ? AppNetworkImage(
-                    url: cat.image.toString(),
-                    fit: BoxFit.cover,
-                    placeholder: _placeholder(c, selected),
-                  )
-                      : _placeholder(c, selected),
+                  // child: cat.image != null
+                  //     ? AppNetworkImage(
+                  //   url: cat.image.toString(),
+                  //   fit: BoxFit.cover,
+                  //   placeholder: _placeholder(c, selected),
+                  // )
+                  //     : _placeholder(c, selected),
                 ),
                 // item count badge
                 Positioned(

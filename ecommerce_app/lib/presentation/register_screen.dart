@@ -1,8 +1,9 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
 import 'package:ecommerce_app/data/model/request/register_request.dart';
-import 'package:ecommerce_app/presentation/login_screen.dart';
-import 'package:ecommerce_app/presentation/verify_email_screen.dart';
+import 'package:ecommerce_app/presentation/auth/login_screen.dart';
+import 'package:ecommerce_app/presentation/auth/verify_email_screen.dart';
+
 import 'package:ecommerce_app/presentation/widgets/basic_form_filed.dart';
 import 'package:ecommerce_app/services/company_info/company_info_cubit.dart';
 import 'package:ecommerce_app/services/company_info/company_info_state.dart';

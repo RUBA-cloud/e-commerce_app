@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../constant/app_theme.dart';
-import '../home/widgets/app_network_image.dart' show AppNetworkImage;
 import '../home/widgets/home_shared.dart';
 
 class CategoryCard extends StatelessWidget {
@@ -70,15 +69,8 @@ class CategoryCard extends StatelessWidget {
                       ),
                       clipBehavior: Clip.antiAlias,
                       child: cat.image != null
-                          ? AppNetworkImage(
-                        url: cat.image.toString(),
-                        fit: BoxFit.cover,
-                        placeholder: Icon(
-                          Icons.category_rounded,
-                          size:  28.r,
-                          color: selected ? c.main : c.hint,
-                        ),
-                      )
+                          ? Text("data")
+
                           : Icon(
                         Icons.category_rounded,
                         size:  28.r,
