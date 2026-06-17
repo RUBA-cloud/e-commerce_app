@@ -92,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ? getErrorView(
                         context: context,
                         message: state.message,
-                        c:       c,
+
                         onRetry: cubit.loadHome,
                       )
                           : RefreshIndicator(

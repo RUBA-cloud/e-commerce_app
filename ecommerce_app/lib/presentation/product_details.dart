@@ -3,7 +3,6 @@ import 'package:ecommerce_app/constant/app_theme.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
 import 'package:ecommerce_app/data/model/response/carts/categories_entity.dart';
 import 'package:ecommerce_app/presentation/home/home_buttom_navigation.dart';
-import 'package:ecommerce_app/presentation/home/widgets/app_network_image.dart';
 import 'package:ecommerce_app/presentation/home/widgets/home_shared.dart';
 import 'package:ecommerce_app/presentation/widgets/similar_products.dart';
 import 'package:ecommerce_app/services/product_details/product_details_cubit.dart';
@@ -129,11 +128,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
               controller: controller,
               onPageChanged: cubit.imageChanged,
               itemCount: urls.length,
-              itemBuilder: (_, i) => AppNetworkImage(
-                url: urls[i],
-                fit: BoxFit.contain,
-                placeholder: _emptyGallery(c),
-              ),
+              itemBuilder: (_, i) =>SizedBox(),
             ),
           ),
           Positioned.fill(
@@ -233,8 +228,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12.r),
-                          child: AppNetworkImage(
-                              url: urls[i], fit: BoxFit.cover),
+                          child:SizedBox()
                         ),
                       ),
                     );

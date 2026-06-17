@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:ecommerce_app/core/utility/ui_utility.dart';
 import 'package:ecommerce_app/data/model/response/carts/company_branch_entity.dart';
 import 'package:ecommerce_app/services/profile/profile_cubit.dart';
 import 'package:ecommerce_app/services/profile/profile_state.dart';
@@ -16,7 +17,7 @@ class CompanyBranchesScreen extends StatefulWidget {
   State<CompanyBranchesScreen> createState() => _CompanyBranchesScreenState();
 }
 
-class _CompanyBranchesScreenState extends State<CompanyBranchesScreen> {
+class _CompanyBranchesScreenState extends State<CompanyBranchesScreen> with UiUtility {
   late ProfileCubit _cubit;
 
   @override
@@ -57,14 +58,18 @@ class _CompanyBranchesScreenState extends State<CompanyBranchesScreen> {
       return const _LoadingView();
     }
     if (state is ProfileBranchFailed) {
-      return _ErrorView(
+      return getErrorView(context: context,
         message: state.message,
-        onRetry: () => _cubit.loadBranches(),
-      );
+        onRetry: () => _cubit.loadBranches());
+
     }
+
+
+
+
     if (state is ProfileBranchLoaded) {
       final branches = state.companyBranchEntity.branches.data;
-      if (branches.isEmpty) return const _EmptyView();
+      if (branches.isEmpty) return  buildEmptyState(context: context, title: "no_branches".tr(), subtitle: "subtitle");
 
       return ListView.separated(
         physics:          const BouncingScrollPhysics(),
@@ -343,7 +348,7 @@ class _BranchCard extends StatelessWidget {
                           icon:  Icons.phone_outlined,
                           label: branch.phone!,
                         ),
-                      if (branch.email != null && branch.email!.isNotEmpty) ...[
+                      if (branch.email.isNotEmpty) ...[
                         SizedBox(height: 8.h),
                         _InfoRow(
                           icon:  Icons.email_outlined,
@@ -354,10 +359,8 @@ class _BranchCard extends StatelessWidget {
                       SizedBox(height: 12.h),
 
                       // Footer pills
-                      if ((branch.workingHoursFrom != null &&
-                          branch.workingHoursFrom!.isNotEmpty) ||
-                          (branch.workingDays != null &&
-                              branch.workingDays!.isNotEmpty))
+                      if ((branch.workingHoursFrom.isNotEmpty) ||
+                          (branch.workingDays.isNotEmpty))
                         _CardFooter(branch: branch),
 
                       SizedBox(height: 14.h),
@@ -565,127 +568,5 @@ class _LoadingView extends StatelessWidget {
       ),
     );
   }
-}
 
-// ─────────────────────────────────────────────────────────────
-// Error view
-// ─────────────────────────────────────────────────────────────
-class _ErrorView extends StatelessWidget {
-  final String?      message;
-  final VoidCallback onRetry;
-  const _ErrorView({this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 32.w),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width:  64.r, height: 64.r,
-              decoration: BoxDecoration(
-                color:        cs.error.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(20.r),
-                border:       Border.all(color: cs.error.withOpacity(0.20)),
-              ),
-              child: Icon(Icons.error_outline, size: 30.r, color: cs.error),
-            ),
-            SizedBox(height: 16.h),
-            Text(
-              message ?? 'something_went_wrong'.tr(),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14.sp,
-                color:    cs.onSurface.withOpacity(0.55),
-                height:   1.5,
-              ),
-            ),
-            SizedBox(height: 20.h),
-            GestureDetector(
-              onTap: onRetry,
-              child: Container(
-                padding: EdgeInsets.symmetric(
-                    horizontal: 24.w, vertical: 12.h),
-                decoration: BoxDecoration(
-                  color:        cs.primary.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12.r),
-                  border:       Border.all(color: cs.primary.withOpacity(0.30)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.refresh_rounded, size: 16.r, color: cs.primary),
-                    SizedBox(width: 8.w),
-                    Text(
-                      'retry'.tr(),
-                      style: TextStyle(
-                        fontSize:   14.sp,
-                        fontWeight: FontWeight.w600,
-                        color:      cs.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Empty view
-// ─────────────────────────────────────────────────────────────
-class _EmptyView extends StatelessWidget {
-  const _EmptyView();
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width:  72.r, height: 72.r,
-            decoration: BoxDecoration(
-              color:        cs.primary.withOpacity(0.07),
-              borderRadius: BorderRadius.circular(22.r),
-              border:       Border.all(color: cs.primary.withOpacity(0.15)),
-            ),
-            child: Icon(
-              Icons.store_outlined,
-              size:  34.r,
-              color: cs.primary.withOpacity(0.45),
-            ),
-          ),
-          SizedBox(height: 16.h),
-          Text(
-            'no_branches'.tr(),
-            style: TextStyle(
-              fontSize:   16.sp,
-              fontWeight: FontWeight.w700,
-              color:      cs.onSurface,
-            ),
-          ),
-          SizedBox(height: 6.h),
-          Text(
-            'no_branches_subtitle'.tr(),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13.sp,
-              color:    cs.onSurface.withOpacity(0.40),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

@@ -28,6 +28,80 @@ mixin UiUtility {
     }
   }
 
+  Widget buildEmptyState({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    IconData icon          = Icons.inventory_2_outlined,
+    String? buttonText,
+    VoidCallback? onAction,
+    Color? color,
+  }) {
+    final c = color ?? const Color(0xFF1D5D9B);
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 32.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width:  80.r,
+              height: 80.r,
+              decoration: BoxDecoration(
+                color:  c.withOpacity(0.08),
+                shape:  BoxShape.circle,
+                border: Border.all(color: c.withOpacity(0.2)),
+              ),
+              child: Icon(icon, size: 36.r, color: c),
+            ),
+            SizedBox(height: 20.h),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize:   18.sp,
+                fontWeight: FontWeight.w700,
+                color:      const Color(0xFF1A1A2E),
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13.sp,
+                color:    const Color(0xFF9E9E9E),
+                height:   1.5,
+              ),
+            ),
+            if (buttonText != null && onAction != null) ...[
+              SizedBox(height: 24.h),
+              SizedBox(
+                width:  double.infinity,
+                height: 48.h,
+                child: ElevatedButton.icon(
+                  onPressed: onAction,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: c,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14.r)),
+                  ),
+                  icon:  Icon(Icons.add, size: 18.r, color: Colors.white),
+                  label: Text(
+                    buttonText,
+                    style: TextStyle(
+                        fontSize:   14.sp,
+                        fontWeight: FontWeight.w700,
+                        color:      Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
   void navigateTo({
     required BuildContext context,
     required Widget page,
@@ -2292,6 +2366,101 @@ class _HexPainter extends CustomPainter {
 }
 
 // ── Trust Badges ──────────────────────────────────────────────────────────────
+class _HeroBanner extends StatelessWidget {
+  final String  name;
+  final String? image;
+
+  const _HeroBanner({required this.name, this.image});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs      = Theme.of(context).colorScheme;
+    final primary = cs.primary;
+    final second  = cs.surface;
+
+    return Container(
+      width:  double.infinity,
+      height: 220.h,
+      decoration: BoxDecoration(
+        // Fixed: gradient from theme colors instead of c.main / c.sub
+        gradient: LinearGradient(
+          colors: [primary, second],
+          begin:  Alignment.topLeft,
+          end:    Alignment.bottomRight,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -40.r, right: -40.r,
+            child: Container(
+              width: 180.r, height: 180.r,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.06),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -60.r, left: -30.r,
+            child: Container(
+              width: 160.r, height: 160.r,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.05),
+              ),
+            ),
+          ),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width:  80.r, height: 80.r,
+                  decoration: BoxDecoration(
+                    shape:  BoxShape.circle,
+                    color:  Colors.white.withOpacity(0.15),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3), width: 2,
+                    ),
+                    image: image != null && image!.isNotEmpty
+                        ? DecorationImage(
+                      image: NetworkImage(image!),
+                      fit:   BoxFit.cover,
+                    )
+                        : null,
+                  ),
+                  child: image == null || image!.isEmpty
+                      ? Icon(Icons.store_rounded,
+                      color: Colors.white, size: 38.r)
+                      : null,
+                ),
+                SizedBox(height: 14.h),
+                Text(
+                  name.isNotEmpty ? name : 'ShopNow',
+                  style: TextStyle(
+                    fontSize:      22.sp,
+                    fontWeight:    FontWeight.w800,
+                    color:         Colors.white,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Container(
+                  width:  40.w, height: 3.h,
+                  decoration: BoxDecoration(
+                    color:        Colors.white.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(2.r),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _TrustBadges extends StatelessWidget {
   const _TrustBadges({required this.c});
@@ -2436,21 +2605,20 @@ Widget brandWidget({
 Widget getErrorView({
   required BuildContext context,
   required String?      message,
-  required AppColors    c,
   required VoidCallback onRetry,
 }) =>
     Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.error_outline, size: 48.r, color: c.hint),
+          Icon(Icons.error_outline, size: 48.r, color: Theme.of(context).hintColor),
           SizedBox(height: 12.h),
           Text(
             message ?? 'something_went_wrong'.tr(),
             style: Theme.of(context)
                 .textTheme
                 .bodyMedium
-                ?.copyWith(color: c.hint),
+                ?.copyWith(color: Theme.of(context).hintColor),
           ),
           SizedBox(height: 16.h),
           ElevatedButton(
@@ -2523,6 +2691,138 @@ class SuccessCard extends StatelessWidget with UiUtility {
             radius:          14,
           ),
         ],
+      ),
+    );
+  }
+
+}
+class HeroBannerWidget extends StatelessWidget {
+  final String  name;
+  final String? image;
+  final String? tagline;
+  final VoidCallback? onTap;
+
+  const HeroBannerWidget({
+    super.key,
+    required this.name,
+    this.image,
+    this.tagline,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs      = Theme.of(context).colorScheme;
+    final primary = cs.primary;
+    final surface = cs.surface;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width:  double.infinity,
+        height: 220.h,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [primary, surface],
+            begin:  Alignment.topLeft,
+            end:    Alignment.bottomRight,
+          ),
+        ),
+        child: Stack(
+          children: [
+            // ── decorative blobs ──────────────────────────────
+            Positioned(
+              top: -40.r, right: -40.r,
+              child: Container(
+                width: 180.r, height: 180.r,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.06),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -60.r, left: -30.r,
+              child: Container(
+                width: 160.r, height: 160.r,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.05),
+                ),
+              ),
+            ),
+
+            // ── content ───────────────────────────────────────
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // avatar / logo
+                  Container(
+                    width:  80.r,
+                    height: 80.r,
+                    decoration: BoxDecoration(
+                      shape:  BoxShape.circle,
+                      color:  Colors.white.withOpacity(0.15),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 2,
+                      ),
+                      image: image != null && image!.isNotEmpty
+                          ? DecorationImage(
+                        image: NetworkImage(image!),
+                        fit:   BoxFit.cover,
+                      )
+                          : null,
+                    ),
+                    child: image == null || image!.isEmpty
+                        ? Icon(Icons.store_rounded,
+                        color: Colors.white, size: 38.r)
+                        : null,
+                  ),
+
+                  SizedBox(height: 14.h),
+
+                  // name
+                  Text(
+                    name.isNotEmpty ? name : 'ShopNow',
+                    style: TextStyle(
+                      fontSize:      22.sp,
+                      fontWeight:    FontWeight.w800,
+                      color:         Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+
+                  SizedBox(height: 4.h),
+
+                  // accent underline bar
+                  Container(
+                    width:  40.w,
+                    height: 3.h,
+                    decoration: BoxDecoration(
+                      color:        Colors.white.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(2.r),
+                    ),
+                  ),
+
+                  // optional tagline
+                  if (tagline != null && tagline!.isNotEmpty) ...[
+                    SizedBox(height: 8.h),
+                    Text(
+                      tagline!,
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        color:    Colors.white.withOpacity(0.75),
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

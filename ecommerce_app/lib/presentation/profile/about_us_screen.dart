@@ -67,6 +67,7 @@ class _AboutUsScreenState extends State<AboutUsScreen>
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation:   0,
         centerTitle: true,
         leading: GestureDetector(
@@ -95,27 +96,14 @@ class _AboutUsScreenState extends State<AboutUsScreen>
       body: BlocBuilder<ProfileCubit, ProfileState>(
         builder: (ctx, state) {
           if (state is ProfileLoadingState) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator.adaptive());
           }
 
           if (state is ProfileLoadFailedState) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.error_outline, size: 48.r),
-                  SizedBox(height: 12.h),
-                  Text(
-                    state.message ?? 'something_went_wrong'.tr(),
-                    style: TextStyle(fontSize: 14.sp),
-                  ),
-                  SizedBox(height: 16.h),
-                  TextButton(
-                    onPressed: () => _profileCubit.loadCompanyInfo(),
-                    child: Text('retry'.tr()),
-                  ),
-                ],
-              ),
+            return getErrorView(           // ← FIXED: was missing return
+              context: context,
+              message: state.message ?? 'something_went_wrong'.tr(),
+              onRetry: () => _profileCubit.loadCompanyInfo(),
             );
           }
 
@@ -132,7 +120,7 @@ class _AboutUsScreenState extends State<AboutUsScreen>
             );
           }
 
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator.adaptive());
         },
       ),
     );
@@ -153,18 +141,17 @@ class _AboutUsBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs       = Theme.of(context).colorScheme;
-    final primary  = cs.primary;
-    final name     = _loc(company?.nameEn,    company?.nameAr);
-    final about    = _loc(company?.aboutUsEn, company?.aboutUsAr);
-    final mission  = _loc(company?.missionEn, company?.missionAr);
-    final vision   = _loc(company?.visionEn,  company?.visionAr);
-    final address  = _loc(company?.addressEn, company?.addressAr);
-    final phone    = company?.phone    ?? '';
-    final email    = company?.email    ?? '';
-    final fb       = company?.facebook?.toString();
-    final ig       = company?.instagram?.toString();
-    final tw       = company?.twitter?.toString();
+    final cs      = Theme.of(context).colorScheme;
+    final name    = _loc(company?.nameEn,    company?.nameAr);
+    final about   = _loc(company?.aboutUsEn, company?.aboutUsAr);
+    final mission = _loc(company?.missionEn, company?.missionAr);
+    final vision  = _loc(company?.visionEn,  company?.visionAr);
+    final address = _loc(company?.addressEn, company?.addressAr);
+    final phone   = company?.phone    ?? '';
+    final email   = company?.email    ?? '';
+    final fb      = company?.facebook?.toString();
+    final ig      = company?.instagram?.toString();
+    final tw      = company?.twitter?.toString();
     final imageUrl = company?.image;
 
     return SingleChildScrollView(
@@ -173,7 +160,7 @@ class _AboutUsBody extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          _HeroBanner(name: name, image: imageUrl),
+          HeroBannerWidget(name: name, image: imageUrl),
 
           SizedBox(height: 24.h),
 
@@ -214,8 +201,7 @@ class _AboutUsBody extends StatelessWidget {
                             icon:    Icons.visibility_outlined,
                             title:   'vision'.tr(),
                             content: vision,
-                            // Fixed: accent uses secondary color from theme
-                            accent: cs.secondary,
+                            accent:  cs.secondary,
                           ),
                         ),
                     ],
@@ -279,106 +265,7 @@ class _AboutUsBody extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Hero banner — gradient uses theme primary + secondary
-// ─────────────────────────────────────────────────────────────
-class _HeroBanner extends StatelessWidget {
-  final String  name;
-  final String? image;
-
-  const _HeroBanner({required this.name, this.image});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs      = Theme.of(context).colorScheme;
-    final primary = cs.primary;
-    final second  = cs.secondary;
-
-    return Container(
-      width:  double.infinity,
-      height: 220.h,
-      decoration: BoxDecoration(
-        // Fixed: gradient from theme colors instead of c.main / c.sub
-        gradient: LinearGradient(
-          colors: [primary, second],
-          begin:  Alignment.topLeft,
-          end:    Alignment.bottomRight,
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -40.r, right: -40.r,
-            child: Container(
-              width: 180.r, height: 180.r,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.06),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -60.r, left: -30.r,
-            child: Container(
-              width: 160.r, height: 160.r,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.05),
-              ),
-            ),
-          ),
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width:  80.r, height: 80.r,
-                  decoration: BoxDecoration(
-                    shape:  BoxShape.circle,
-                    color:  Colors.white.withOpacity(0.15),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3), width: 2,
-                    ),
-                    image: image != null && image!.isNotEmpty
-                        ? DecorationImage(
-                      image: NetworkImage(image!),
-                      fit:   BoxFit.cover,
-                    )
-                        : null,
-                  ),
-                  child: image == null || image!.isEmpty
-                      ? Icon(Icons.store_rounded,
-                      color: Colors.white, size: 38.r)
-                      : null,
-                ),
-                SizedBox(height: 14.h),
-                Text(
-                  name.isNotEmpty ? name : 'ShopNow',
-                  style: TextStyle(
-                    fontSize:      22.sp,
-                    fontWeight:    FontWeight.w800,
-                    color:         Colors.white,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                SizedBox(height: 4.h),
-                Container(
-                  width:  40.w, height: 3.h,
-                  decoration: BoxDecoration(
-                    color:        Colors.white.withOpacity(0.6),
-                    borderRadius: BorderRadius.circular(2.r),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Section card — all colors from Theme
+// Section card
 // ─────────────────────────────────────────────────────────────
 class _SectionCard extends StatelessWidget {
   final IconData icon;
@@ -403,7 +290,6 @@ class _SectionCard extends StatelessWidget {
       width:   double.infinity,
       padding: EdgeInsets.all(20.r),
       decoration: BoxDecoration(
-        // Fixed: card surface from theme
         color:        cs.surface,
         borderRadius: BorderRadius.circular(20.r),
         border:       Border.all(color: cs.outline.withOpacity(0.15)),
@@ -438,8 +324,7 @@ class _SectionCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize:   15.sp,
                   fontWeight: FontWeight.w700,
-                  // Fixed: text from theme
-                  color: cs.onSurface,
+                  color:      cs.onSurface,
                 ),
               ),
             ],
@@ -458,7 +343,6 @@ class _SectionCard extends StatelessWidget {
               content!,
               style: TextStyle(
                 fontSize:   14.sp,
-                // Fixed: secondary text from theme
                 color:      cs.onSurface.withOpacity(0.6),
                 height:     1.65,
                 fontWeight: FontWeight.w400,
@@ -490,7 +374,6 @@ class _PillCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs    = Theme.of(context).colorScheme;
-    // Fixed: falls back to theme primary if no accent passed
     final color = accent ?? cs.primary;
 
     return Container(
@@ -551,7 +434,6 @@ class _ContactRow extends StatelessWidget {
   final String       label;
   final VoidCallback onTap;
 
-  // Fixed: removed p and c — no longer needed
   const _ContactRow({
     required this.icon,
     required this.label,
@@ -602,7 +484,6 @@ class _SocialRow extends StatelessWidget {
   final String? instagram;
   final String? twitter;
 
-  // Fixed: removed p and c
   const _SocialRow({this.facebook, this.instagram, this.twitter});
 
   Future<void> _launch(String url) async {
@@ -704,7 +585,6 @@ class _SocialButton extends StatelessWidget {
   final Color        color;
   final VoidCallback onTap;
 
-  // Fixed: removed p — no longer needed
   const _SocialButton({
     required this.label,
     required this.icon,

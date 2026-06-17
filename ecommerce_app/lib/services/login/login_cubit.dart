@@ -145,8 +145,7 @@ class LoginCubit extends Cubit<LoginState> {
   }
 
   void goToRegister()       => emit(const GoToRegister());
-  void goToForgotPassword() => emit(const GoToForgotPassword());
-bool passwordIsObscure =false;
+  void goToForgotPassword() => emit(const GoToForgotPassword());bool passwordIsObscure =true;
   void toggleObscure() {
     passwordIsObscure =!  passwordIsObscure;
   }

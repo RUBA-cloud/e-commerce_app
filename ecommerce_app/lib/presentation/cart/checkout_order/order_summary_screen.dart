@@ -3,7 +3,6 @@ import 'package:ecommerce_app/constant/app_theme.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
 import 'package:ecommerce_app/data/model/request/make_order_request.dart';
 import 'package:ecommerce_app/data/model/response/carts/carts_entity.dart';
-import 'package:ecommerce_app/presentation/home/widgets/app_network_image.dart';
 import 'package:ecommerce_app/presentation/home/widgets/home_shared.dart';
 import 'package:ecommerce_app/services/cart/cart_cubit.dart';
 import 'package:ecommerce_app/services/cart/cart_state.dart';
@@ -233,8 +232,7 @@ class OrderSummaryScreen extends StatelessWidget {
             child: SizedBox(
               width: 56.r,
               height: 56.r,
-              child: AppNetworkImage(
-                  url: item.product?.mainImage ?? '', fit: BoxFit.cover),
+              child:SizedBox(),
             ),
           ),
           SizedBox(width: 10.w),

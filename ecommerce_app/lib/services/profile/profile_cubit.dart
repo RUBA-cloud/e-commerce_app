@@ -173,7 +173,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     required String address,
     File? avatar,
   }) async {
-    if (isClosed) return;
+    if (isClosed)  return;
     emit(ProfileUpdateLoading());
     try {
       final request = UpdateProfileRequest(

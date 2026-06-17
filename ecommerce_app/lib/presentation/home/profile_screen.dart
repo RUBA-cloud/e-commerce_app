@@ -1,9 +1,3 @@
-// ============================================================
-//  edit_profile_screen.dart  –  100% theme-driven, no _T class
-//  Colors come from: Theme.of(context).colorScheme  +
-//                    UiUtility.companyColors(state)
-// ============================================================
-
 import "package:easy_localization/easy_localization.dart";
 import "package:ecommerce_app/core/utility/ui_utility.dart";
 import "package:ecommerce_app/presentation/auth/login_screen.dart";
@@ -17,35 +11,23 @@ import "package:flutter/material.dart";
 import "package:flutter_bloc/flutter_bloc.dart";
 import "package:flutter_screenutil/flutter_screenutil.dart";
 
-// ─────────────────────────────────────────────────────────────
-// ColorScheme extension — maps semantic names to real slots
-// ─────────────────────────────────────────────────────────────
 extension _CS on ColorScheme {
-  // backgrounds
-  Color get pageBackground  => brightness == Brightness.dark
+  Color get pageBackground => brightness == Brightness.dark
       ? surface.withOpacity(0.95)
       : surface;
-  Color get cardBackground  => brightness == Brightness.dark
+  Color get cardBackground => brightness == Brightness.dark
       ? surfaceVariant
-      : onInverseSurface;      // near-white in light, elevated in dark
-
-  // text
-  Color get textPrimary     => onSurface;
-  Color get textMuted       => onSurface.withOpacity(0.50);
-
-  // divider
-  Color get dividerColor    => outline.withOpacity(0.25);
-
-  // card shadow
-  Color get shadowColor     => brightness == Brightness.dark
+      : onInverseSurface;
+  Color get textPrimary => onSurface;
+  Color get textMuted   => onSurface.withOpacity(0.50);
+  Color get dividerColor => outline.withOpacity(0.25);
+  Color get shadowColor  => brightness == Brightness.dark
       ? Colors.black
       : shadow;
 }
 
-// ─────────────────────────────────────────────────────────────
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
-
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
@@ -60,7 +42,6 @@ class _ProfileScreenState extends State<ProfileScreen> with UiUtility {
     _cubit.loadCompanyInfo();
   }
 
-  // ── BLoC navigation listener ──────────────────────────────
   void _handleState(BuildContext ctx, ProfileState state) {
     if (state is ProfileLogoutSuccessState) {
       navigateTo(
@@ -91,23 +72,24 @@ class _ProfileScreenState extends State<ProfileScreen> with UiUtility {
     if (state is GoToCompanyBranches) {
       navigateTo(
         context: ctx,
-        page: BlocProvider.value(value: _cubit, child: const CompanyBranchesScreen()),
+        page: BlocProvider.value(
+            value: _cubit, child: const CompanyBranchesScreen()),
       );
       return;
     }
   }
 
-  // ── Language toggle ───────────────────────────────────────
-  Future<void> _toggleLanguage(BuildContext ctx) async {
-    final next = ctx.locale.languageCode == "en"
+  Future<void> _toggleLanguage() async {
+    final next = context.locale.languageCode == "en"
         ? const Locale("ar")
         : const Locale("en");
-   await EasyLocalization.of(context)!.setLocale(next);
+    await EasyLocalization.of(context)!.setLocale(next);
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isArabic = context.locale.languageCode == "ar";
 
     return BlocListener<ProfileCubit, ProfileState>(
       listener: _handleState,
@@ -115,18 +97,15 @@ class _ProfileScreenState extends State<ProfileScreen> with UiUtility {
         backgroundColor: cs.pageBackground,
         body: BlocBuilder<ProfileCubit, ProfileState>(
           builder: (ctx, state) {
-
             if (state is ProfileLoadingState) {
               return Center(
-                child: CircularProgressIndicator(
-                  color: cs.primary,
-                  strokeWidth: 2.5,
-                ),
+                child: CircularProgressIndicator.adaptive(strokeWidth: 2.5),
               );
             }
 
             if (state is ProfileLoadFailedState) {
-              return _ErrorBody(
+              return getErrorView(
+                context: context,
                 message: state.message,
                 onRetry: _cubit.loadCompanyInfo,
               );
@@ -136,148 +115,131 @@ class _ProfileScreenState extends State<ProfileScreen> with UiUtility {
             final name     = isLoaded ? (state.name  ?? "") : "";
             final email    = isLoaded ? (state.email ?? "") : "";
             final initials = isLoaded ? (state.avatarInitials ?? "?") : "?";
-            final isArabic = ctx.locale.languageCode == "ar";
 
             return CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
 
-                // ── Header ────────────────────────────────
+                // ── Hero Banner ──────────────────────────
                 SliverToBoxAdapter(
-                  child:  Container(
-                    // Header uses primary → primaryContainer gradient — theme-driven
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [cs.primary, cs.primaryContainer],
-                        begin: Alignment.topLeft,
-                        end:   Alignment.bottomRight,
-                      ),
-                    ),
-                    child: SafeArea(
-                      bottom: false,
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 36.h),
-                        child: Column(children: [
+                  child: HeroBannerWidget(
+                    name: 'profile'.tr(),
+                  ),
+                ),
 
-                          // Top row
-                          Row(children: [
-                            Text(
-                              "profile".tr(),
-                              style: TextStyle(
-                                fontSize: 20.sp, fontWeight: FontWeight.w700,
-                                color: cs.onPrimary, letterSpacing: -0.3,
+                // ── Avatar + User Info + Stats ───────────
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24.w),
+                    child: Column(
+                      children: [
+                        SizedBox(height: 28.h),
+
+                        // Avatar
+                        Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            Container(
+                              width: 88.r, height: 88.r,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: cs.onPrimary.withOpacity(0.15),
+                                border: Border.all(
+                                    color: cs.onPrimary.withOpacity(0.30),
+                                    width: 3),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color:      cs.primary.withOpacity(0.35),
+                                    blurRadius: 24,
+                                    offset:     const Offset(0, 8),
+                                  ),
+                                ],
                               ),
-                            ),
-                            const Spacer(),
-                            _IconBtn(
-                              icon: Icons.edit_outlined,
-                              onTap: () {navigateTo(context: context,replace: true,page: BlocProvider.value(value: _cubit,child: EditProfileScreen(),));},
-                              tooltip: "edit_profile".tr(),
-                            ),
-                          ]),
-
-                          SizedBox(height: 28.h),
-
-                          // Avatar
-                          Stack(
-                            alignment: Alignment.bottomRight,
-                            children: [
-                              Container(
-                                width: 88.r, height: 88.r,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: cs.onPrimary.withOpacity(0.15),
-                                  border: Border.all(
-                                      color: cs.onPrimary.withOpacity(0.30), width: 3),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color:      cs.primary.withOpacity(0.35),
-                                      blurRadius: 24,
-                                      offset:     const Offset(0, 8),
-                                    ),
-                                  ],
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    initials,
-                                    style: TextStyle(
-                                      fontSize: 26.sp,
-                                      fontWeight: FontWeight.w800,
-                                      color: cs.onPrimary,
-                                    ),
+                              child: Center(
+                                child: Text(
+                                  initials,
+                                  style: TextStyle(
+                                    fontSize:   26.sp,
+                                    fontWeight: FontWeight.w800,
+                                    color:      cs.onPrimary,
                                   ),
                                 ),
                               ),
-                              Container(
-                                width: 24.r, height: 24.r,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: cs.secondary,
-                                  border: Border.all(color: cs.primary, width: 2),
-                                ),
-                                child: Icon(Icons.verified_rounded,
-                                    size: 13.r, color: cs.onSecondary),
-                              ),
-                            ],
-                          ),
-
-                          SizedBox(height: 16.h),
-
-                          // Name / email / skeleton
-                          if (isLoaded) ...[
-                            Text(
-                              name,
-                              style: TextStyle(
-                                fontSize: 18.sp, fontWeight: FontWeight.w700,
-                                color: cs.onPrimary, letterSpacing: -0.2,
-                              ),
                             ),
-                            SizedBox(height: 5.h),
                             Container(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 12.w, vertical: 4.h),
+                              width: 24.r, height: 24.r,
                               decoration: BoxDecoration(
-                                color: cs.onPrimary.withOpacity(0.10),
-                                borderRadius: BorderRadius.circular(20.r),
+                                shape: BoxShape.circle,
+                                color:  cs.secondary,
                                 border: Border.all(
-                                    color: cs.onPrimary.withOpacity(0.18)),
+                                    color: cs.primary, width: 2),
                               ),
-                              child: Text(
-                                email,
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: cs.onPrimary.withOpacity(0.78),
-                                ),
+                              child: Icon(Icons.verified_rounded,
+                                  size: 13.r, color: cs.onSecondary),
+                            ),
+                          ],
+                        ),
+
+                        SizedBox(height: 16.h),
+
+                        if (isLoaded) ...[
+                          Text(
+                            name,
+                            style: TextStyle(
+                              fontSize:      18.sp,
+                              fontWeight:    FontWeight.w700,
+                              color:         cs.textPrimary,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          SizedBox(height: 5.h),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 12.w, vertical: 4.h),
+                            decoration: BoxDecoration(
+                              color: cs.primary.withOpacity(0.10),
+                              borderRadius: BorderRadius.circular(20.r),
+                              border: Border.all(
+                                  color: cs.primary.withOpacity(0.18)),
+                            ),
+                            child: Text(
+                              email,
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: cs.textMuted,
                               ),
                             ),
-                          ] else ...[
-                            _SkeletonLine(
-                                width: 130.w, color: cs.onPrimary.withOpacity(0.30)),
-                            SizedBox(height: 8.h),
-                            _SkeletonLine(
-                                width: 180.w, color: cs.onPrimary.withOpacity(0.20)),
-                          ],
+                          ),
+                        ] else ...[
+                          _SkeletonLine(
+                              width: 130.w,
+                              color: cs.onSurface.withOpacity(0.15)),
+                          SizedBox(height: 8.h),
+                          _SkeletonLine(
+                              width: 180.w,
+                              color: cs.onSurface.withOpacity(0.10)),
+                        ],
 
-                          SizedBox(height: 28.h),
+                        SizedBox(height: 28.h),
 
-                          // Stats
-                          if (isLoaded)
-                            Row(children: [
-                              _StatChip(label: "orders".tr(),   value: "24"),
-                              SizedBox(width: 10.w),
-                              _StatChip(label: "wishlist".tr(), value: "11"),
-                              SizedBox(width: 10.w),
-                              _StatChip(label: "reviews".tr(),  value: "7"),
-                            ]),
-                        ]),
-                      ),
+                        if (isLoaded)
+                          Row(children: [
+                            _StatChip(label: "orders".tr(),   value: "24"),
+                            SizedBox(width: 10.w),
+                            _StatChip(label: "wishlist".tr(), value: "11"),
+                            SizedBox(width: 10.w),
+                            _StatChip(label: "reviews".tr(),  value: "7"),
+                          ]),
+
+                        SizedBox(height: 8.h),
+                      ],
                     ),
-                  )
+                  ),
                 ),
 
                 SliverToBoxAdapter(child: SizedBox(height: 20.h)),
 
-                // ── Settings ──────────────────────────────
+                // ── Settings ────────────────────────────
                 SliverToBoxAdapter(
                   child: _SectionCard(
                     label: "settings".tr(),
@@ -292,7 +254,7 @@ class _ProfileScreenState extends State<ProfileScreen> with UiUtility {
                       _TileDivider(),
                       _LanguageTile(
                         isArabic: isArabic,
-                        onToggle: () => _toggleLanguage(ctx),
+                        onToggle: _toggleLanguage,
                       ),
                       _TileDivider(),
                       _Tile(
@@ -301,20 +263,13 @@ class _ProfileScreenState extends State<ProfileScreen> with UiUtility {
                         accent: cs.secondary,
                         onTap:  () {},
                       ),
-                      _TileDivider(),
-                      _Tile(
-                        icon:   Icons.payment_rounded,
-                        label:  "payment_options".tr(),
-                        accent: cs.tertiary,
-                        onTap:  () {},
-                      ),
                     ],
                   ),
                 ),
 
                 SliverToBoxAdapter(child: SizedBox(height: 12.h)),
 
-                // ── Company ───────────────────────────────
+                // ── Company ─────────────────────────────
                 SliverToBoxAdapter(
                   child: _SectionCard(
                     label: "company".tr(),
@@ -324,15 +279,8 @@ class _ProfileScreenState extends State<ProfileScreen> with UiUtility {
                         icon:     Icons.store_outlined,
                         label:    "branches".tr(),
                         accent:   cs.secondary,
-                        trailing: _BadgeChip(label: isLoaded ? "6": "—"),
+                        trailing: _BadgeChip(label: isLoaded ? "6" : "—"),
                         onTap:    () => _cubit.goToCompanyBranches(),
-                      ),
-                      _TileDivider(),
-                      _Tile(
-                        icon:   Icons.headset_mic_outlined,
-                        label:  "contact_us".tr(),
-                        accent: cs.primary,
-                        onTap:  () => _cubit.goToAboutUs(),
                       ),
                       _TileDivider(),
                       _Tile(
@@ -347,7 +295,7 @@ class _ProfileScreenState extends State<ProfileScreen> with UiUtility {
 
                 SliverToBoxAdapter(child: SizedBox(height: 12.h)),
 
-                // ── Logout ────────────────────────────────
+                // ── Logout ───────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16.w),
@@ -366,10 +314,8 @@ class _ProfileScreenState extends State<ProfileScreen> with UiUtility {
     );
   }
 
-  // ── Logout dialog ─────────────────────────────────────────
   void _showLogoutDialog(BuildContext ctx) {
     final cs = Theme.of(ctx).colorScheme;
-
     showDialog<void>(
       context: ctx,
       builder: (_) => Dialog(
@@ -384,8 +330,8 @@ class _ProfileScreenState extends State<ProfileScreen> with UiUtility {
               Container(
                 width: 64.r, height: 64.r,
                 decoration: BoxDecoration(
-                  color: cs.error.withOpacity(0.10),
-                  shape: BoxShape.circle,
+                  color:  cs.error.withOpacity(0.10),
+                  shape:  BoxShape.circle,
                 ),
                 child: Icon(Icons.logout_rounded,
                     size: 28.r, color: cs.error),
@@ -394,8 +340,9 @@ class _ProfileScreenState extends State<ProfileScreen> with UiUtility {
               Text(
                 "logout".tr(),
                 style: TextStyle(
-                  fontSize: 17.sp, fontWeight: FontWeight.w700,
-                  color: cs.textPrimary,
+                  fontSize:   17.sp,
+                  fontWeight: FontWeight.w700,
+                  color:      cs.textPrimary,
                 ),
               ),
               SizedBox(height: 8.h),
@@ -404,8 +351,8 @@ class _ProfileScreenState extends State<ProfileScreen> with UiUtility {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13.sp,
-                  color: cs.textMuted,
-                  height: 1.5,
+                  color:    cs.textMuted,
+                  height:   1.5,
                 ),
               ),
               SizedBox(height: 24.h),
@@ -415,8 +362,8 @@ class _ProfileScreenState extends State<ProfileScreen> with UiUtility {
                     onPressed: () => Navigator.pop(ctx),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: cs.textMuted,
-                      side: BorderSide(color: cs.dividerColor),
-                      shape: RoundedRectangleBorder(
+                      side:    BorderSide(color: cs.dividerColor),
+                      shape:   RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.r)),
                       padding: EdgeInsets.symmetric(vertical: 13.h),
                     ),
@@ -439,10 +386,12 @@ class _ProfileScreenState extends State<ProfileScreen> with UiUtility {
                           borderRadius: BorderRadius.circular(12.r)),
                       padding: EdgeInsets.symmetric(vertical: 13.h),
                     ),
-                    child: Text("logout".tr(),
-                        style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w700)),
+                    child: Text(
+                      "logout".tr(),
+                      style: TextStyle(
+                          fontSize:   14.sp,
+                          fontWeight: FontWeight.w700),
+                    ),
                   ),
                 ),
               ]),
@@ -453,7 +402,6 @@ class _ProfileScreenState extends State<ProfileScreen> with UiUtility {
     );
   }
 }
-
 
 // ─────────────────────────────────────────────────────────────
 // Section Card
@@ -472,13 +420,11 @@ class _SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Label row
           Padding(
             padding: EdgeInsets.only(left: 4.w, bottom: 8.h),
             child: Row(children: [
@@ -487,18 +433,19 @@ class _SectionCard extends StatelessWidget {
               Text(
                 label.toUpperCase(),
                 style: TextStyle(
-                  fontSize: 11.sp, fontWeight: FontWeight.w700,
-                  color: cs.textMuted, letterSpacing: 1.0,
+                  fontSize:      11.sp,
+                  fontWeight:    FontWeight.w700,
+                  color:         cs.textMuted,
+                  letterSpacing: 1.0,
                 ),
               ),
             ]),
           ),
-          // Card
           Container(
             decoration: BoxDecoration(
-              color: cs.cardBackground,
+              color:        cs.cardBackground,
               borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(color: cs.dividerColor),
+              border:       Border.all(color: cs.dividerColor),
               boxShadow: [
                 BoxShadow(
                   color:      cs.shadowColor.withOpacity(0.06),
@@ -524,7 +471,7 @@ class _SectionCard extends StatelessWidget {
 class _Tile extends StatelessWidget {
   final IconData     icon;
   final String       label;
-  final Color        accent;   // from ColorScheme at call site
+  final Color        accent;
   final VoidCallback onTap;
   final Widget?      trailing;
 
@@ -539,14 +486,12 @@ class _Tile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-
     return InkWell(
-      onTap: onTap,
+      onTap:          onTap,
       splashColor:    accent.withOpacity(0.07),
       highlightColor: accent.withOpacity(0.04),
       child: Padding(
-        padding: EdgeInsets.symmetric(
-            horizontal: 16.w, vertical: 14.h),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
         child: Row(children: [
           Container(
             width: 40.r, height: 40.r,
@@ -561,9 +506,9 @@ class _Tile extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 14.sp,
+                fontSize:   14.sp,
                 fontWeight: FontWeight.w500,
-                color: cs.textPrimary,
+                color:      cs.textPrimary,
               ),
             ),
           ),
@@ -577,26 +522,25 @@ class _Tile extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Language Tile  (animated EN / AR pill toggle)
+// Language Tile
 // ─────────────────────────────────────────────────────────────
 class _LanguageTile extends StatelessWidget {
   final bool         isArabic;
   final VoidCallback onToggle;
 
-  const _LanguageTile({required this.isArabic, required this.onToggle});
+  const _LanguageTile(
+      {required this.isArabic, required this.onToggle});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-
     return InkWell(
-      onTap: onToggle,
+      onTap:          onToggle,
       splashColor:    cs.secondary.withOpacity(0.07),
       highlightColor: cs.secondary.withOpacity(0.04),
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
         child: Row(children: [
-          // Icon badge
           Container(
             width: 40.r, height: 40.r,
             decoration: BoxDecoration(
@@ -611,74 +555,68 @@ class _LanguageTile extends StatelessWidget {
             child: Text(
               "language".tr(),
               style: TextStyle(
-                fontSize: 14.sp,
+                fontSize:   14.sp,
                 fontWeight: FontWeight.w500,
-                color: cs.textPrimary,
+                color:      cs.textPrimary,
               ),
             ),
           ),
-
-          // Pill toggle
           GestureDetector(
             onTap: onToggle,
             child: Container(
-              width: 72.w,
+              width:   72.w,
               padding: EdgeInsets.all(3.r),
               decoration: BoxDecoration(
-                color:        cs.secondary.withOpacity(0.10),
+                color: cs.secondary.withOpacity(0.10),
                 borderRadius: BorderRadius.circular(20.r),
                 border: Border.all(
                     color: cs.secondary.withOpacity(0.35)),
               ),
-              child: Stack(
-                children: [
-                  // Sliding thumb
-                  AnimatedAlign(
-                    duration: const Duration(milliseconds: 220),
-                    curve:    Curves.easeInOut,
+              child: Stack(children: [
+                AnimatedAlign(
+                  duration:  const Duration(milliseconds: 220),
+                  curve:     Curves.easeInOut,
+                  alignment: isArabic
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  child: Container(
+                    width:   32.w,
+                    padding: EdgeInsets.symmetric(vertical: 5.h),
+                    decoration: BoxDecoration(
+                      color:        cs.secondary,
+                      borderRadius: BorderRadius.circular(16.r),
+                    ),
+                    child: Center(
+                      child: Text(
+                        isArabic ? "AR" : "EN",
+                        style: TextStyle(
+                          fontSize:   10.sp,
+                          fontWeight: FontWeight.w800,
+                          color:      cs.onSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: Align(
                     alignment: isArabic
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
-                    child: Container(
-                      width: 32.w,
-                      padding: EdgeInsets.symmetric(vertical: 5.h),
-                      decoration: BoxDecoration(
-                        color:        cs.secondary,
-                        borderRadius: BorderRadius.circular(16.r),
-                      ),
-                      child: Center(
-                        child: Text(
-                          isArabic ? "AR": "EN",
-                          style: TextStyle(
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.w800,
-                            color: cs.onSecondary,
-                          ),
+                        ? Alignment.centerLeft
+                        : Alignment.centerRight,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8.w),
+                      child: Text(
+                        isArabic ? "EN" : "AR",
+                        style: TextStyle(
+                          fontSize:   10.sp,
+                          fontWeight: FontWeight.w600,
+                          color:      cs.secondary,
                         ),
                       ),
                     ),
                   ),
-                  // Inactive label
-                  Positioned.fill(
-                    child: Align(
-                      alignment: isArabic
-                          ? Alignment.centerLeft
-                          : Alignment.centerRight,
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.w),
-                        child: Text(
-                          isArabic ? "EN": "AR",
-                          style: TextStyle(
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.w600,
-                            color: cs.secondary,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ]),
             ),
           ),
         ]),
@@ -693,15 +631,15 @@ class _LanguageTile extends StatelessWidget {
 class _TileDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Divider(
-    height: 1,
-    indent: 70.w,
+    height:    1,
+    indent:    70.w,
     endIndent: 0,
     color: Theme.of(context).colorScheme.dividerColor,
   );
 }
 
 // ─────────────────────────────────────────────────────────────
-// Badge Chip  (branch count)
+// Badge Chip
 // ─────────────────────────────────────────────────────────────
 class _BadgeChip extends StatelessWidget {
   final String label;
@@ -720,8 +658,9 @@ class _BadgeChip extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 11.sp, fontWeight: FontWeight.w700,
-          color: cs.secondary,
+          fontSize:   11.sp,
+          fontWeight: FontWeight.w700,
+          color:      cs.secondary,
         ),
       ),
     );
@@ -729,7 +668,7 @@ class _BadgeChip extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Stat Chip  (orders / wishlist / reviews in header)
+// Stat Chip
 // ─────────────────────────────────────────────────────────────
 class _StatChip extends StatelessWidget {
   final String label;
@@ -743,16 +682,17 @@ class _StatChip extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 10.h),
         decoration: BoxDecoration(
-          color:        cs.onPrimary.withOpacity(0.10),
+          color:        cs.primary.withOpacity(0.08),
           borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(color: cs.onPrimary.withOpacity(0.15)),
+          border: Border.all(color: cs.primary.withOpacity(0.15)),
         ),
         child: Column(children: [
           Text(
             value,
             style: TextStyle(
-              fontSize: 16.sp, fontWeight: FontWeight.w800,
-              color: cs.onPrimary,
+              fontSize:   16.sp,
+              fontWeight: FontWeight.w800,
+              color:      cs.primary,
             ),
           ),
           SizedBox(height: 2.h),
@@ -760,7 +700,7 @@ class _StatChip extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 10.sp,
-              color: cs.onPrimary.withOpacity(0.60),
+              color:    cs.textMuted,
             ),
           ),
         ]),
@@ -780,7 +720,7 @@ class _LogoutButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return InkWell(
-      onTap: onTap,
+      onTap:        onTap,
       borderRadius: BorderRadius.circular(16.r),
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
@@ -811,8 +751,9 @@ class _LogoutButton extends StatelessWidget {
             child: Text(
               "logout".tr(),
               style: TextStyle(
-                fontSize: 14.sp, fontWeight: FontWeight.w600,
-                color: cs.error,
+                fontSize:   14.sp,
+                fontWeight: FontWeight.w600,
+                color:      cs.error,
               ),
             ),
           ),
@@ -825,14 +766,14 @@ class _LogoutButton extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Icon Button  (edit in header)
+// Icon Button
 // ─────────────────────────────────────────────────────────────
 class _IconBtn extends StatelessWidget {
   final IconData     icon;
   final VoidCallback onTap;
   final String       tooltip;
-  const _IconBtn({required this.icon, required this.onTap,
-    required this.tooltip});
+  const _IconBtn(
+      {required this.icon, required this.onTap, required this.tooltip});
 
   @override
   Widget build(BuildContext context) {
@@ -844,62 +785,12 @@ class _IconBtn extends StatelessWidget {
         child: Container(
           width: 38.r, height: 38.r,
           decoration: BoxDecoration(
-            color:        cs.onPrimary.withOpacity(0.12),
+            color:        cs.primary.withOpacity(0.10),
             borderRadius: BorderRadius.circular(10.r),
-            border: Border.all(
-                color: cs.onPrimary.withOpacity(0.18)),
+            border: Border.all(color: cs.primary.withOpacity(0.20)),
           ),
-          child: Icon(icon, size: 18.r, color: cs.onPrimary),
+          child: Icon(icon, size: 18.r, color: cs.primary),
         ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Error Body
-// ─────────────────────────────────────────────────────────────
-class _ErrorBody extends StatelessWidget {
-  final String?      message;
-  final VoidCallback onRetry;
-  const _ErrorBody({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(32.r),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.cloud_off_rounded,
-              size: 52.r, color: cs.textMuted),
-          SizedBox(height: 14.h),
-          Text(
-            message ?? "something_went_wrong".tr(),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: cs.textMuted,
-              height: 1.5,
-            ),
-          ),
-          SizedBox(height: 20.h),
-          ElevatedButton.icon(
-            onPressed: onRetry,
-            icon:  Icon(Icons.refresh_rounded, size: 16.r),
-            label: Text("retry".tr(),
-                style: TextStyle(fontSize: 13.sp)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: cs.primary,
-              foregroundColor: cs.onPrimary,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r)),
-              padding: EdgeInsets.symmetric(
-                  horizontal: 24.w, vertical: 12.h),
-            ),
-          ),
-        ]),
       ),
     );
   }
@@ -915,50 +806,11 @@ class _SkeletonLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    width: width, height: 13.h,
+    width: width,
+    height: 13.h,
     decoration: BoxDecoration(
-      color: color,
+      color:        color,
       borderRadius: BorderRadius.circular(6.r),
     ),
   );
 }
-
-
-// ============================================================
-//  HOW COLORS MAP
-// ============================================================
-//
-//  Header gradient   → cs.primary  →  cs.primaryContainer
-//  Header text/icon  → cs.onPrimary
-//  Avatar badge      → cs.secondary  /  cs.onSecondary
-//  Section card bg   → cs.cardBackground  (extension above)
-//  Tile accent 1     → cs.primary        (notifications, contact)
-//  Tile accent 2     → cs.secondary      (language, branches)
-//  Tile accent 3     → cs.tertiary       (password, about)
-//  Logout / error    → cs.error  /  cs.onError
-//  Muted text        → cs.onSurface.withOpacity(0.50)
-//  Dividers          → cs.outline.withOpacity(0.25)
-//
-//  Your buildTheme() in UiUtility already sets all of these
-//  from CompanyColors, so no extra wiring is needed.
-//
-// ============================================================
-//  ColorScheme fields used  (set in UiUtility.buildTheme)
-// ============================================================
-//
-//  primary          → c.main
-//  primaryContainer → Color.lerp(c.main, c.sub, 0.5)  or c.sub
-//  onPrimary        → c.buttonText
-//  secondary        → c.sub
-//  onSecondary      → c.buttonText
-//  tertiary         → any third accent you want (e.g. c.icon)
-//  onTertiary       → c.buttonText
-//  surface          → c.card
-//  onSurface        → c.text
-//  outline          → c.sub.withOpacity(0.4)
-//  error            → Color(0xFFE24B4A)
-//  onError          → Colors.white
-//
-//  Add tertiary / onTertiary to ColorScheme.fromSeed(…) call:
-//    tertiary:   c.icon,
-//    onTertiary: c.buttonText,

@@ -28,7 +28,6 @@ class _LoginScreenState extends State<LoginScreen>
   final _emailCtrl    = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _formKey      = GlobalKey<FormState>();
-  bool  _obscure      = true;
 
   late LoginCubit          _cubit;
   late AnimationController _fadeCtrl;
