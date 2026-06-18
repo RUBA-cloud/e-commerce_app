@@ -13,6 +13,7 @@ class GoToAboutUs               extends ProfileState {}
 class GoToHelpAndSupport        extends ProfileState {}
 class GoToCompanyBranches       extends ProfileState {}
 class GoToEditProfile           extends ProfileState {}
+class GoToChangePassword          extends ProfileState {}
 
 // ── Profile loaded ────────────────────────────────────────────
 class ProfileLoadedState extends ProfileState {
@@ -75,3 +76,5 @@ class ProfileUpdateFailed extends ProfileState {
   final String? message;
   ProfileUpdateFailed({this.message});
 }
+class ChangePasswordUpdateFailedState extends ProfileState{}
+class ChangePasswordUpdateSuccessState extends ProfileState{}

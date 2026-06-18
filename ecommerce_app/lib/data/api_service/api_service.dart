@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:ecommerce_app/data/model/request/add_to_cart_request.dart';
 import 'package:ecommerce_app/data/model/request/brand_request.dart';
 import 'package:ecommerce_app/data/model/request/make_order_request.dart';
+import 'package:ecommerce_app/data/model/request/profile/change_password_request.dart';
 import 'package:ecommerce_app/data/model/request/profile/update_profile_request.dart';
 import 'package:ecommerce_app/data/model/request/update_car_request.dart';
 import 'package:ecommerce_app/data/model/request/email_request.dart';
@@ -24,10 +25,9 @@ import 'package:ecommerce_app/data/model/response/profile/profile_entity.dart';
 import 'package:ecommerce_app/data/model/response/register_entity.dart';
 import 'package:ecommerce_app/data/model/response/similar_product_entity_entity.dart';
 import 'package:ecommerce_app/data/model/request/filter_request.dart';
-import 'package:injectable/injectable.dart';
 import 'package:retrofit/retrofit.dart';
 
-part 'api_service.g.dart'; // ← required for retrofit to generate _ApiService
+part 'api_service.g.dart';
 
 @RestApi()
 abstract class ApiService {
@@ -85,7 +85,7 @@ abstract class ApiService {
   @GET('/filters')
   Future<FilterOptionEntity> getFilterOptions();
 
-  @GET('/filter')
+  @POST('/filter')
   Future<FilterResultEntity> filter(@Body() FilterRequest request);
 
   @GET('/company-branch')
@@ -93,13 +93,8 @@ abstract class ApiService {
 
   @POST('/user/profile')
   Future<ProfileEntity> updateProfile(@Body() UpdateProfileRequest update);
-}
 
-// FIX: Register ApiService here as a lazy singleton via an injectable module.
-// This is the correct pattern when the class has a factory constructor
-// that redirects to a generated type (_ApiService).
-@module
-abstract class ApiServiceModule {
-  @lazySingleton
-  ApiService apiService(Dio dio) => ApiService(dio);
+  @POST('/change_password')
+  Future<HttpResponse<bool>> changePassword(
+      @Body() ChangePasswordRequest changePasswordRequest);
 }

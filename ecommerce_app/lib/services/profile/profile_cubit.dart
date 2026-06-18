@@ -2,16 +2,18 @@ import 'dart:io';
 
 import 'package:ecommerce_app/core/di/api_result.dart';
 import 'package:ecommerce_app/core/di/configure_dependency.dart';
+import 'package:ecommerce_app/data/model/request/profile/change_password_request.dart';
 import 'package:ecommerce_app/data/model/request/profile/update_profile_request.dart';
 import 'package:ecommerce_app/data/model/response/carts/company_branch_entity.dart';
 import 'package:ecommerce_app/data/model/response/company_info_entity.dart';
 import 'package:ecommerce_app/data/model/response/profile/profile_entity.dart';
+import 'package:ecommerce_app/domain/usecases/auth_use_case/change_password_use_case.dart';
 import 'package:ecommerce_app/domain/usecases/company_info_use_cases.dart';
 import 'package:ecommerce_app/domain/usecases/get_company_branches_use_cases.dart';
 import 'package:ecommerce_app/domain/usecases/shared_pref_usecases/shared_prefs_clear_use_case.dart';
 import 'package:ecommerce_app/domain/usecases/shared_pref_usecases/shared_prefs_get_string_use_case.dart';
 import 'package:ecommerce_app/domain/usecases/shared_pref_usecases/shared_prefs_string_use_case.dart';
-import 'package:ecommerce_app/domain/usecases/udpdate_profile_use_case.dart';
+import 'package:ecommerce_app/domain/usecases/auth_use_case/udpdate_profile_use_case.dart';
 import 'package:ecommerce_app/services/profile/profile_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -23,8 +25,8 @@ import '../../constant/shared_prefence_keys.dart' show SharedPrefKeys;
 // EditProfileScreen reads this synchronously via currentUser.
 // ─────────────────────────────────────────────────────────────
 class CachedUser {
-  final String  name;
-  final String  email;
+  final String name;
+  final String email;
   final String? phone;
   final String? avatar;
   final String? country;
@@ -52,17 +54,16 @@ class CachedUser {
     String? city,
     String? street,
     String? address,
-  }) =>
-      CachedUser(
-        name:    name    ?? this.name,
-        email:   email   ?? this.email,
-        phone:   phone   ?? this.phone,
-        avatar:  avatar  ?? this.avatar,
-        country: country ?? this.country,
-        city:    city    ?? this.city,
-        street:  street  ?? this.street,
-        address: address ?? this.address,
-      );
+  }) => CachedUser(
+    name: name ?? this.name,
+    email: email ?? this.email,
+    phone: phone ?? this.phone,
+    avatar: avatar ?? this.avatar,
+    country: country ?? this.country,
+    city: city ?? this.city,
+    street: street ?? this.street,
+    address: address ?? this.address,
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -75,18 +76,18 @@ class ProfileCubit extends Cubit<ProfileState> {
       BlocProvider.of<ProfileCubit>(context);
 
   // ── Use-cases (matching the real DI registrations) ────────────
-  final SharedPrefsClearUseCase    _clearUseCase =
-  getIt<SharedPrefsClearUseCase>();
-  final GetCompanyInfoUseCase      _getCompanyInfoUseCase =
-  getIt<GetCompanyInfoUseCase>();
+  final SharedPrefsClearUseCase _clearUseCase =
+      getIt<SharedPrefsClearUseCase>();
+  final GetCompanyInfoUseCase _getCompanyInfoUseCase =
+      getIt<GetCompanyInfoUseCase>();
   final GetCompanyBranchesUseCases _getCompanyBranchesUseCases =
-  getIt<GetCompanyBranchesUseCases>();
-  final UpdateProfileUseCase       updateProfileUseCase =
-  getIt<UpdateProfileUseCase>();
-  final SharedPrefsStringUseCase   _write =
-  getIt<SharedPrefsStringUseCase>();
+      getIt<GetCompanyBranchesUseCases>();
+  final UpdateProfileUseCase updateProfileUseCase =
+      getIt<UpdateProfileUseCase>();
+  final SharedPrefsStringUseCase _write = getIt<SharedPrefsStringUseCase>();
   final SharedPrefsGetStringUseCase _read =
-  getIt<SharedPrefsGetStringUseCase>();
+      getIt<SharedPrefsGetStringUseCase>();
+  final ChangePasswordUseCase _changePasswordUseCase = getIt<ChangePasswordUseCase>();
 
   // ── In-memory cached user ─────────────────────────────────────
   CachedUser? _cachedUser;
@@ -105,13 +106,15 @@ class ProfileCubit extends Cubit<ProfileState> {
       switch (result) {
         case Success<CompanyInfoEntity>(:final data):
           final company = data.company;
-          emit(ProfileLoadedState(
-            name:           company.nameEn,
-            email:          company.email,
-            phone:          company.phone,
-            avatarInitials: _initials(company.nameEn),
-            company:        company,
-          ));
+          emit(
+            ProfileLoadedState(
+              name: company.nameEn,
+              email: company.email,
+              phone: company.phone,
+              avatarInitials: _initials(company.nameEn),
+              company: company,
+            ),
+          );
         case Failure(:final error):
           emit(ProfileLoadFailedState(message: error));
       }
@@ -128,33 +131,35 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> loadUserProfile() async {
     emit(ProfileLoadingState());
     try {
-      final name    = await _read.execute(SharedPrefKeys.userName)    ?? '';
-      final email   = await _read.execute(SharedPrefKeys.userEmail)   ?? '';
-      final phone   = await _read.execute(SharedPrefKeys.userPhone);
-      final avatar  = await _read.execute(SharedPrefKeys.userAvatar);
+      final name = await _read.execute(SharedPrefKeys.userName) ?? '';
+      final email = await _read.execute(SharedPrefKeys.userEmail) ?? '';
+      final phone = await _read.execute(SharedPrefKeys.userPhone);
+      final avatar = await _read.execute(SharedPrefKeys.userAvatar);
       final country = await _read.execute(SharedPrefKeys.userCountry);
-      final city    = await _read.execute(SharedPrefKeys.userCity);
-      final street  = await _read.execute(SharedPrefKeys.userStreet);
+      final city = await _read.execute(SharedPrefKeys.userCity);
+      final street = await _read.execute(SharedPrefKeys.userStreet);
       final address = await _read.execute(SharedPrefKeys.userAddress);
 
       _cachedUser = CachedUser(
-        name:    name,
-        email:   email,
-        phone:   _nullIfEmpty(phone),
-        avatar:  _nullIfEmpty(avatar),
+        name: name,
+        email: email,
+        phone: _nullIfEmpty(phone),
+        avatar: _nullIfEmpty(avatar),
         country: _nullIfEmpty(country),
-        city:    _nullIfEmpty(city),
-        street:  _nullIfEmpty(street),
+        city: _nullIfEmpty(city),
+        street: _nullIfEmpty(street),
         address: _nullIfEmpty(address),
       );
 
-      emit(ProfileLoadedState(
-        name:           name,
-        email:          email,
-        phone:          _cachedUser!.phone,
-        avatar:         _cachedUser!.avatar,
-        avatarInitials: _initials(name),
-      ));
+      emit(
+        ProfileLoadedState(
+          name: name,
+          email: email,
+          phone: _cachedUser!.phone,
+          avatar: _cachedUser!.avatar,
+          avatarInitials: _initials(name),
+        ),
+      );
     } catch (e) {
       emit(ProfileLoadFailedState(message: e.toString()));
     }
@@ -173,16 +178,16 @@ class ProfileCubit extends Cubit<ProfileState> {
     required String address,
     File? avatar,
   }) async {
-    if (isClosed)  return;
+    if (isClosed) return;
     emit(ProfileUpdateLoading());
     try {
       final request = UpdateProfileRequest(
-        name:    name,
-        email:   email,
-        phone:   phone,
+        name: name,
+        email: email,
+        phone: phone,
         country: country,
-        city:    city,
-        street:  street,
+        city: city,
+        street: street,
       );
 
       final result = await updateProfileUseCase.execute(request);
@@ -191,26 +196,26 @@ class ProfileCubit extends Cubit<ProfileState> {
       switch (result) {
         case Success<ProfileEntity>():
           await Future.wait([
-            _write.execute(SharedPrefKeys.userName,    name),
-            _write.execute(SharedPrefKeys.userEmail,   email),
-            _write.execute(SharedPrefKeys.userPhone,   phone),
+            _write.execute(SharedPrefKeys.userName, name),
+            _write.execute(SharedPrefKeys.userEmail, email),
+            _write.execute(SharedPrefKeys.userPhone, phone),
             _write.execute(SharedPrefKeys.userCountry, country),
-            _write.execute(SharedPrefKeys.userCity,    city),
-            _write.execute(SharedPrefKeys.userStreet,  street),
+            _write.execute(SharedPrefKeys.userCity, city),
+            _write.execute(SharedPrefKeys.userStreet, street),
             _write.execute(SharedPrefKeys.userAddress, address),
           ]);
           if (isClosed) return; // ← guard after every await
 
           _cachedUser = (_cachedUser ?? CachedUser(name: name, email: email))
               .copyWith(
-            name:    name,
-            email:   email,
-            phone:   _nullIfEmpty(phone),
-            country: _nullIfEmpty(country),
-            city:    _nullIfEmpty(city),
-            street:  _nullIfEmpty(street),
-            address: _nullIfEmpty(address),
-          );
+                name: name,
+                email: email,
+                phone: _nullIfEmpty(phone),
+                country: _nullIfEmpty(country),
+                city: _nullIfEmpty(city),
+                street: _nullIfEmpty(street),
+                address: _nullIfEmpty(address),
+              );
 
           emit(ProfileUpdateSuccess());
           return;
@@ -225,6 +230,7 @@ class ProfileCubit extends Cubit<ProfileState> {
       emit(ProfileUpdateFailed(message: e.toString()));
     }
   }
+
   // ═══════════════════════════════════════════════════════════════
   // 4. LOAD BRANCHES  (original method — unchanged behaviour)
   // ═══════════════════════════════════════════════════════════════
@@ -259,10 +265,21 @@ class ProfileCubit extends Cubit<ProfileState> {
   // ═══════════════════════════════════════════════════════════════
   // Navigation emitters  (original — unchanged)
   // ═══════════════════════════════════════════════════════════════
-  void goToAboutUs()         => emit(GoToAboutUs());
-  void goToHelpAndSupport()  => emit(GoToHelpAndSupport());
+  void goToAboutUs() => emit(GoToAboutUs());
+  void goToHelpAndSupport() => emit(GoToHelpAndSupport());
   void goToCompanyBranches() => emit(GoToCompanyBranches());
-  void goToEditProfile()     => emit(GoToEditProfile());
+  void goToEditProfile() => emit(GoToEditProfile());
+  void goToChanePassword()=>emit(GoToChangePassword());
+  void submitChangePassword(ChangePasswordRequest changePasswordRequest)async{
+
+    var result=  _changePasswordUseCase.execute( changePasswordRequest);
+    switch (result) {
+      case Success<bool>():
+        emit(ChangePasswordUpdateSuccessState());
+      case Failure():
+        emit(ChangePasswordUpdateFailedState());
+    }
+  }
 
   // ═══════════════════════════════════════════════════════════════
   // Private helpers
