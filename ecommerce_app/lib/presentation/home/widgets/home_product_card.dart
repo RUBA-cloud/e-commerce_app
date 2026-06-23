@@ -2,7 +2,7 @@
 
 import 'package:ecommerce_app/constant/app_theme.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
-import 'package:ecommerce_app/data/model/response/carts/categories_entity.dart';
+import 'package:ecommerce_app/data/model/response/category_entity.dart';
 import 'package:ecommerce_app/presentation/home/widgets/home_shared.dart';
 import 'package:ecommerce_app/presentation/product_details.dart';
 import 'package:ecommerce_app/services/product_details/product_details_cubit.dart';
@@ -17,8 +17,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class ProductsGrid extends StatelessWidget {
   const ProductsGrid({super.key, required this.products, required this.c});
 
-  final List<CategoriesDataDataProductsEntity> products;
-  final AppColors                              c;
+  // ✅ correct type — list of individual products, not the whole response
+  final List<CategoryDataDataProductsEntity> products;
+  final AppColors                            c;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +27,7 @@ class ProductsGrid extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: GridView.builder(
         shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
+        physics:    const NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount:   2,
           mainAxisSpacing:  12.h,
@@ -53,9 +54,10 @@ class HomeProductCard extends StatefulWidget {
     this.heroTag,
   });
 
-  final CategoriesDataDataProductsEntity product;
-  final AppColors                        colors;
-  final String?                          heroTag;
+  // ✅ correct type
+  final CategoryDataDataProductsEntity product;
+  final AppColors                      colors;
+  final String?                        heroTag;
 
   @override
   State<HomeProductCard> createState() => _HomeProductCardState();
@@ -64,64 +66,57 @@ class HomeProductCard extends StatefulWidget {
 class _HomeProductCardState extends State<HomeProductCard> with UiUtility {
   bool _fav = false;
 
-  // ── Per-category accent colour ─────────────────────────────────────────────
-  // Falls back to the brand's main colour when category name is unrecognised.
   Color _accentFor(String categoryEn, AppColors c) {
     final key = categoryEn.toLowerCase();
-    if (key.contains('electronic') || key.contains('tech')) {
-      return const Color(0xFF0F6E56); // teal-600
-    } else if (key.contains('footwear') || key.contains('shoe')) {
-      return const Color(0xFF993C1D); // coral-600
-    } else if (key.contains('bag') || key.contains('accessory')) {
-      return const Color(0xFF854F0B); // amber-600
-    } else if (key.contains('sport') || key.contains('fitness')) {
-      return const Color(0xFF185FA5); // blue-600
-    } else if (key.contains('home') || key.contains('kitchen')) {
-      return const Color(0xFF3B6D11); // green-600
-    }
-    return c.main; // default brand colour
+    if (key.contains('electronic') || key.contains('tech'))    return const Color(0xFF0F6E56);
+    if (key.contains('footwear')   || key.contains('shoe'))    return const Color(0xFF993C1D);
+    if (key.contains('bag')        || key.contains('accessory')) return const Color(0xFF854F0B);
+    if (key.contains('sport')      || key.contains('fitness')) return const Color(0xFF185FA5);
+    if (key.contains('home')       || key.contains('kitchen')) return const Color(0xFF3B6D11);
+    return c.main;
   }
 
   Color _accentBgFor(String categoryEn, AppColors c) {
     final key = categoryEn.toLowerCase();
-    if (key.contains('electronic') || key.contains('tech')) {
-      return const Color(0xFFE1F5EE);
-    } else if (key.contains('footwear') || key.contains('shoe')) {
-      return const Color(0xFFFAECE7);
-    } else if (key.contains('bag') || key.contains('accessory')) {
-      return const Color(0xFFFAEEDA);
-    } else if (key.contains('sport') || key.contains('fitness')) {
-      return const Color(0xFFE6F1FB);
-    } else if (key.contains('home') || key.contains('kitchen')) {
-      return const Color(0xFFEAF3DE);
-    }
+    if (key.contains('electronic') || key.contains('tech'))    return const Color(0xFFE1F5EE);
+    if (key.contains('footwear')   || key.contains('shoe'))    return const Color(0xFFFAECE7);
+    if (key.contains('bag')        || key.contains('accessory')) return const Color(0xFFFAEEDA);
+    if (key.contains('sport')      || key.contains('fitness')) return const Color(0xFFE6F1FB);
+    if (key.contains('home')       || key.contains('kitchen')) return const Color(0xFFEAF3DE);
     return c.main.withOpacity(0.08);
   }
 
   @override
   Widget build(BuildContext context) {
-    final c    = widget.colors;
-    final p    = widget.product;
+    final c = widget.colors;
+    final p = widget.product;
+
+    // ✅ category and type are nullable — use safe fallbacks
+    final categoryNameEn = p.category?.nameEn ?? '';
+    final categoryNameAr = p.category?.nameAr ?? '';
 
     final categoryName = localizedEnAr(
       context: context,
-      nameEn:  p.category.nameEn,
-      nameAr:  p.category.nameAr,
+      nameEn:  categoryNameEn,
+      nameAr:  categoryNameAr,
     );
     final productName = localizedEnAr(
       context: context,
-      nameEn: p.nameEn,
-      nameAr: p.nameAr,
+      nameEn:  p.nameEn,
+      nameAr:  p.nameAr,
     );
 
-    final accent   = _accentFor(p.category.nameEn, c);
-    final accentBg = _accentBgFor(p.category.nameEn, c);
+    final accent   = _accentFor(categoryNameEn, c);
+    final accentBg = _accentBgFor(categoryNameEn, c);
 
     return GestureDetector(
-      onTap: () =>navigateTo(context: context, page: BlocProvider(create:(c)=> ProductDetailsCubit(widget.product),child: ProductDetailsScreen(product: widget.product),)),
-         
-        
-      
+      onTap: () => navigateTo(
+        context: context,
+        page: BlocProvider(
+          create: (_) => ProductDetailsCubit(),
+          child:  ProductDetailsScreen(product: widget.product),
+        ),
+      ),
       child: Container(
         decoration: BoxDecoration(
           color:        c.card,
@@ -137,6 +132,7 @@ class _HomeProductCardState extends State<HomeProductCard> with UiUtility {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
             // ── Product image ────────────────────────────────────
             ClipRRect(
               borderRadius: BorderRadius.only(
@@ -149,15 +145,25 @@ class _HomeProductCardState extends State<HomeProductCard> with UiUtility {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // AppNetworkImage(
-                    //   url:         p.mainImage,
-                    //   fit:         BoxFit.cover,
-                    //   placeholder: HomeProductPlaceholder(
-                    //     colors:    c,
-                    //     accentBg:  accentBg,
-                    //     accent:    accent,
-                    //   ),
-                    // ),
+
+                    // ✅ show network image when mainImage is available
+                    p.mainImage != null && p.mainImage!.isNotEmpty
+                        ? Image.network(
+                      p.mainImage!,
+                      fit:         BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          HomeProductPlaceholder(
+                            colors:   c,
+                            accentBg: accentBg,
+                            accent:   accent,
+                          ),
+                    )
+                        : HomeProductPlaceholder(
+                      colors:   c,
+                      accentBg: accentBg,
+                      accent:   accent,
+                    ),
+
                     // Gradient overlay
                     Positioned(
                       left: 0, right: 0, bottom: 0,
@@ -175,12 +181,15 @@ class _HomeProductCardState extends State<HomeProductCard> with UiUtility {
                         ),
                       ),
                     ),
+
                     // NEW badge
                     Positioned(
                       top: 8, left: 8,
                       child: Container(
                         padding: EdgeInsets.symmetric(
-                            horizontal: 8.w, vertical: 3.h),
+                          horizontal: 8.w,
+                          vertical:   3.h,
+                        ),
                         decoration: BoxDecoration(
                           color:        accent.withOpacity(0.92),
                           borderRadius: BorderRadius.circular(8.r),
@@ -188,21 +197,23 @@ class _HomeProductCardState extends State<HomeProductCard> with UiUtility {
                         child: Text(
                           'NEW',
                           style: TextStyle(
-                            fontSize:   8.sp,
-                            fontWeight: FontWeight.w800,
-                            color:      Colors.white,
+                            fontSize:      8.sp,
+                            fontWeight:    FontWeight.w800,
+                            color:         Colors.white,
                             letterSpacing: 0.8,
                           ),
                         ),
                       ),
                     ),
+
                     // Favourite button
                     Positioned(
                       top: 8, right: 8,
                       child: GestureDetector(
                         onTap: () => setState(() => _fav = !_fav),
                         child: Container(
-                          width: 30.r, height: 30.r,
+                          width:  30.r,
+                          height: 30.r,
                           decoration: BoxDecoration(
                             color: c.card.withOpacity(0.92),
                             shape: BoxShape.circle,
@@ -217,11 +228,13 @@ class _HomeProductCardState extends State<HomeProductCard> with UiUtility {
                         ),
                       ),
                     ),
+
                     // Add-to-cart button
                     Positioned(
                       right: 10, bottom: 10,
                       child: Container(
-                        width: 34.r, height: 34.r,
+                        width:  34.r,
+                        height: 34.r,
                         decoration: BoxDecoration(
                           color:        accent,
                           borderRadius: BorderRadius.circular(12.r),
@@ -233,11 +246,7 @@ class _HomeProductCardState extends State<HomeProductCard> with UiUtility {
                             ),
                           ],
                         ),
-                        child: Icon(
-                          Icons.add,
-                          size:  18.r,
-                          color: Colors.white,
-                        ),
+                        child: Icon(Icons.add, size: 18.r, color: Colors.white),
                       ),
                     ),
                   ],
@@ -251,29 +260,34 @@ class _HomeProductCardState extends State<HomeProductCard> with UiUtility {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+
                   // Category label
-                  Row(
-                    children: [
-                      Container(
-                        width:  4.w,
-                        height: 4.w,
-                        decoration: BoxDecoration(
-                          color: accent, shape: BoxShape.circle,
+                  if (categoryName.isNotEmpty)
+                    Row(
+                      children: [
+                        Container(
+                          width:  4.w,
+                          height: 4.w,
+                          decoration: BoxDecoration(
+                            color: accent,
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                      ),
-                      SizedBox(width: 4.w),
-                      Text(
-                        categoryName.toUpperCase(),
-                        style: TextStyle(
-                          fontSize:      8.sp,
-                          fontWeight:    FontWeight.w700,
-                          color:         accent,
-                          letterSpacing: 0.5,
+                        SizedBox(width: 4.w),
+                        Text(
+                          categoryName.toUpperCase(),
+                          style: TextStyle(
+                            fontSize:      8.sp,
+                            fontWeight:    FontWeight.w700,
+                            color:         accent,
+                            letterSpacing: 0.5,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+
                   SizedBox(height: 5.h),
+
                   // Product name
                   Text(
                     productName,
@@ -283,10 +297,12 @@ class _HomeProductCardState extends State<HomeProductCard> with UiUtility {
                       color:      c.bodyText,
                       height:     1.25,
                     ),
-                    maxLines:  2,
-                    overflow:  TextOverflow.ellipsis,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
+
                   SizedBox(height: 8.h),
+
                   // Price + rating
                   Row(
                     children: [
@@ -306,8 +322,7 @@ class _HomeProductCardState extends State<HomeProductCard> with UiUtility {
                       ),
                       Text(
                         ' 4.8',
-                        style:
-                        TextStyle(fontSize: 10.sp, color: c.hint),
+                        style: TextStyle(fontSize: 10.sp, color: c.hint),
                       ),
                     ],
                   ),

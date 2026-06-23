@@ -1,3 +1,7 @@
+// ============================================================
+//  login_screen.dart
+// ============================================================
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
 import 'package:ecommerce_app/data/model/request/login_request.dart';
@@ -6,9 +10,9 @@ import 'package:ecommerce_app/presentation/auth/register_screen.dart';
 import 'package:ecommerce_app/presentation/auth/verify_email_screen.dart';
 import 'package:ecommerce_app/presentation/home/home_buttom_navigation.dart';
 import 'package:ecommerce_app/presentation/widgets/animated_blob.dart';
-import 'package:ecommerce_app/services/cart/cart_cubit.dart';
-import 'package:ecommerce_app/services/company_info/company_info_cubit.dart';
-import 'package:ecommerce_app/services/company_info/company_info_state.dart';
+import 'package:ecommerce_app/services/company_info/app_main_cubit.dart';
+import 'package:ecommerce_app/services/company_info/app_main_state.dart';
+import 'package:ecommerce_app/services/home/home_cubit.dart';
 import 'package:ecommerce_app/services/login/login_cubit.dart';
 import 'package:ecommerce_app/services/login/login_state.dart';
 import 'package:ecommerce_app/services/register/register_cubit.dart';
@@ -30,6 +34,7 @@ class _LoginScreenState extends State<LoginScreen>
   final _formKey      = GlobalKey<FormState>();
 
   late LoginCubit          _cubit;
+  late AppMainCubit        _appCubit;
   late AnimationController _fadeCtrl;
   late Animation<double>   _fadeAnim;
 
@@ -37,6 +42,7 @@ class _LoginScreenState extends State<LoginScreen>
   void initState() {
     super.initState();
     _cubit    = LoginCubit.get(context);
+    _appCubit = AppMainCubit.get(context);
     _fadeCtrl = AnimationController(
       vsync:    this,
       duration: const Duration(milliseconds: 700),
@@ -52,7 +58,8 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  void _switchLocale(String code) =>  EasyLocalization.of(context)!.setLocale(Locale(code));
+  void _switchLocale(String code) =>
+      EasyLocalization.of(context)!.setLocale(Locale(code));
 
   void _onSubmit() {
     if (!_formKey.currentState!.validate()) return;
@@ -69,126 +76,158 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AppMainCubit, AppMainState>(
+      // ✅ rebuild ONLY on theme toggle or company info —
+      //    never on loading/auth states so spinner never appears
       buildWhen: (_, s) =>
-      s is CompanyInfoLoaded || s is CompanyInfoUpdated,
+      s is ThemeChangedState  ||
+          s is CompanyInfoLoaded  ||
+          s is CompanyInfoUpdated,
       builder: (ctx, companyState) {
-        final c      = companyColors(companyState);
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        final p      = ColorHelper.fromCompany(c, isDark);
-        final isAr   = ctx.locale.languageCode == 'ar';
 
-        return BlocListener<LoginCubit, LoginState>(
-          listener: _handleState,
-          child: Scaffold(
-            backgroundColor: p.bg,
-            body: Stack(
-              children: [
-                // ── Blobs ──────────────────────────────────────
-                Positioned(
-                  top: -80.r, right: -60.r,
-                  child: AnimatedBlob(
-                    color:    p.primary,
-                    size:     320.r,
-                    opacity:  isDark ? 0.18 : 0.12,
-                    duration: const Duration(seconds: 4),
+        // ✅ isDark from cubit directly — Theme.of() lags one frame
+        final isDark = companyState is ThemeChangedState
+            ? companyState.isDark
+            : _appCubit.isDark;
+
+        // ✅ ThemeChangedState carries no company data —
+        //    fall back to last loaded state from cubit,
+        //    only when cubit actually has real company data
+        final colorState = (companyState is ThemeChangedState)
+            ? ((_appCubit.state is CompanyInfoLoaded ||
+            _appCubit.state is CompanyInfoUpdated)
+            ? _appCubit.state   // ✅ safe — has real company data
+            : companyState)     // ✅ no data yet — keep fallback defaults
+            : companyState;
+
+        final c    = companyColors(colorState, ctx);
+        final r    = c.resolved(isDark);  // ✅ picks dark fields when isDark
+        final p    = ColorHelper.fromCompany(c, isDark);
+        final isAr = ctx.locale.languageCode == 'ar';
+
+        return AnimatedTheme(
+          // ✅ smooth 300ms color transition on theme toggle
+          data:     buildTheme(c, brightness: isDark ? Brightness.dark : Brightness.light),
+          duration: const Duration(milliseconds: 300),
+          child: BlocListener<LoginCubit, LoginState>(
+            listener: _handleState,
+            child: Scaffold(
+              backgroundColor: p.bg,
+              body: Stack(
+                children: [
+
+                  // ── Blobs ────────────────────────────────────
+                  Positioned(
+                    top: -80.r, right: -60.r,
+                    child: AnimatedBlob(
+                      color:    p.primary,
+                      size:     320.r,
+                      opacity:  isDark ? 0.18 : 0.12,
+                      duration: const Duration(seconds: 4),
+                    ),
                   ),
-                ),
-                Positioned(
-                  bottom: -100.r, left: -80.r,
-                  child: AnimatedBlob(
-                    color:    p.blob2,
-                    size:     260.r,
-                    opacity:  isDark ? 0.14 : 0.09,
-                    duration: const Duration(seconds: 5),
+                  Positioned(
+                    bottom: -100.r, left: -80.r,
+                    child: AnimatedBlob(
+                      color:    p.blob2,
+                      size:     260.r,
+                      opacity:  isDark ? 0.14 : 0.09,
+                      duration: const Duration(seconds: 5),
+                    ),
                   ),
-                ),
 
-                // ── Content ────────────────────────────────────
-                SafeArea(
-                  child: FadeTransition(
-                    opacity: _fadeAnim,
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.symmetric(horizontal: 24.w),
-                      child: Form(
-                        key:              _formKey,
-                        autovalidateMode: AutovalidateMode.onUserInteraction,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(height: 20.h),
+                  // ── Content ──────────────────────────────────
+                  SafeArea(
+                    child: FadeTransition(
+                      opacity: _fadeAnim,
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: EdgeInsets.symmetric(horizontal: 24.w),
+                        child: Form(
+                          key:              _formKey,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(height: 20.h),
 
-                            // ── Top bar (mixin — login has no back btn)
-                            sharedTopBar(
-                              p:             p,
-                              isAr:          isAr,
-                              isDark:        isDark,
-                              onLang:        _switchLocale,
-                              onBack:        null,   // no back on login
-                              showBackButton: false,
-                            ),
-                            SizedBox(height: 32.h),
-
-                            // ── Logo (mixin)
-                            Center(
-                              child: sharedLogo(
-                                p:       p,
-                                c:       c,
-                                icon:    Icons.storefront_rounded,
-                                appName: 'ShopNow',
+                              // ── Top bar ─────────────────────
+                              sharedTopBar(
+                                p:              p,
+                                isAr:           isAr,
+                                isDark:         isDark,
+                                onLang:         _switchLocale,
+                                onBack:         null,
+                                showBackButton: false,
                               ),
-                            ),
-                            SizedBox(height: 28.h),
+                              SizedBox(height: 32.h),
 
-                            // ── Headline (mixin)
-                            sharedHeadline(
-                              title:    'welcome_back'.tr(),
-                              subtitle: 'login_subtitle'.tr(),
-                              p:        p,
-                            ),
-                            SizedBox(height: 32.h),
+                              // ── Logo ────────────────────────
+                              // ✅ pass resolved `r` — dark-aware gradient
+                              Center(
+                                child: sharedLogo(
+                                  p:       p,
+                                  c:       r,
+                                  icon:    Icons.storefront_rounded,
+                                  appName: 'ShopNow',
+                                ),
+                              ),
+                              SizedBox(height: 28.h),
 
-                            // ── Form card
-                            _LoginFormCard(
-                              p:            p,
-                              emailCtrl:    _emailCtrl,
-                              passwordCtrl: _passwordCtrl,
-                              obscure:      _cubit.passwordIsObscure,
-                              onTogglePass: () =>_cubit.toggleObscure,
+                              // ── Headline ────────────────────
+                              sharedHeadline(
+                                title:    'welcome_back'.tr(),
+                                subtitle: 'login_subtitle'.tr(),
+                                p:        p,
+                              ),
+                              SizedBox(height: 32.h),
 
-                              onForgot: () => _cubit.goToForgotPassword(),
-                              onSubmit: _onSubmit,
-                            ),
-                            SizedBox(height: 32.h),
+                              // ── Form card ───────────────────
+                              // rebuilds ONLY when obscure toggles
+                              BlocBuilder<LoginCubit, LoginState>(
+                                buildWhen: (_, s) => s is LoginObscureToggled,
+                                builder: (context, state) => _LoginFormCard(
+                                  p:            p,
+                                  emailCtrl:    _emailCtrl,
+                                  passwordCtrl: _passwordCtrl,
+                                  obscure:      _cubit.passwordIsObscure,
+                                  onTogglePass: _cubit.toggleObscure,
+                                  onForgot:     () => _cubit.goToForgotPassword(),
+                                  onSubmit:     _onSubmit,
+                                ),
+                              ),
+                              SizedBox(height: 32.h),
 
-                            // ── Or divider (mixin)
-                            sharedOrDivider(p: p),
-                            SizedBox(height: 24.h),
+                              // ── Or divider ──────────────────
+                              sharedOrDivider(p: p),
+                              SizedBox(height: 24.h),
 
-                            // ── Register link
-                            _RegisterRow(
-                              p:     p,
-                              onTap: () => _cubit.goToRegister(),
-                            ),
-                            SizedBox(height: 40.h),
-                          ],
+                              // ── Register link ───────────────
+                              _RegisterRow(
+                                p:     p,
+                                onTap: () => _cubit.goToRegister(),
+                              ),
+                              SizedBox(height: 40.h),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
 
-                // ── Loading overlay (mixin)
-                BlocBuilder<LoginCubit, LoginState>(
-                  buildWhen: (_, s) =>
-                  s is LoginLoading ||
-                      s is LoginInitial ||
-                      s is LoginFailed,
-                  builder: (_, s) => s is LoginLoading
-                      ? sharedLoadingOverlay(p: p)
-                      : const SizedBox.shrink(),
-                ),
-              ],
+                  // ── Loading overlay ──────────────────────────
+                  // ✅ driven ONLY by LoginCubit — never by AppMainCubit
+                  //    so theme changes NEVER trigger the loading spinner
+                  BlocBuilder<LoginCubit, LoginState>(
+                    buildWhen: (_, s) =>
+                    s is LoginLoading ||
+                        s is LoginInitial ||
+                        s is LoginFailed,
+                    builder: (_, s) => s is LoginLoading
+                        ? sharedLoadingOverlay(p: p)
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -212,7 +251,7 @@ class _LoginScreenState extends State<LoginScreen>
         context: ctx,
         replace: true,
         page: BlocProvider(
-          create: (_) => CartCubit(),
+          create: (_) => HomeCubit(),
           child: const ButtonHomeNavigationScreen(),
         ),
       );
@@ -239,12 +278,16 @@ class _LoginScreenState extends State<LoginScreen>
       return;
     }
     if (state is LoginFailed) {
-      showSnackBar(context: ctx, message: state.message, success: false);
+      showSnackBar(
+        context: ctx,
+        message: state.message ?? 'something_went_wrong'.tr(),
+        success: false,
+      );
     }
   }
 }
 
-// ── Login form card ───────────────────────────────────────────────────────────
+// ── Login form card ───────────────────────────────────────────
 
 class _LoginFormCard extends StatelessWidget with UiUtility {
   const _LoginFormCard({
@@ -267,7 +310,9 @@ class _LoginFormCard extends StatelessWidget with UiUtility {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // ✅ AnimatedContainer — smooth bg color transition on theme change
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
       padding:    EdgeInsets.all(24.r),
       decoration: BoxDecoration(
         color:        p.card,
@@ -285,7 +330,7 @@ class _LoginFormCard extends StatelessWidget with UiUtility {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          // ── Email ──────────────────────────────────────────
+          // ── Email ──────────────────────────────────────
           sharedFieldLabel(label: 'email'.tr(), p: p),
           SizedBox(height: 8.h),
           sharedInputField(
@@ -305,7 +350,7 @@ class _LoginFormCard extends StatelessWidget with UiUtility {
           ),
           SizedBox(height: 18.h),
 
-          // ── Password ───────────────────────────────────────
+          // ── Password ───────────────────────────────────
           sharedFieldLabel(label: 'password'.tr(), p: p),
           SizedBox(height: 8.h),
           sharedInputField(
@@ -316,12 +361,15 @@ class _LoginFormCard extends StatelessWidget with UiUtility {
             p:          p,
             suffix: GestureDetector(
               onTap: onTogglePass,
-              child: Icon(
-                obscure
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-                color: p.subText,
-                size:  20.r,
+              child: Padding(
+                padding: EdgeInsets.only(right: 12.w),
+                child: Icon(
+                  obscure
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  color: p.subText,
+                  size:  20.r,
+                ),
               ),
             ),
             validator: (v) =>
@@ -329,7 +377,7 @@ class _LoginFormCard extends StatelessWidget with UiUtility {
           ),
           SizedBox(height: 10.h),
 
-          // ── Forgot password ────────────────────────────────
+          // ── Forgot password ────────────────────────────
           Align(
             alignment: AlignmentDirectional.centerEnd,
             child: TextButton(
@@ -351,7 +399,7 @@ class _LoginFormCard extends StatelessWidget with UiUtility {
           ),
           SizedBox(height: 24.h),
 
-          // ── Submit ─────────────────────────────────────────
+          // ── Submit ─────────────────────────────────────
           BlocBuilder<LoginCubit, LoginState>(
             buildWhen: (_, s) =>
             s is LoginLoading ||
@@ -371,7 +419,7 @@ class _LoginFormCard extends StatelessWidget with UiUtility {
   }
 }
 
-// ── Register row ──────────────────────────────────────────────────────────────
+// ── Register row ──────────────────────────────────────────────
 
 class _RegisterRow extends StatelessWidget {
   const _RegisterRow({required this.p, required this.onTap});

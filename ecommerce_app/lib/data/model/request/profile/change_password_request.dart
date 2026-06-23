@@ -1,17 +1,18 @@
 class ChangePasswordRequest {
-  final String? currentPassword;
+  final String? currentPassword;final
+  String?passwordConfirmation;
   final String? password;
 
   const ChangePasswordRequest({
     this.currentPassword,
     this.password,
+    this.passwordConfirmation
   });
 
   Map<String, dynamic> toJson() => {
     if (currentPassword != null) 'current_password': currentPassword,
     if (password != null) 'password': password,
-
-  };
+  if(passwordConfirmation!=null) "password_confirmation":passwordConfirmation};
 
   factory ChangePasswordRequest.fromJson(Map<String, dynamic> json) {
     return ChangePasswordRequest(

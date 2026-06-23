@@ -1,10 +1,11 @@
+// lib/presentation/product/product_details_screen.dart
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/constant/app_theme.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
-import 'package:ecommerce_app/data/model/response/carts/categories_entity.dart';
+import 'package:ecommerce_app/data/model/response/category_entity.dart';
 import 'package:ecommerce_app/presentation/home/home_buttom_navigation.dart';
 import 'package:ecommerce_app/presentation/home/widgets/home_shared.dart';
-import 'package:ecommerce_app/presentation/widgets/similar_products.dart';
 import 'package:ecommerce_app/services/product_details/product_details_cubit.dart';
 import 'package:ecommerce_app/services/product_details/product_details_state.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +15,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class ProductDetailsScreen extends StatefulWidget {
   const ProductDetailsScreen({super.key, required this.product});
 
-  final CategoriesDataDataProductsEntity product;
+  final CategoryDataDataProductsEntity product;
 
   @override
   State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
@@ -22,31 +23,38 @@ class ProductDetailsScreen extends StatefulWidget {
 
 class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     with UiUtility {
+
   // ── helpers ───────────────────────────────────────────────────────────────
+
   List<String> get _imageUrls {
-    if (widget.product.images.isNotEmpty) {
-      return widget.product.images.map((e) => e.imagePath).toList();
+    final urls = <String>[];
+    for (final img in widget.product.images) {
+      final url = img is String ? img : img?.toString();
+      if (url != null && url.isNotEmpty) urls.add(url);
     }
-    if (widget.product.mainImage.isNotEmpty) return [widget.product.mainImage];
-    return [];
+    final main = widget.product.mainImage;
+    if (main != null && main.isNotEmpty && !urls.contains(main)) {
+      urls.insert(0, main);
+    }
+    return urls;
   }
 
   String _name(BuildContext ctx) => localizedEnAr(
     context: ctx,
-    nameEn: widget.product.nameEn,
-    nameAr: widget.product.nameAr,
+    nameEn:  widget.product.nameEn,
+    nameAr:  widget.product.nameAr,
   );
 
   String _category(BuildContext ctx) => localizedEnAr(
     context: ctx,
-    nameEn: widget.product.category.nameEn,
-    nameAr: widget.product.category.nameAr,
+    nameEn:  widget.product.category?.nameEn ?? '',
+    nameAr:  widget.product.category?.nameAr ?? '',
   );
 
   String _description(BuildContext ctx) => localizedEnAr(
     context: ctx,
-    nameEn: widget.product.descriptionEn,
-    nameAr: widget.product.descriptionAr,
+    nameEn:  widget.product.descriptionEn ?? '',
+    nameAr:  widget.product.descriptionAr ?? '',
   );
 
   double get _unitPrice => double.tryParse(widget.product.price) ?? 0;
@@ -57,7 +65,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   @override
   void initState() {
     super.initState();
-    _cubit = ProductDetailsCubit(widget.product);
+    _cubit = ProductDetailsCubit();
+    _cubit.entity = widget.product;
     _cubit.fetchSelectedCategory(widget.product.categoryId);
   }
 
@@ -74,17 +83,16 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
       value: _cubit,
       child: BlocListener<ProductDetailsCubit, ProductDetailsState>(
         listener: (context, state) {
-          // Navigate to cart tab on successful add
           if (state is AddProductsToCartsSuccess) {
             ButtonHomeNavigationScreen.goToCart(context);
           }
         },
         child: BlocBuilder<ProductDetailsCubit, ProductDetailsState>(
           builder: (context, state) {
-            final c = Theme.of(context).appColors;
+            final c = Theme.of(context).appColors; // ✅ AppColors from company
             return Scaffold(
               backgroundColor: c.textField,
-              extendBody: true,
+              extendBody:      true,
               body: Stack(
                 children: [
                   CustomScrollView(
@@ -110,94 +118,113 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   // ══════════════════════════════════════════════════════════════════════════
   // GALLERY
   // ══════════════════════════════════════════════════════════════════════════
+
   Widget _gallerySliver(
       BuildContext context, AppColors c, ProductDetailsState state) {
-    final urls = _imageUrls;
-    final cubit = ProductDetailsCubit.get(context);
-    final controller = PageController(initialPage: state.selectedImageIndex);
+    final urls       = _imageUrls;
+    final cubit      = ProductDetailsCubit.get(context);
+    final controller = PageController(
+      initialPage: state.selectedImageIndex.clamp(
+          0, urls.isEmpty ? 0 : urls.length - 1),
+    );
 
     return SliverToBoxAdapter(
       child: Stack(
         children: [
+
+          // ── Main pager ────────────────────────────────────────────────
           Container(
             height: 380.h,
-            color: c.main.withOpacity(0.06),
+            color:  c.main.withOpacity(0.06),
             child: urls.isEmpty
                 ? _emptyGallery(c)
                 : PageView.builder(
-              controller: controller,
+              controller:    controller,
               onPageChanged: cubit.imageChanged,
-              itemCount: urls.length,
-              itemBuilder: (_, i) =>SizedBox(),
+              itemCount:     urls.length,
+              itemBuilder:   (_, i) => Image.network(
+                urls[i],
+                fit:          BoxFit.cover,
+                errorBuilder: (_, __, ___) => _emptyGallery(c),
+              ),
             ),
           ),
+
+          // ── Bottom gradient ───────────────────────────────────────────
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                  begin:  Alignment.topCenter,
+                  end:    Alignment.bottomCenter,
                   colors: [Colors.transparent, c.textField.withOpacity(0.9)],
-                  stops: const [0.55, 1.0],
+                  stops:  const [0.55, 1.0],
                 ),
               ),
             ),
           ),
+
+          // ── Dot indicators ────────────────────────────────────────────
           if (urls.length > 1)
             Positioned(
               bottom: 68.h,
-              left: 0,
-              right: 0,
+              left:   0,
+              right:  0,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(urls.length, (i) {
                   final active = state.selectedImageIndex == i;
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 220),
-                    margin: EdgeInsets.symmetric(horizontal: 3.w),
-                    width: active ? 22.w : 7.w,
-                    height: 7.h,
+                    margin:   EdgeInsets.symmetric(horizontal: 3.w),
+                    width:    active ? 22.w : 7.w,
+                    height:   7.h,
                     decoration: BoxDecoration(
-                      color: active ? c.main : c.hint.withOpacity(0.35),
+                      color: active
+                          ? c.main
+                          : c.hint.withOpacity(0.35),
                       borderRadius: BorderRadius.circular(4.r),
                     ),
                   );
                 }),
               ),
             ),
+
+          // ── Counter pill ──────────────────────────────────────────────
           if (urls.isNotEmpty)
             Positioned(
-              top: MediaQuery.paddingOf(context).top + 58.h,
+              top:   MediaQuery.paddingOf(context).top + 58.h,
               right: 16.w,
               child: Container(
-                padding:
-                EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
                 decoration: BoxDecoration(
-                  color: c.card.withOpacity(0.92),
+                  color:        c.card.withOpacity(0.92),
                   borderRadius: BorderRadius.circular(20.r),
                   border: Border.all(color: c.hint.withOpacity(0.12)),
                 ),
                 child: Text(
                   '${state.selectedImageIndex + 1} / ${urls.length}',
                   style: TextStyle(
-                    fontSize: 11.sp,
+                    fontSize:   11.sp,
                     fontWeight: FontWeight.w700,
-                    color: c.bodyText,
+                    color:      c.bodyText,
                   ),
                 ),
               ),
             ),
+
+          // ── Thumbnail strip ───────────────────────────────────────────
           if (urls.length > 1)
             Positioned(
-              left: 0,
-              right: 0,
+              left:   0,
+              right:  0,
               bottom: 16.h,
               child: SizedBox(
                 height: 60.h,
                 child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: EdgeInsets.symmetric(horizontal: 20.w),
-                  itemCount: urls.length,
+                  scrollDirection:  Axis.horizontal,
+                  padding:          EdgeInsets.symmetric(horizontal: 20.w),
+                  itemCount:        urls.length,
                   separatorBuilder: (_, __) => SizedBox(width: 8.w),
                   itemBuilder: (_, i) {
                     final selected = state.selectedImageIndex == i;
@@ -205,7 +232,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                       onTap: () => controller.animateToPage(
                         i,
                         duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOutCubic,
+                        curve:    Curves.easeOutCubic,
                       ),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
@@ -219,16 +246,27 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                           boxShadow: selected
                               ? [
                             BoxShadow(
-                              color: c.main.withOpacity(0.28),
+                              color:      c.main.withOpacity(0.28),
                               blurRadius: 8,
-                              offset: const Offset(0, 3),
+                              offset:     const Offset(0, 3),
                             ),
                           ]
                               : null,
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12.r),
-                          child:SizedBox()
+                          child: Image.network(
+                            urls[i],
+                            fit:          BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: c.textField,
+                              child: Icon(
+                                Icons.image_outlined,
+                                size:  20.r,
+                                color: c.hint,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     );
@@ -242,11 +280,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   }
 
   Widget _emptyGallery(AppColors c) => Container(
-    color: c.main.withOpacity(0.06),
+    color:     c.main.withOpacity(0.06),
     alignment: Alignment.center,
     child: Icon(
       Icons.shopping_bag_outlined,
-      size: 80.r,
+      size:  80.r,
       color: c.main.withOpacity(0.30),
     ),
   );
@@ -254,13 +292,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   // ══════════════════════════════════════════════════════════════════════════
   // TOP BAR
   // ══════════════════════════════════════════════════════════════════════════
+
   Widget _topBar(
       BuildContext context, AppColors c, ProductDetailsState state) {
     final cubit = ProductDetailsCubit.get(context);
     return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
+      top: 0, left: 0, right: 0,
       child: Container(
         padding: EdgeInsets.fromLTRB(
           12.w,
@@ -270,16 +307,16 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
         ),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin:  Alignment.topCenter,
+            end:    Alignment.bottomCenter,
             colors: [c.card.withOpacity(0.92), Colors.transparent],
           ),
         ),
         child: Row(
           children: [
             _circleBtn(
-              icon: Icons.arrow_back_ios_new_rounded,
-              c: c,
+              icon:  Icons.arrow_back_ios_new_rounded,
+              c:     c,
               onTap: () => Navigator.pop(context),
             ),
             SizedBox(width: 10.w),
@@ -289,27 +326,27 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 14.sp,
+                  fontSize:   14.sp,
                   fontWeight: FontWeight.w700,
-                  color: c.bodyText,
+                  color:      c.bodyText,
                 ),
               ),
             ),
             _circleBtn(
-              icon: state.isFav
+              icon:      state.isFav
                   ? Icons.favorite_rounded
                   : Icons.favorite_border_rounded,
-              c: c,
+              c:         c,
               iconColor: state.isFav ? Colors.red.shade400 : c.icon,
-              bg: state.isFav
+              bg:        state.isFav
                   ? Colors.red.shade50
                   : c.card.withOpacity(0.92),
               onTap: cubit.toggleFav,
             ),
             SizedBox(width: 8.w),
             _circleBtn(
-              icon: Icons.ios_share_rounded,
-              c: c,
+              icon:  Icons.ios_share_rounded,
+              c:     c,
               onTap: () {},
             ),
           ],
@@ -319,26 +356,26 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   }
 
   Widget _circleBtn({
-    required IconData icon,
-    required AppColors c,
+    required IconData     icon,
+    required AppColors    c,
     required VoidCallback onTap,
-    Color? iconColor,
-    Color? bg,
+    Color?                iconColor,
+    Color?                bg,
   }) =>
       GestureDetector(
         onTap: onTap,
         child: Container(
-          width: 38.r,
+          width:  38.r,
           height: 38.r,
           decoration: BoxDecoration(
-            color: bg ?? c.card.withOpacity(0.92),
-            shape: BoxShape.circle,
+            color:  bg ?? c.card.withOpacity(0.92),
+            shape:  BoxShape.circle,
             border: Border.all(color: c.hint.withOpacity(0.14)),
             boxShadow: [
               BoxShadow(
-                color: c.hint.withOpacity(0.10),
+                color:      c.hint.withOpacity(0.10),
                 blurRadius: 8,
-                offset: const Offset(0, 3),
+                offset:     const Offset(0, 3),
               ),
             ],
           ),
@@ -349,6 +386,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   // ══════════════════════════════════════════════════════════════════════════
   // CONTENT SHEET
   // ══════════════════════════════════════════════════════════════════════════
+
   Widget _contentSheet(
       BuildContext context, AppColors c, ProductDetailsState state) {
     final desc = _description(context);
@@ -357,13 +395,13 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
       offset: Offset(0, -24.h),
       child: Container(
         decoration: BoxDecoration(
-          color: c.card,
+          color:        c.card,
           borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
           boxShadow: [
             BoxShadow(
-              color: c.main.withOpacity(0.08),
+              color:      c.main.withOpacity(0.08),
               blurRadius: 24,
-              offset: const Offset(0, -4),
+              offset:     const Offset(0, -4),
             ),
           ],
         ),
@@ -373,10 +411,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
             SizedBox(height: 10.h),
             Center(
               child: Container(
-                width: 40.w,
+                width:  40.w,
                 height: 4.h,
                 decoration: BoxDecoration(
-                  color: c.hint.withOpacity(0.22),
+                  color:        c.hint.withOpacity(0.22),
                   borderRadius: BorderRadius.circular(2.r),
                 ),
               ),
@@ -386,36 +424,39 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Pills
+
+                  // ── Pills ─────────────────────────────────────────────
                   Wrap(
-                    spacing: 6.w,
+                    spacing:    6.w,
                     runSpacing: 6.h,
                     children: [
-                      _pill(_category(context), c),
+                      if (_category(context).isNotEmpty)
+                        _pill(_category(context), c),
                       _pill(
                         'in_stock'.tr(),
                         c,
-                        color: const Color(0xFF0F6E56),
-                        bg: const Color(0xFFE1F5EE),
+                        color:       const Color(0xFF0F6E56),
+                        bg:          const Color(0xFFE1F5EE),
                         borderColor: const Color(0xFF9FE1CB),
                       ),
                       _pill(
                         'new_arrival'.tr(),
                         c,
-                        color: c.main,
-                        bg: c.main.withOpacity(0.10),
+                        color:       c.main,
+                        bg:          c.main.withOpacity(0.10),
                         borderColor: c.main.withOpacity(0.3),
                       ),
                     ],
                   ),
+
                   SizedBox(height: 14.h),
                   Text(
                     _name(context),
                     style: TextStyle(
-                      fontSize: 24.sp,
-                      fontWeight: FontWeight.w800,
-                      color: c.bodyText,
-                      height: 1.15,
+                      fontSize:      24.sp,
+                      fontWeight:    FontWeight.w800,
+                      color:         c.bodyText,
+                      height:        1.15,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -425,44 +466,48 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                   _trustRow(c),
                   SizedBox(height: 18.h),
                   _priceQtyCard(context, c, state),
+
                   if (widget.product.colors.isNotEmpty) ...[
                     SizedBox(height: 22.h),
                     _sectionLabel('color'.tr(), c),
                     SizedBox(height: 10.h),
                     _colorsRow(context, c, state),
                   ],
+
                   if (widget.product.sizes.isNotEmpty) ...[
                     SizedBox(height: 22.h),
                     _sectionLabel('size'.tr(), c),
                     SizedBox(height: 10.h),
                     _sizesWrap(context, c, state),
                   ],
+
                   SizedBox(height: 22.h),
                   _sectionLabel('description'.tr(), c),
                   SizedBox(height: 10.h),
-                  // Description card
+
+                  // ── Description card ──────────────────────────────────
                   GestureDetector(
                     onTap: ProductDetailsCubit.get(context).toggleDesc,
                     child: Container(
-                      width: double.infinity,
+                      width:   double.infinity,
                       padding: EdgeInsets.all(16.r),
                       decoration: BoxDecoration(
-                        color: c.textField,
+                        color:        c.textField,
                         borderRadius: BorderRadius.circular(18.r),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            desc,
+                            desc.isNotEmpty ? desc : '—',
                             maxLines: state.descExpanded ? null : 3,
                             overflow: state.descExpanded
                                 ? TextOverflow.visible
                                 : TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 13.sp,
-                              color: c.bodyText.withOpacity(0.85),
-                              height: 1.65,
+                              color:    c.bodyText.withOpacity(0.85),
+                              height:   1.65,
                             ),
                           ),
                           if (desc.length > 100) ...[
@@ -475,9 +520,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                                       ? 'show_less'.tr()
                                       : 'read_more'.tr(),
                                   style: TextStyle(
-                                    fontSize: 11.sp,
+                                    fontSize:   11.sp,
                                     fontWeight: FontWeight.w700,
-                                    color: c.main,
+                                    color:      c.main,
                                   ),
                                 ),
                                 SizedBox(width: 2.w),
@@ -485,7 +530,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                                   state.descExpanded
                                       ? Icons.keyboard_arrow_up_rounded
                                       : Icons.keyboard_arrow_down_rounded,
-                                  size: 14.r,
+                                  size:  14.r,
                                   color: c.main,
                                 ),
                               ],
@@ -495,6 +540,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                       ),
                     ),
                   ),
+
                   SizedBox(height: 22.h),
                   _sectionLabel('product_info'.tr(), c),
                   SizedBox(height: 10.h),
@@ -504,20 +550,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
               ),
             ),
 
-            // ── Similar products ──────────────────────────────────────────
-            if (state.similarCategory?.products != null)
-              SimilarProductsSection(
-                similarProducts: state.similarCategory!,
-                currentProduct: widget.product,
-                onProductTap: (product) => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        ProductDetailsScreen(product: widget.product),
-                  ),
-                ),
-              ),
-
             SizedBox(height: 120.h),
           ],
         ),
@@ -526,6 +558,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   }
 
   // ── Pill ──────────────────────────────────────────────────────────────────
+
   Widget _pill(
       String text,
       AppColors c, {
@@ -536,22 +569,23 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 5.h),
       decoration: BoxDecoration(
-        color: bg ?? c.textField,
+        color:        bg ?? c.textField,
         borderRadius: BorderRadius.circular(20.r),
         border: Border.all(color: borderColor ?? c.hint.withOpacity(0.18)),
       ),
       child: Text(
         text,
         style: TextStyle(
-          fontSize: 10.sp,
+          fontSize:   10.sp,
           fontWeight: FontWeight.w600,
-          color: color ?? c.hint,
+          color:      color ?? c.hint,
         ),
       ),
     );
   }
 
   // ── Rating row ────────────────────────────────────────────────────────────
+
   Widget _ratingRow(AppColors c) {
     return Row(
       children: [
@@ -559,7 +593,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
           5,
               (i) => Icon(
             i < 4 ? Icons.star_rounded : Icons.star_half_rounded,
-            size: 18.r,
+            size:  18.r,
             color: Colors.amber[600],
           ),
         ),
@@ -567,9 +601,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
         Text(
           '4.8',
           style: TextStyle(
-            fontSize: 14.sp,
+            fontSize:   14.sp,
             fontWeight: FontWeight.w800,
-            color: c.bodyText,
+            color:      c.bodyText,
           ),
         ),
         Text(
@@ -581,11 +615,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   }
 
   // ── Trust row ─────────────────────────────────────────────────────────────
+
   Widget _trustRow(AppColors c) {
     final items = [
       (Icons.local_shipping_outlined, 'free_shipping'.tr()),
-      (Icons.verified_user_outlined, 'secure_payment'.tr()),
-      (Icons.autorenew_rounded, 'easy_returns'.tr()),
+      (Icons.verified_user_outlined,  'secure_payment'.tr()),
+      (Icons.autorenew_rounded,       'easy_returns'.tr()),
     ];
     return Row(
       children: items.asMap().entries.map((e) {
@@ -593,20 +628,20 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
         final last = e.key == items.length - 1;
         return Expanded(
           child: Container(
-            margin: EdgeInsets.only(right: last ? 0 : 8.w),
+            margin:  EdgeInsets.only(right: last ? 0 : 8.w),
             padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 4.w),
             decoration: BoxDecoration(
-              color: c.textField,
+              color:        c.textField,
               borderRadius: BorderRadius.circular(14.r),
               border: Border.all(color: c.hint.withOpacity(0.10)),
             ),
             child: Column(
               children: [
                 Container(
-                  width: 32.r,
+                  width:  32.r,
                   height: 32.r,
                   decoration: BoxDecoration(
-                    color: c.main.withOpacity(0.10),
+                    color:        c.main.withOpacity(0.10),
                     borderRadius: BorderRadius.circular(10.r),
                   ),
                   child: Icon(item.$1, size: 17.r, color: c.main),
@@ -615,12 +650,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                 Text(
                   item.$2,
                   textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                  maxLines:  2,
+                  overflow:  TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 8.sp,
+                    fontSize:   8.sp,
                     fontWeight: FontWeight.w600,
-                    color: c.bodyText,
+                    color:      c.bodyText,
                   ),
                 ),
               ],
@@ -632,17 +667,18 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   }
 
   // ── Section label ─────────────────────────────────────────────────────────
+
   Widget _sectionLabel(String text, AppColors c) {
     return Row(
       children: [
         Container(
-          width: 4.w,
+          width:  4.w,
           height: 18.h,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [c.main, c.sub],
+              begin:  Alignment.topCenter,
+              end:    Alignment.bottomCenter,
+              colors: [Theme.of(context).colorScheme.surface, Theme.of(context).colorScheme.primary],
             ),
             borderRadius: BorderRadius.circular(2.r),
           ),
@@ -651,9 +687,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
         Text(
           text,
           style: TextStyle(
-            fontSize: 15.sp,
+            fontSize:   15.sp,
             fontWeight: FontWeight.w800,
-            color: c.bodyText,
+            color:      c.bodyText,
           ),
         ),
       ],
@@ -661,23 +697,25 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   }
 
   // ── Price + qty card ──────────────────────────────────────────────────────
+
   Widget _priceQtyCard(
       BuildContext context, AppColors c, ProductDetailsState state) {
     final cubit = ProductDetailsCubit.get(context);
+
     return Container(
       padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [c.main, c.sub],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          colors: [Theme.of(context).colorScheme.surface, Theme.of(context).colorScheme.primary],
+          begin:  Alignment.topLeft,
+          end:    Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(22.r),
         boxShadow: [
           BoxShadow(
-            color: c.main.withOpacity(0.35),
+            color:      c.main.withOpacity(0.35),
             blurRadius: 18,
-            offset: const Offset(0, 8),
+            offset:     const Offset(0, 8),
           ),
         ],
       ),
@@ -694,17 +732,17 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                       'price'.tr(),
                       style: TextStyle(
                         fontSize: 11.sp,
-                        color: c.buttonText.withOpacity(0.75),
+                        color:    c.buttonText.withOpacity(0.75),
                       ),
                     ),
                     SizedBox(height: 2.h),
                     Text(
                       '\$${widget.product.price}',
                       style: TextStyle(
-                        fontSize: 30.sp,
+                        fontSize:   30.sp,
                         fontWeight: FontWeight.w900,
-                        color: c.buttonText,
-                        height: 1,
+                        color:      c.buttonText,
+                        height:     1,
                       ),
                     ),
                   ],
@@ -713,9 +751,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
               Text(
                 '× ${state.quantity}',
                 style: TextStyle(
-                  fontSize: 13.sp,
+                  fontSize:   13.sp,
                   fontWeight: FontWeight.w600,
-                  color: c.buttonText.withOpacity(0.85),
+                  color:      c.buttonText.withOpacity(0.85),
                 ),
               ),
             ],
@@ -724,7 +762,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
           Container(
             padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 5.h),
             decoration: BoxDecoration(
-              color: c.buttonText.withOpacity(0.14),
+              color:        c.buttonText.withOpacity(0.14),
               borderRadius: BorderRadius.circular(14.r),
             ),
             child: Row(
@@ -734,9 +772,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                 Text(
                   '${state.quantity}',
                   style: TextStyle(
-                    fontSize: 17.sp,
+                    fontSize:   17.sp,
                     fontWeight: FontWeight.w800,
-                    color: c.buttonText,
+                    color:      c.buttonText,
                   ),
                 ),
                 _qtyBtn(Icons.add_rounded, c, cubit.increment),
@@ -752,10 +790,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
       GestureDetector(
         onTap: onTap,
         child: Container(
-          width: 42.r,
+          width:  42.r,
           height: 42.r,
           decoration: BoxDecoration(
-            color: c.buttonText.withOpacity(0.20),
+            color:        c.buttonText.withOpacity(0.20),
             borderRadius: BorderRadius.circular(12.r),
           ),
           child: Icon(icon, color: c.buttonText, size: 20.r),
@@ -763,27 +801,28 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
       );
 
   // ── Colors ────────────────────────────────────────────────────────────────
+
   Widget _colorsRow(
       BuildContext context, AppColors c, ProductDetailsState state) {
     final cubit = ProductDetailsCubit.get(context);
     return SizedBox(
       height: 52.h,
       child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: widget.product.colors.length,
+        scrollDirection:  Axis.horizontal,
+        itemCount:        widget.product.colors.length,
         separatorBuilder: (_, __) => SizedBox(width: 12.w),
         itemBuilder: (_, i) {
-          final hex = widget.product.colors[i];
+          final hex      = widget.product.colors[i];
           final selected = state.selectedColor == hex;
           return GestureDetector(
             onTap: () => cubit.selectColor(hex),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 46.r,
+              width:  46.r,
               height: 46.r,
               decoration: BoxDecoration(
-                color: _hexColor(hex),
-                shape: BoxShape.circle,
+                color:  _hexColor(hex),
+                shape:  BoxShape.circle,
                 border: Border.all(
                   color: selected ? c.main : c.hint.withOpacity(0.25),
                   width: selected ? 2.5 : 1,
@@ -791,8 +830,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                 boxShadow: selected
                     ? [
                   BoxShadow(
-                    color: _hexColor(hex).withOpacity(0.45),
-                    blurRadius: 10,
+                    color:        _hexColor(hex).withOpacity(0.45),
+                    blurRadius:   10,
                     spreadRadius: 1,
                   ),
                 ]
@@ -809,41 +848,43 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   }
 
   // ── Sizes ─────────────────────────────────────────────────────────────────
+
   Widget _sizesWrap(
       BuildContext context, AppColors c, ProductDetailsState state) {
     final cubit = ProductDetailsCubit.get(context);
     return Wrap(
-      spacing: 8.w,
+      spacing:    8.w,
       runSpacing: 8.h,
       children: widget.product.sizes.asMap().entries.map((e) {
-        final i = e.key;
-        final size = e.value;
+        final i        = e.key;
+        final size     = e.value;
         final selected = state.selectedSizeIndex == i;
-        final label = localizedEnAr(
+        final label    = localizedEnAr(
           context: context,
-          nameEn: size.nameEn,
-          nameAr: size.nameAr,
+          nameEn:  size.nameEn,
+          nameAr:  size.nameAr,
         );
         return GestureDetector(
           onTap: () => cubit.selectSize(size.id),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration:    const Duration(milliseconds: 200),
             constraints: BoxConstraints(minWidth: 64.w),
             padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
             decoration: BoxDecoration(
-              gradient:
-              selected ? LinearGradient(colors: [c.main, c.sub]) : null,
-              color: selected ? null : c.textField,
+              gradient: selected
+                  ? LinearGradient(colors: [c.main, c.sub])
+                  : null,
+              color:        selected ? null : c.textField,
               borderRadius: BorderRadius.circular(14.r),
               border: Border.all(
-                color: selected ? Colors.transparent : c.hint.withOpacity(0.18),
+                color: selected ? Colors.transparent : Theme.of(context).colorScheme.surface
               ),
               boxShadow: selected
                   ? [
                 BoxShadow(
-                  color: c.main.withOpacity(0.30),
+                  color:      c.main.withOpacity(0.30),
                   blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  offset:     const Offset(0, 4),
                 ),
               ]
                   : null,
@@ -853,9 +894,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 13.sp,
+                    fontSize:   13.sp,
                     fontWeight: FontWeight.w700,
-                    color: selected ? c.buttonText : c.bodyText,
+                    color:      selected ? c.buttonText : c.bodyText,
                   ),
                 ),
                 if (size.price > 0)
@@ -863,7 +904,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                     '+\$${size.price}',
                     style: TextStyle(
                       fontSize: 10.sp,
-                      color: selected
+                      color:    selected
                           ? c.buttonText.withOpacity(0.85)
                           : c.main,
                     ),
@@ -877,18 +918,31 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   }
 
   // ── Product info ──────────────────────────────────────────────────────────
+
   Widget _highlights(BuildContext context, AppColors c) {
+    final typeNameEn = widget.product.type?.nameEn ?? '';
+    final typeNameAr = widget.product.type?.nameAr ?? '';
     final type = localizedEnAr(
       context: context,
-      nameEn: widget.product.type.nameEn,
-      nameAr: widget.product.type.nameAr,
+      nameEn:  typeNameEn,
+      nameAr:  typeNameAr,
     );
+
     return Column(
       children: [
-        _infoTile(Icons.category_rounded, 'categories'.tr(),
-            _category(context), c),
+        _infoTile(
+          Icons.category_rounded,
+          'categories'.tr(),
+          _category(context).isNotEmpty ? _category(context) : '—',
+          c,
+        ),
         SizedBox(height: 8.h),
-        _infoTile(Icons.style_rounded, 'type'.tr(), type, c),
+        _infoTile(
+          Icons.style_rounded,
+          'type'.tr(),
+          type.isNotEmpty ? type : '—',
+          c,
+        ),
         if (widget.product.colors.isNotEmpty) ...[
           SizedBox(height: 8.h),
           _infoTile(
@@ -902,22 +956,21 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     );
   }
 
-  Widget _infoTile(
-      IconData icon, String label, String value, AppColors c) {
+  Widget _infoTile(IconData icon, String label, String value, AppColors c) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
       decoration: BoxDecoration(
-        color: c.textField,
+        color:        c.textField,
         borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: c.hint.withOpacity(0.10)),
+        border: Border.all(color: Theme.of(context).colorScheme.primary),
       ),
       child: Row(
         children: [
           Container(
-            width: 38.r,
+            width:  38.r,
             height: 38.r,
             decoration: BoxDecoration(
-              color: c.main.withOpacity(0.09),
+              color:        Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(11.r),
             ),
             child: Icon(icon, size: 19.r, color: c.main),
@@ -932,16 +985,19 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: 13.sp,
+                    fontSize:   13.sp,
                     fontWeight: FontWeight.w600,
-                    color: c.bodyText,
+                    color:     Theme.of(context).colorScheme.primary
                   ),
                 ),
               ],
             ),
           ),
-          Icon(Icons.chevron_right_rounded,
-              color: c.hint.withOpacity(0.6), size: 20.r),
+          Icon(
+            Icons.chevron_right_rounded,
+            color: Theme.of(context).colorScheme.primary,
+            size:  20.r,
+          ),
         ],
       ),
     );
@@ -950,51 +1006,52 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   // ══════════════════════════════════════════════════════════════════════════
   // BOTTOM DOCK
   // ══════════════════════════════════════════════════════════════════════════
+
   Widget _bottomDock(
       BuildContext context, AppColors c, ProductDetailsState state) {
-    final total = _unitPrice * state.quantity;
+    final total    = _unitPrice * state.quantity;
     final totalStr = total % 1 == 0
         ? '\$${total.toInt()}'
         : '\$${total.toStringAsFixed(2)}';
-
     final isAdding = state is AddProductCartsLoading;
 
     return Positioned(
-      left: 16.w,
-      right: 16.w,
+      left:   16.w,
+      right:  16.w,
       bottom: MediaQuery.paddingOf(context).bottom + 12.h,
       child: Container(
         padding: EdgeInsets.all(10.r),
         decoration: BoxDecoration(
-          color: c.card,
+          color:        c.card,
           borderRadius: BorderRadius.circular(22.r),
           border: Border.all(color: c.hint.withOpacity(0.12)),
           boxShadow: [
             BoxShadow(
-              color: c.main.withOpacity(0.14),
+              color:      c.main.withOpacity(0.14),
               blurRadius: 22,
-              offset: const Offset(0, 6),
+              offset:     const Offset(0, 6),
             ),
           ],
         ),
         child: Row(
           children: [
-            // Total
+
+            // ── Total ─────────────────────────────────────────────────
             Expanded(
               child: Padding(
                 padding: EdgeInsets.only(left: 4.w),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisSize:       MainAxisSize.min,
                   children: [
                     Text('total'.tr(),
                         style: TextStyle(fontSize: 10.sp, color: c.hint)),
                     Text(
                       totalStr,
                       style: TextStyle(
-                        fontSize: 19.sp,
+                        fontSize:   19.sp,
                         fontWeight: FontWeight.w900,
-                        color: c.bodyText,
+                        color:      c.bodyText,
                       ),
                     ),
                   ],
@@ -1002,24 +1059,27 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
               ),
             ),
 
-            // Cart shortcut
+            // ── Cart shortcut ─────────────────────────────────────────
             GestureDetector(
               onTap: () => ButtonHomeNavigationScreen.goToCart(context),
               child: Container(
-                width: 44.r,
+                width:  44.r,
                 height: 44.r,
                 decoration: BoxDecoration(
-                  color: c.textField,
+                  color:       Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(13.r),
                   border: Border.all(color: c.hint.withOpacity(0.14)),
                 ),
-                child: Icon(Icons.shopping_bag_outlined,
-                    color: c.icon, size: 20.r),
+                child: Icon(
+                  Icons.shopping_bag_outlined,
+                  color: c.icon,
+                  size:  20.r,
+                ),
               ),
             ),
             SizedBox(width: 8.w),
 
-            // Add to cart
+            // ── Add to cart ───────────────────────────────────────────
             Expanded(
               flex: 2,
               child: GestureDetector(
@@ -1027,38 +1087,41 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                 child: Container(
                   height: 44.h,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [c.main, c.sub]),
+                    gradient:     LinearGradient(colors: [c.main, c.sub]),
                     borderRadius: BorderRadius.circular(13.r),
                     boxShadow: [
                       BoxShadow(
-                        color: c.main.withOpacity(0.30),
+                        color:      c.main.withOpacity(0.30),
                         blurRadius: 10,
-                        offset: const Offset(0, 4),
+                        offset:     const Offset(0, 4),
                       ),
                     ],
                   ),
                   alignment: Alignment.center,
                   child: isAdding
                       ? SizedBox(
-                    width: 20.r,
+                    width:  20.r,
                     height: 20.r,
                     child: CircularProgressIndicator(
-                      color: c.buttonText,
+                      color:       c.buttonText,
                       strokeWidth: 2,
                     ),
                   )
                       : Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.shopping_cart_outlined,
-                          color: c.buttonText, size: 16.r),
+                      Icon(
+                        Icons.shopping_cart_outlined,
+                        color: c.buttonText,
+                        size:  16.r,
+                      ),
                       SizedBox(width: 5.w),
                       Text(
                         'add_to_cart'.tr(),
                         style: TextStyle(
-                          fontSize: 12.sp,
+                          fontSize:   12.sp,
                           fontWeight: FontWeight.w800,
-                          color: c.buttonText,
+                          color:      c.buttonText,
                         ),
                       ),
                     ],
@@ -1068,14 +1131,14 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
             ),
             SizedBox(width: 8.w),
 
-            // Buy now
+            // ── Buy now ───────────────────────────────────────────────
             GestureDetector(
               onTap: () {},
               child: Container(
-                height: 44.h,
+                height:  44.h,
                 padding: EdgeInsets.symmetric(horizontal: 12.w),
                 decoration: BoxDecoration(
-                  color: c.sub.withOpacity(0.85),
+                  color:        c.sub.withOpacity(0.85),
                   borderRadius: BorderRadius.circular(13.r),
                 ),
                 child: Icon(Icons.bolt_rounded,
@@ -1089,6 +1152,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   }
 
   // ── Utility ───────────────────────────────────────────────────────────────
+
   Color _hexColor(String hex) {
     try {
       return Color(int.parse(hex.replaceFirst('#', '0xFF')));

@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/constant/app_theme.dart';
 import 'package:ecommerce_app/data/model/response/carts/categories_entity.dart';
+import 'package:ecommerce_app/data/model/response/category_entity.dart';
 import 'package:ecommerce_app/presentation/home/widgets/home_product_card.dart';
 import 'package:ecommerce_app/presentation/home/widgets/home_shared.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +14,7 @@ class SeeAllProductsScreen extends StatefulWidget {
     this.initialCategoryIndex = 0,
   });
 
-  final List<CategoriesDataDataEntity> categories;
+  final List<CategoryDataDataEntity> categories;
   final int initialCategoryIndex;
 
   @override
@@ -35,14 +36,14 @@ class _SeeAllProductsScreenState extends State<SeeAllProductsScreen> {
           );
   }
 
-  List<CategoriesDataDataProductsEntity> get _products {
+  List<dynamic> get _products {
     if (widget.categories.isEmpty || _categoryIndex >= widget.categories.length) {
       return [];
     }
     final list = widget.categories[_categoryIndex].products;
-    if (_query.isEmpty) return list;
+    if (_query.isEmpty) return list!;
     final q = _query.toLowerCase();
-    return list.where((p) {
+    return list!.where((p) {
       return p.nameEn.toLowerCase().contains(q) ||
           p.nameAr.toLowerCase().contains(q);
     }).toList();

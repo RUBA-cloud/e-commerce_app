@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../data/model/response/category_entity.dart';
 import 'home/widgets/home_product_card.dart';
 
 // ═══════════════════════════════════════════════════════
@@ -31,25 +32,18 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  int  _hours         = 2;
-  int  _minutes       = 14;
-  int  _seconds       = 37;
-  bool _homeRequested = false;
+class _HomeScreenState extends State<HomeScreen> with UiUtility {
+  int _hours   = 2;
+  int _minutes = 14;
+  int _seconds = 37;
 
   @override
   void initState() {
     super.initState();
     _startTimer();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_homeRequested) {
-      _homeRequested = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       HomeCubit.get(context).loadHome();
-    }
+    });
   }
 
   void _startTimer() {
@@ -69,44 +63,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final c = Theme.of(context).appColors;
+    // ✅ Read theme colors once here via the ThemeExtension
+    final c = Theme.of(context).colorScheme;
 
     return BlocBuilder<HomeCubit, HomeState>(
       builder: (context, state) {
         final cubit = HomeCubit.get(context);
         return Scaffold(
-          backgroundColor: c.textField,
+          backgroundColor: c.surface,
           body: Stack(
             children: [
-              HomeBackgroundDecor(colors: c),
+              HomeBackgroundDecor(),
               SafeArea(
                 child: Column(
                   children: [
-                    _HomeHeader(c: c, userName: '', cubit: cubit),
-                    Expanded(
-                      child: state is HomeLoading
-                          ? Center(
-                        child: CircularProgressIndicator(color: c.main),
-                      )
-                          : state is HomeFailed
-                          ? getErrorView(
-                        context: context,
-                        message: state.message,
-
-                        onRetry: cubit.loadHome,
-                      )
-                          : RefreshIndicator(
-                        color:     c.main,
-                        onRefresh: cubit.loadHome,
-                        child: _Body(
-                          cubit:   cubit,
-                          c:       c,
-                          hours:   _hours,
-                          minutes: _minutes,
-                          seconds: _seconds,
-                        ),
-                      ),
-                    ),
+                    _HomeHeader(cubit: cubit),
+                    Expanded(child: _buildBody(context, state, cubit)),
                   ],
                 ),
               ),
@@ -116,44 +88,92 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
   }
+
+  Widget _buildBody(
+      BuildContext context,
+      HomeState state,
+      HomeCubit cubit,
+      ) {
+    // ✅ Read colors from context — no need to pass c around
+    final c = Theme.of(context).appColors;
+
+    if (state is HomeLoading) {
+      return Center(child: CircularProgressIndicator(color: c.buttonText));
+    }
+
+    if (state is HomeFailed) {
+      return getErrorView(
+        context: context,
+        message: state.message,
+        onRetry: cubit.loadHome,
+      );
+    }
+
+    return Stack(
+      children: [
+        RefreshIndicator(
+          color:     c.label,
+          onRefresh: cubit.loadHome,
+          child: _Body(
+            cubit:   cubit,
+            hours:   _hours,
+            minutes: _minutes,
+            seconds: _seconds,
+          ),
+        ),
+        if (state is HomeFilterLoading)
+          Positioned(
+            top: 0, left: 0, right: 0,
+            child: LinearProgressIndicator(
+              color:           c.buttonText,
+              backgroundColor: c.button.withOpacity(0.15),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════
-// _Body
+// _Body  — reads colors from context directly
 // ═══════════════════════════════════════════════════════
 
 class _Body extends StatelessWidget {
   const _Body({
     required this.cubit,
-    required this.c,
     required this.hours,
     required this.minutes,
     required this.seconds,
   });
 
   final HomeCubit cubit;
-  final AppColors c;
   final int       hours;
   final int       minutes;
   final int       seconds;
 
   @override
   Widget build(BuildContext context) {
+    // ✅ Get colors from context — no parameter needed
+    final c = Theme.of(context).colorScheme;
+
+    final brands   = cubit.selectedCategoryBrands;
     final products = cubit.selectedProducts;
 
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        _PromoCarousel(c: c),
+
+        // ── Promo carousel ───────────────────────────────────────────────
+        const _PromoCarousel(),
         SizedBox(height: 20.h),
 
-        // ── Categories ──────────────────────────────────────
+        // ── Categories row ───────────────────────────────────────────────
         AccentSectionTitle(
-          title:               'categories'.tr(),
-          subtitle:            'explore_collections'.tr(),
-          accentColor:         c.main,
-          accentSecondaryColor: c.sub,
-          seeAllLabel:         'see_all'.tr(),
+          title:                'categories'.tr(),
+          subtitle:             'explore_collections'.tr(),
+          accentColor:          c.primary,
+          accentSecondaryColor: c.surface,
+          seeAllLabel:          'see_all'.tr(),
           onSeeAll: () {
             final cats = cubit.categoriesEntity?.data.data;
             if (cats == null || cats.isEmpty) return;
@@ -169,43 +189,40 @@ class _Body extends StatelessWidget {
           },
         ),
         SizedBox(height: 12.h),
-        CategoryCard(cubit: cubit, c: c),
+        CategoryCard(cubit: cubit),
         SizedBox(height: 16.h),
 
-        // ── Flash sale bar ───────────────────────────────────
-        _FlashBar(c: c, hours: hours, minutes: minutes, seconds: seconds),
+        // ── Flash sale bar ───────────────────────────────────────────────
+        _FlashBar(hours: hours, minutes: minutes, seconds: seconds),
         SizedBox(height: 20.h),
 
-        // ── Brands ──────────────────────────────────────────
-        if (cubit.brandEntity?.data != null &&
-            cubit.brandEntity!.data.data.isNotEmpty) ...[
+        // ── Brands for selected category ─────────────────────────────────
+        if (brands.isNotEmpty) ...[
           AccentSectionTitle(
-            title:               'top_brands'.tr(),
-            subtitle:            'trusted_partners'.tr(),
-            accentColor:         c.main,
-            accentSecondaryColor: c.sub,
-            seeAllLabel:         'see_all'.tr(),
+            title:                'top_brands'.tr(),
+            subtitle:             'trusted_partners'.tr(),
+            accentColor:          c.primary,
+            accentSecondaryColor: c.secondary,
+            seeAllLabel:          'see_all'.tr(),
             onSeeAll: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => SeeAllBrandsScreen(
-                  brands: cubit.brandEntity!.data.data,
-                ),
+                builder: (_) => SeeAllBrandsScreen(brands: brands),
               ),
             ),
           ),
           SizedBox(height: 12.h),
-          _BrandsRow(cubit: cubit, c: c),
+          _BrandsRow(brands: brands, cubit: cubit),
           SizedBox(height: 20.h),
         ],
 
-        // ── Products ─────────────────────────────────────────
+        // ── Products for selected category ───────────────────────────────
         AccentSectionTitle(
-          title:               'products'.tr(),
-          subtitle:            'handpicked_for_you'.tr(),
-          accentColor:         c.main,
-          accentSecondaryColor: c.sub,
-          seeAllLabel:         'see_all'.tr(),
+          title:                'products'.tr(),
+          subtitle:             'handpicked_for_you'.tr(),
+          accentColor:          c.primary,
+          accentSecondaryColor: c.secondary,
+          seeAllLabel:          'see_all'.tr(),
           onSeeAll: () {
             final cats = cubit.categoriesEntity?.data.data;
             if (cats == null || cats.isEmpty) return;
@@ -222,17 +239,14 @@ class _Body extends StatelessWidget {
         ),
         SizedBox(height: 12.h),
 
-        // ── Active filter chips ───────────────────────────────
         if (cubit.activeFilter.isActive) ...[
-          _ActiveFilterBar(cubit: cubit, c: c),
+          _ActiveFilterBar(cubit: cubit),
           SizedBox(height: 12.h),
         ],
-
         if (products.isEmpty)
-          emptyWidget(c: c)
+         emptyWidget(c: Theme.of(context).appColors)
         else
-          ProductsGrid(products: products, c: c),
-
+          ProductsGrid(products: products, c: Theme.of(context).appColors,),
         SizedBox(height: 100.h),
       ],
     );
@@ -240,19 +254,19 @@ class _Body extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════
-// _ActiveFilterBar  — shows active filters as dismissible chips
+// _ActiveFilterBar
 // ═══════════════════════════════════════════════════════
 
 class _ActiveFilterBar extends StatelessWidget {
-  const _ActiveFilterBar({required this.cubit, required this.c});
+  const _ActiveFilterBar({required this.cubit});
 
   final HomeCubit cubit;
-  final AppColors c;
 
   @override
   Widget build(BuildContext context) {
+    final c      = Theme.of(context).colorScheme; // ✅
     final f      = cubit.activeFilter;
-    final brands = cubit.brandEntity?.data.data ?? [];
+    final brands = cubit.selectedCategoryBrands;
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w),
@@ -261,48 +275,41 @@ class _ActiveFilterBar extends StatelessWidget {
         runSpacing: 6.h,
         children: [
 
-          // Price chip
           if (f.minPrice > 0 || f.maxPrice < 10000)
             _FilterChip(
               label: '\$${f.minPrice.toInt()}–\$${f.maxPrice.toInt()}',
-              c:     c,
               onRemove: () => cubit.applyFilter(
                 f.copyWith(minPrice: 0, maxPrice: 10000),
               ),
             ),
 
-          // Brand chip
-          if (f.selectedBrandId != null) ...[
+          if (f.selectedBrandId != null && brands.isNotEmpty)
             _FilterChip(
               label: brands
                   .firstWhere(
                     (b) => b.id == f.selectedBrandId,
                 orElse: () => brands.first,
               )
-                  .nameEn ?? '',
-              c:        c,
+                  .nameEn,
               onRemove: () => cubit.applyFilter(
                 f.copyWith(clearBrand: true),
               ),
             ),
-          ],
 
-
-          // Clear all
           GestureDetector(
             onTap: cubit.clearFilter,
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
               decoration: BoxDecoration(
-                color:        c.sub.withOpacity(0.12),
+                color:        c.surface.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(20.r),
-                border:       Border.all(color: c.sub.withOpacity(0.4)),
+                border:       Border.all(color: c.surface.withOpacity(0.4)),
               ),
               child: Text(
                 'clear_all'.tr(),
                 style: TextStyle(
                   fontSize:   11.sp,
-                  color:      c.sub,
+                  color:      c.primary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -314,27 +321,29 @@ class _ActiveFilterBar extends StatelessWidget {
   }
 }
 
-// ── Small dismissible chip ────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+// _FilterChip
+// ═══════════════════════════════════════════════════════
 
 class _FilterChip extends StatelessWidget {
   const _FilterChip({
     required this.label,
-    required this.c,
     required this.onRemove,
   });
 
   final String       label;
-  final AppColors    c;
   final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme; // ✅
+
     return Container(
       padding: EdgeInsets.only(left: 10.w, right: 4.w, top: 6.h, bottom: 6.h),
       decoration: BoxDecoration(
-        color:        c.main.withOpacity(0.1),
+        color:        c.secondary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20.r),
-        border:       Border.all(color: c.main.withOpacity(0.35)),
+        border:       Border.all(color: c.primary.withOpacity(0.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -343,7 +352,7 @@ class _FilterChip extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize:   11.sp,
-              color:      c.main,
+              color:      c.primary,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -354,10 +363,11 @@ class _FilterChip extends StatelessWidget {
               width:  16.r,
               height: 16.r,
               decoration: BoxDecoration(
-                color:  c.main.withOpacity(0.15),
-                shape:  BoxShape.circle,
+                color: c.primary.withOpacity(0.15),
+                shape: BoxShape.circle,
               ),
-              child: Icon(Icons.close, size: 10.r, color: c.main),
+              child: Icon(Icons.close, size: 10.r, color: c.primary
+              ),
             ),
           ),
         ],
@@ -371,18 +381,15 @@ class _FilterChip extends StatelessWidget {
 // ═══════════════════════════════════════════════════════
 
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({
-    required this.c,
-    required this.userName,
-    required this.cubit,
-  });
+  const _HomeHeader({required this.cubit});
 
-  final AppColors c;
-  final String    userName;
   final HomeCubit cubit;
 
   @override
   Widget build(BuildContext context) {
+    final c        = Theme.of(context).colorScheme; // ✅
+    final userName = '';                           // replace with real user name
+
     return Padding(
       padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 12.h),
       child: Column(
@@ -390,109 +397,89 @@ class _HomeHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-
-              // ── Avatar ────────────────────────────────────
               Container(
                 width:  48.r,
                 height: 48.r,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [c.main, c.sub],
+                    colors: [c.primary, c.surface],
                     begin:  Alignment.topLeft,
                     end:    Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(16.r),
                   boxShadow: [
                     BoxShadow(
-                      color:      c.main.withOpacity(0.35),
+                      color:      c.primary.withOpacity(0.35),
                       blurRadius: 12,
                       offset:     const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: Icon(
-                  Icons.person_rounded,
-                  color: c.buttonText,
-                  size:  26.r,
-                ),
+                child: Icon(Icons.person_rounded, color: c.primary, size: 26.r),
               ),
               SizedBox(width: 12.w),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'good_morning'.tr(),
-                      style: TextStyle(fontSize: 12.sp, color: c.hint),
+                      style: TextStyle(fontSize: 12.sp, color: c.surface),
                     ),
                     Text(
                       userName.isEmpty ? 'guest'.tr() : userName,
                       style: TextStyle(
                         fontSize:      18.sp,
                         fontWeight:    FontWeight.w800,
-                        color:         c.bodyText,
+                        color:         c.primary,
                         letterSpacing: -0.4,
                       ),
                     ),
                   ],
                 ),
               ),
-
-              _HeaderIcon(
-                c:     c,
-                icon:  Icons.notifications_none_rounded,
-                badge: true,
-              ),
+              _HeaderIcon(icon: Icons.notifications_none_rounded, badge: true),
               SizedBox(width: 8.w),
               GestureDetector(
                 onTap: () => ButtonHomeNavigationScreen.goToCart(context),
-                child: _HeaderIcon(c: c, icon: Icons.shopping_bag_outlined),
+                child: _HeaderIcon(icon: Icons.shopping_bag_outlined),
               ),
             ],
           ),
           SizedBox(height: 14.h),
 
-          // ── Search bar ──────────────────────────────────────
           GlassSurface(
-            colors:  c,
+
             radius:  18.r,
             padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 4.h),
             child: Row(
               children: [
-
-                // Search icon
                 Container(
                   width:  36.r,
                   height: 36.r,
                   decoration: BoxDecoration(
-                    color:        c.main.withOpacity(0.12),
+                    color:        c.primary.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(12.r),
                   ),
-                  child: Icon(
-                    Icons.search_rounded,
-                    size:  20.r,
-                    color: c.main,
-                  ),
+                  child: Icon(Icons.search_rounded, size: 20.r, color: c.surface),
                 ),
                 SizedBox(width: 10.w),
-
                 Expanded(
                   child: Text(
                     'search_hint'.tr(),
-                    style: TextStyle(fontSize: 13.sp, color: c.hint),
+                    style: TextStyle(fontSize: 13.sp, color: c.primary),
                   ),
                 ),
-
-                // ── Filter icon with active dot ───────────────
                 BlocBuilder<HomeCubit, HomeState>(
                   builder: (context, state) {
                     final filterActive = cubit.activeFilter.isActive;
                     return GestureDetector(
                       onTap: () => showDialog(
                         context: context,
-                        builder: (_) => BlocProvider(create: (_)=>HomeCubit(),
-                            child: FilterDialog ()),
+                        builder: (_) => BlocProvider.value(
+                          value: cubit,
+                          child: const FilterDialog(),
+                        ),
                       ),
                       child: Stack(
                         clipBehavior: Clip.none,
@@ -501,31 +488,24 @@ class _HomeHeader extends StatelessWidget {
                             width:  40.r,
                             height: 40.r,
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [c.main, c.sub],
-                              ),
+                              gradient: LinearGradient(colors: [c.primary, c.surface]),
                               borderRadius: BorderRadius.circular(14.r),
                             ),
                             child: Icon(
                               Icons.tune_rounded,
                               size:  20.r,
-                              color: c.buttonText,
+                              color: c.primary
                             ),
                           ),
                           if (filterActive)
                             Positioned(
-                              top:   -3,
-                              right: -3,
+                              top: -3, right: -3,
                               child: Container(
-                                width:  10,
-                                height: 10,
+                                width: 10, height: 10,
                                 decoration: BoxDecoration(
                                   color:  Colors.redAccent,
                                   shape:  BoxShape.circle,
-                                  border: Border.all(
-                                    color: c.card,
-                                    width: 1.5,
-                                  ),
+                                  border: Border.all(color: c.primary, width: 1.5),
                                 ),
                               ),
                             ),
@@ -549,46 +529,45 @@ class _HomeHeader extends StatelessWidget {
 
 class _HeaderIcon extends StatelessWidget {
   const _HeaderIcon({
-    required this.c,
     required this.icon,
     this.badge = false,
   });
 
-  final AppColors c;
-  final IconData  icon;
-  final bool      badge;
+  final IconData icon;
+  final bool     badge;
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme; // ✅
+
     return Stack(
       children: [
         Container(
           width:  42.r,
           height: 42.r,
           decoration: BoxDecoration(
-            color:        c.card,
+            color:      c.secondary.withOpacity(0.10),
             borderRadius: BorderRadius.circular(14.r),
             boxShadow: [
               BoxShadow(
-                color:      c.hint.withOpacity(0.10),
+                color:      c.secondary.withOpacity(0.10),
                 blurRadius: 8,
                 offset:     const Offset(0, 2),
               ),
             ],
           ),
-          child: Icon(icon, size: 22.r, color: c.icon),
+          child: Icon(icon, size: 22.r, color: c.primary
+          ),
         ),
         if (badge)
           Positioned(
-            top:   8,
-            right: 8,
+            top: 8, right: 8,
             child: Container(
-              width:  8,
-              height: 8,
+              width: 8, height: 8,
               decoration: BoxDecoration(
-                color:  c.sub,
+                color:  c.primary,
                 shape:  BoxShape.circle,
-                border: Border.all(color: c.card, width: 1.5),
+                border: Border.all(color: c.surface, width: 1.5),
               ),
             ),
           ),
@@ -602,8 +581,7 @@ class _HeaderIcon extends StatelessWidget {
 // ═══════════════════════════════════════════════════════
 
 class _PromoCarousel extends StatefulWidget {
-  const _PromoCarousel({required this.c});
-  final AppColors c;
+  const _PromoCarousel();
 
   @override
   State<_PromoCarousel> createState() => _PromoCarouselState();
@@ -621,21 +599,22 @@ class _PromoCarouselState extends State<_PromoCarousel> with UiUtility {
 
   @override
   Widget build(BuildContext context) {
-    final c      = widget.c;
+    final c = Theme.of(context).colorScheme;// ✅
+
     final slides = [
       PromoSlideData(
         badge:    'limited_offer'.tr(),
         title:    'summer_collection'.tr(),
         subtitle: 'free_delivery_notice'.tr(),
         discount: '50%',
-        gradient: [c.main, c.sub],
+        gradient: [c.primary, c.surface],
       ),
       PromoSlideData(
         badge:    'new_arrivals'.tr(),
         title:    'fresh_styles'.tr(),
         subtitle: 'trending_now'.tr(),
         discount: '30%',
-        gradient: [c.sub, c.button],
+        gradient: [c.secondary, c.surface],
       ),
     ];
 
@@ -647,8 +626,7 @@ class _PromoCarouselState extends State<_PromoCarousel> with UiUtility {
             controller:    _controller,
             onPageChanged: (i) => setState(() => _page = i),
             itemCount:     slides.length,
-            itemBuilder:   (ctx, i) =>
-                promoSlide(context: ctx, data: slides[i]),
+            itemBuilder:   (ctx, i) => promoSlide(context: ctx, data: slides[i]),
           ),
         ),
         SizedBox(height: 10.h),
@@ -662,7 +640,7 @@ class _PromoCarouselState extends State<_PromoCarousel> with UiUtility {
               width:    active ? 18.w : 6.w,
               height:   6.h,
               decoration: BoxDecoration(
-                color:        active ? c.main : c.hint.withOpacity(0.35),
+                color:        active ? c.primary : c.surface.withOpacity(0.35),
                 borderRadius: BorderRadius.circular(4.r),
               ),
             );
@@ -679,33 +657,33 @@ class _PromoCarouselState extends State<_PromoCarousel> with UiUtility {
 
 class _FlashBar extends StatelessWidget {
   const _FlashBar({
-    required this.c,
     required this.hours,
     required this.minutes,
     required this.seconds,
   });
 
-  final AppColors c;
-  final int       hours;
-  final int       minutes;
-  final int       seconds;
+  final int hours;
+  final int minutes;
+  final int seconds;
 
   String _pad(int v) => v.toString().padLeft(2, '0');
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;// ✅
+
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16.w),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [c.sub, c.main],
+          colors: [c.primary, c.secondary],
           begin:  Alignment.centerLeft,
           end:    Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(22.r),
         boxShadow: [
           BoxShadow(
-            color:      c.sub.withOpacity(0.35),
+            color:      c.primary.withOpacity(0.35),
             blurRadius: 16,
             offset:     const Offset(0, 6),
           ),
@@ -715,12 +693,11 @@ class _FlashBar extends StatelessWidget {
       child: Stack(
         children: [
           Positioned(
-            right: -20,
-            top:   -20,
+            right: -20, top: -20,
             child: Icon(
               Icons.bolt_rounded,
               size:  100.r,
-              color: c.buttonText.withOpacity(0.08),
+              color: c.primary.withOpacity(0.08),
             ),
           ),
           Padding(
@@ -730,14 +707,10 @@ class _FlashBar extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.all(10.r),
                   decoration: BoxDecoration(
-                    color:        c.buttonText.withOpacity(0.18),
+                    color:        c.surface.withOpacity(0.18),
                     borderRadius: BorderRadius.circular(14.r),
                   ),
-                  child: Icon(
-                    Icons.bolt_rounded,
-                    size:  22.r,
-                    color: c.buttonText,
-                  ),
+                  child: Icon(Icons.bolt_rounded, size: 22.r, color: c.primary),
                 ),
                 SizedBox(width: 12.w),
                 Expanded(
@@ -749,14 +722,14 @@ class _FlashBar extends StatelessWidget {
                         style: TextStyle(
                           fontSize:   15.sp,
                           fontWeight: FontWeight.w800,
-                          color:      c.buttonText,
+                          color:      c.primary,
                         ),
                       ),
                       Text(
                         'ends_today'.tr(),
                         style: TextStyle(
                           fontSize: 10.sp,
-                          color:    c.buttonText.withOpacity(0.75),
+                          color:    c.primary.withOpacity(0.75),
                         ),
                       ),
                     ],
@@ -764,11 +737,11 @@ class _FlashBar extends StatelessWidget {
                 ),
                 Row(
                   children: [
-                    _TimerBox(val: _pad(hours),   c: c),
-                    _timerSep(c),
-                    _TimerBox(val: _pad(minutes), c: c),
-                    _timerSep(c),
-                    _TimerBox(val: _pad(seconds), c: c),
+                    _TimerBox(val: _pad(hours)),
+                    _timerSep(context),
+                    _TimerBox(val: _pad(minutes)),
+                    _timerSep(context),
+                    _TimerBox(val: _pad(seconds)),
                   ],
                 ),
               ],
@@ -779,17 +752,20 @@ class _FlashBar extends StatelessWidget {
     );
   }
 
-  Widget _timerSep(AppColors c) => Padding(
-    padding: EdgeInsets.symmetric(horizontal: 4.w),
-    child: Text(
-      ':',
-      style: TextStyle(
-        fontSize:   14.sp,
-        fontWeight: FontWeight.w700,
-        color:      c.buttonText.withOpacity(0.6),
+  Widget _timerSep(BuildContext context) {
+    final c = Theme.of(context).appColors; // ✅
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 4.w),
+      child: Text(
+        ':',
+        style: TextStyle(
+          fontSize:   14.sp,
+          fontWeight: FontWeight.w700,
+          color:      c.buttonText.withOpacity(0.6),
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -797,13 +773,14 @@ class _FlashBar extends StatelessWidget {
 // ═══════════════════════════════════════════════════════
 
 class _TimerBox extends StatelessWidget {
-  const _TimerBox({required this.val, required this.c});
+  const _TimerBox({required this.val});
 
-  final String    val;
-  final AppColors c;
+  final String val;
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).appColors; // ✅
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 4.h),
       decoration: BoxDecoration(
@@ -827,14 +804,19 @@ class _TimerBox extends StatelessWidget {
 // ═══════════════════════════════════════════════════════
 
 class _BrandsRow extends StatelessWidget {
-  const _BrandsRow({required this.cubit, required this.c});
+  const _BrandsRow({
+    required this.brands,
+    required this.cubit,
+  });
 
-  final HomeCubit cubit;
-  final AppColors c;
+  final List<CategoryDataDataProductsBrandsEntity> brands;
+  final HomeCubit                                  cubit;
 
   @override
   Widget build(BuildContext context) {
-    final brands = cubit.brandEntity!.data.data;
+    final c = Theme.of(context).appColors; // ✅
+
+    if (brands.isEmpty) return const SizedBox.shrink();
 
     return SizedBox(
       height: 118.h,
@@ -843,8 +825,20 @@ class _BrandsRow extends StatelessWidget {
         padding:          EdgeInsets.symmetric(horizontal: 16.w),
         itemCount:        brands.length,
         separatorBuilder: (_, __) => SizedBox(width: 14.w),
-        itemBuilder: (_, i) =>
-            brandWidget(brand: brands[i], c: c, context: context),
+        itemBuilder: (_, i) {
+          final brand      = brands[i];
+          final isSelected = cubit.activeFilter.selectedBrandId == brand.id;
+          return GestureDetector(
+            onTap: () {
+              if (isSelected) {
+                cubit.applyFilter(cubit.activeFilter.copyWith(clearBrand: true));
+              } else {
+                cubit.applyFilter(cubit.activeFilter.copyWith(selectedBrandId: brand.id));
+              }
+            },
+
+          );
+        },
       ),
     );
   }

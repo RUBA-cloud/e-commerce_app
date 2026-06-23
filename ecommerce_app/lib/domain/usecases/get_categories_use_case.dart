@@ -1,5 +1,5 @@
 import 'package:ecommerce_app/core/di/api_result.dart';
-import 'package:ecommerce_app/data/model/response/carts/categories_entity.dart';
+import 'package:ecommerce_app/data/model/response/category_entity.dart';
 import 'package:ecommerce_app/domain/repoistery/home_repoistory.dart';
 import 'package:injectable/injectable.dart';
 
@@ -9,6 +9,6 @@ class GetCategoryUseCase {
 
   GetCategoryUseCase(this._homeRepo);
 
-  Future<ApiResult<CategoriesEntity>> execute() =>
+  Future<ApiResult<CategoryEntity>> execute() =>
       _homeRepo.fetchCategories();
 }

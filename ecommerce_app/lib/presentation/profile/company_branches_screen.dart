@@ -32,6 +32,7 @@ class _CompanyBranchesScreenState extends State<CompanyBranchesScreen> with UiUt
     final isAr = context.locale.languageCode == 'ar';
 
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: BlocBuilder<ProfileCubit, ProfileState>(
         builder: (ctx, state) {
           int? count;
@@ -343,16 +344,16 @@ class _BranchCard extends StatelessWidget {
                       SizedBox(height: 12.h),
 
                       // Contact info
-                      if (branch.phone != null && branch.phone!.isNotEmpty)
+                      if (branch.phone.isNotEmpty)
                         _InfoRow(
                           icon:  Icons.phone_outlined,
-                          label: branch.phone!,
+                          label: branch.phone,
                         ),
                       if (branch.email.isNotEmpty) ...[
                         SizedBox(height: 8.h),
                         _InfoRow(
                           icon:  Icons.email_outlined,
-                          label: branch.email!,
+                          label: branch.email,
                         ),
                       ],
 

@@ -1,5 +1,5 @@
 // ============================================================
-//  register_screen.dart — uses UiUtility shared widgets
+//  register_screen.dart
 // ============================================================
 
 import 'package:easy_localization/easy_localization.dart';
@@ -8,17 +8,14 @@ import 'package:ecommerce_app/data/model/request/register_request.dart';
 import 'package:ecommerce_app/presentation/auth/login_screen.dart';
 import 'package:ecommerce_app/presentation/auth/verify_email_screen.dart';
 import 'package:ecommerce_app/presentation/widgets/animated_blob.dart';
-import 'package:ecommerce_app/services/company_info/company_info_cubit.dart';
-import 'package:ecommerce_app/services/company_info/company_info_state.dart';
+import 'package:ecommerce_app/services/company_info/app_main_cubit.dart';
+import 'package:ecommerce_app/services/company_info/app_main_state.dart';
 import 'package:ecommerce_app/services/login/login_cubit.dart';
 import 'package:ecommerce_app/services/register/register_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-// ─────────────────────────────────────────────────────────────
-// RegisterScreen
-// ─────────────────────────────────────────────────────────────
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -37,12 +34,14 @@ class _RegisterScreenState extends State<RegisterScreen>
   bool _obscure = true;
 
   late RegisterCubit       _cubit;
+  late AppMainCubit        _appCubit;
   late AnimationController _fadeCtrl;
   late Animation<double>   _fadeAnim;
 
   @override
   void initState() {
     super.initState();
+    _appCubit = AppMainCubit.get(context);
     _fadeCtrl = AnimationController(
       vsync:    this,
       duration: const Duration(milliseconds: 700),
@@ -83,133 +82,161 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   void _switchLocale(String code) => context.setLocale(Locale(code));
 
-  // ── Build ──────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AppMainCubit, AppMainState>(
+      // ✅ rebuild on theme toggle AND company info changes
       buildWhen: (_, s) =>
-      s is CompanyInfoLoaded || s is CompanyInfoUpdated,
+      s is ThemeChangedState  ||
+          s is CompanyInfoLoaded  ||
+          s is CompanyInfoUpdated,
       builder: (ctx, companyState) {
-        final c      = companyColors(companyState);
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        final p      = ColorHelper.fromCompany(c, isDark);
-        final isAr   = ctx.locale.languageCode == 'ar';
 
-        return BlocListener<RegisterCubit, RegisterState>(
-          listener: (ctx2, state) => _handleState(ctx2, state),
-          child: Scaffold(
-            backgroundColor: p.bg,
-            body: Stack(
-              children: [
-                // ── Blobs ───────────────────────────────────
-                Positioned(
-                  top: -80.r, right: -60.r,
-                  child: AnimatedBlob(
-                    color:    p.primary,
-                    size:     320.r,
-                    opacity:  isDark ? 0.18 : 0.12,
-                    duration: const Duration(seconds: 4),
+        // ✅ isDark from cubit directly — Theme.of() lags one frame
+        final isDark = companyState is ThemeChangedState
+            ? companyState.isDark
+            : _appCubit.isDark;
+
+        // ✅ ThemeChangedState carries no company data —
+        //    fall back to last loaded state from cubit,
+        //    only when cubit actually has real company data
+        final colorState = (companyState is ThemeChangedState)
+            ? ((_appCubit.state is CompanyInfoLoaded ||
+            _appCubit.state is CompanyInfoUpdated)
+            ? _appCubit.state   // ✅ safe — has real company data
+            : companyState)     // ✅ no data yet — keep fallback defaults
+            : companyState;
+
+        final c    = companyColors(colorState, ctx);
+        final r    = c.resolved(isDark);  // ✅ picks dark fields when isDark
+        final p    = ColorHelper.fromCompany(c, isDark);
+        final isAr = ctx.locale.languageCode == 'ar';
+
+        return AnimatedTheme(
+          // ✅ smooth 300ms color transition on theme toggle
+          data:     buildTheme(c, brightness: isDark ? Brightness.dark : Brightness.light),
+          duration: const Duration(milliseconds: 300),
+          child: BlocListener<RegisterCubit, RegisterState>(
+            listener: (ctx2, state) => _handleState(ctx2, state),
+            child: Scaffold(
+              backgroundColor: p.bg,
+              body: Stack(
+                children: [
+
+                  // ── Blobs ──────────────────────────────────
+                  Positioned(
+                    top: -80.r, right: -60.r,
+                    child: AnimatedBlob(
+                      color:    p.primary,
+                      size:     320.r,
+                      opacity:  isDark ? 0.18 : 0.12,
+                      duration: const Duration(seconds: 4),
+                    ),
                   ),
-                ),
-                Positioned(
-                  bottom: -100.r, left: -80.r,
-                  child: AnimatedBlob(
-                    color:    p.blob2,
-                    size:     260.r,
-                    opacity:  isDark ? 0.14 : 0.09,
-                    duration: const Duration(seconds: 5),
+                  Positioned(
+                    bottom: -100.r, left: -80.r,
+                    child: AnimatedBlob(
+                      color:    p.blob2,
+                      size:     260.r,
+                      opacity:  isDark ? 0.14 : 0.09,
+                      duration: const Duration(seconds: 5),
+                    ),
                   ),
-                ),
 
-                // ── Content ─────────────────────────────────
-                SafeArea(
-                  child: FadeTransition(
-                    opacity: _fadeAnim,
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.symmetric(horizontal: 24.w),
-                      child: Form(
-                        key:              _formKey,
-                        autovalidateMode: AutovalidateMode.onUserInteraction,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(height: 20.h),
+                  // ── Content ────────────────────────────────
+                  SafeArea(
+                    child: FadeTransition(
+                      opacity: _fadeAnim,
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: EdgeInsets.symmetric(horizontal: 24.w),
+                        child: Form(
+                          key:              _formKey,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(height: 20.h),
 
-                            // ── Top bar (shared) ─────────────
-                            sharedTopBar(
-                              p:      p,
-                              isAr:   isAr,
-                              isDark: isDark,
-                              onLang: _switchLocale,
-                              onBack: () => _cubit.goToLogin(),
-                            ),
-                            SizedBox(height: 28.h),
-
-                            // ── Logo (shared) ────────────────
-                            Center(
-                              child: sharedLogo(
-                                p:       p,
-                                c:       c,
-                                icon:    Icons.person_add_outlined,
-                                appName: 'ShopNow',
+                              // ── Top bar ───────────────────
+                              sharedTopBar(
+                                p:              p,
+                                isAr:           isAr,
+                                isDark:         isDark,
+                                onLang:         _switchLocale,
+                                onBack:         () => navigateTo(context: context, page:BlocProvider(create: (_)=>LoginCubit(),child: LoginScreen(),)),
+                                showBackButton: true,
                               ),
-                            ),
-                            SizedBox(height: 24.h),
+                              SizedBox(height: 28.h),
 
-                            // ── Headline (shared) ────────────
-                            sharedHeadline(
-                              title:    'create_account'.tr(),
-                              subtitle: 'register_subtitle'.tr(),
-                              p:        p,
-                            ),
-                            SizedBox(height: 28.h),
+                              // ── Logo ──────────────────────
+                              // ✅ pass resolved `r` — dark-aware gradient
+                              Center(
+                                child: sharedLogo(
+                                  p:       p,
+                                  c:       r,
+                                  icon:    Icons.person_add_outlined,
+                                  appName: 'ShopNow',
+                                ),
+                              ),
+                              SizedBox(height: 24.h),
 
-                            // ── Form card ────────────────────
-                            _RegisterFormCard(
-                              p:            p,
-                              nameCtrl:     _nameCtrl,
-                              emailCtrl:    _emailCtrl,
-                              phoneCtrl:    _phoneCtrl,
-                              passwordCtrl: _passwordCtrl,
-                              obscure:      _obscure,
-                              onTogglePass: () =>
-                                  setState(() => _obscure = !_obscure),
-                              cubit:    _cubit,
-                              onSubmit: _submit,
-                            ),
-                            SizedBox(height: 28.h),
+                              // ── Headline ──────────────────
+                              sharedHeadline(
+                                title:    'create_account'.tr(),
+                                subtitle: 'register_subtitle'.tr(),
+                                p:        p,
+                              ),
+                              SizedBox(height: 28.h),
 
-                            // ── Or divider (shared) ──────────
-                            sharedOrDivider(p: p),
-                            SizedBox(height: 20.h),
+                              // ── Form card ─────────────────
+                              _RegisterFormCard(
+                                p:            p,
+                                nameCtrl:     _nameCtrl,
+                                emailCtrl:    _emailCtrl,
+                                phoneCtrl:    _phoneCtrl,
+                                passwordCtrl: _passwordCtrl,
+                                obscure:      _obscure,
+                                onTogglePass: () =>
+                                    setState(() => _obscure = !_obscure),
+                                cubit:    _cubit,
+                                onSubmit: _submit,
+                              ),
+                              SizedBox(height: 28.h),
 
-                            // ── Login link (shared) ──────────
-                            sharedAuthLinkRow(
-                              question:    'have_account'.tr(),
-                              actionLabel: 'login'.tr(),
-                              p:           p,
-                              onTap:       () => _cubit.goToLogin(),
-                            ),
-                            SizedBox(height: 40.h),
-                          ],
+                              // ── Or divider ────────────────
+                              sharedOrDivider(p: p),
+                              SizedBox(height: 20.h),
+
+                              // ── Login link ────────────────
+                              sharedAuthLinkRow(
+                                question:    'have_account'.tr(),
+                                actionLabel: 'login'.tr(),
+                                p:           p,
+                                onTap:       () => _cubit.goToLogin(),
+                              ),
+                              SizedBox(height: 40.h),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
 
-                // ── Loading overlay (shared) ─────────────────
-                BlocBuilder<RegisterCubit, RegisterState>(
-                  buildWhen: (_, s) =>
-                  s is RegisterLoading ||
-                      s is RegisterInitial  ||
-                      s is RegisterFailed,
-                  builder: (_, s) => s is RegisterLoading
-                      ? sharedLoadingOverlay(p: p)
-                      : const SizedBox.shrink(),
-                ),
-              ],
+                  // ── Loading overlay ────────────────────────
+                  // ✅ driven ONLY by RegisterCubit — never AppMainCubit
+                  //    so theme changes never trigger the spinner
+                  BlocBuilder<RegisterCubit, RegisterState>(
+                    buildWhen: (_, s) =>
+                    s is RegisterLoading ||
+                        s is RegisterInitial  ||
+                        s is RegisterFailed,
+                    builder: (_, s) => s is RegisterLoading
+                        ? sharedLoadingOverlay(p: p)
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -229,12 +256,14 @@ class _RegisterScreenState extends State<RegisterScreen>
       return;
     }
     if (state is EmailAlreadyExist) {
-      showSnackBar(context: ctx, success: false,
+      showSnackBar(
+          context: ctx, success: false,
           message: 'email_already_exists'.tr());
       return;
     }
     if (state is PhoneAlreadyExist) {
-      showSnackBar(context: ctx, success: false,
+      showSnackBar(
+          context: ctx, success: false,
           message: 'phone_already_exists'.tr());
       return;
     }
@@ -283,7 +312,9 @@ class _RegisterFormCard extends StatelessWidget with UiUtility {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // ✅ AnimatedContainer — smooth bg color transition on theme change
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
       padding:    EdgeInsets.all(24.r),
       decoration: BoxDecoration(
         color:        p.card,
@@ -301,7 +332,7 @@ class _RegisterFormCard extends StatelessWidget with UiUtility {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          // ── Name ──────────────────────────────────────────
+          // ── Name ────────────────────────────────────────
           sharedFieldLabel(label: 'name'.tr(), p: p),
           SizedBox(height: 8.h),
           sharedInputField(
@@ -318,7 +349,7 @@ class _RegisterFormCard extends StatelessWidget with UiUtility {
           ),
           SizedBox(height: 18.h),
 
-          // ── Email ─────────────────────────────────────────
+          // ── Email ────────────────────────────────────────
           sharedFieldLabel(label: 'email'.tr(), p: p),
           SizedBox(height: 8.h),
           sharedInputField(
@@ -338,7 +369,7 @@ class _RegisterFormCard extends StatelessWidget with UiUtility {
           ),
           SizedBox(height: 18.h),
 
-          // ── Phone ─────────────────────────────────────────
+          // ── Phone ────────────────────────────────────────
           sharedFieldLabel(label: 'phone'.tr(), p: p),
           SizedBox(height: 8.h),
           sharedInputField(
@@ -351,7 +382,7 @@ class _RegisterFormCard extends StatelessWidget with UiUtility {
           ),
           SizedBox(height: 18.h),
 
-          // ── Password ──────────────────────────────────────
+          // ── Password ─────────────────────────────────────
           sharedFieldLabel(label: 'password'.tr(), p: p),
           SizedBox(height: 8.h),
           sharedInputField(
@@ -362,12 +393,15 @@ class _RegisterFormCard extends StatelessWidget with UiUtility {
             p:          p,
             suffix: GestureDetector(
               onTap: onTogglePass,
-              child: Icon(
-                obscure
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-                color: p.subText,
-                size:  20.r,
+              child: Padding(
+                padding: EdgeInsets.only(right: 12.w),
+                child: Icon(
+                  obscure
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  color: p.subText,
+                  size:  20.r,
+                ),
               ),
             ),
             validator: (v) {
@@ -378,7 +412,7 @@ class _RegisterFormCard extends StatelessWidget with UiUtility {
           ),
           SizedBox(height: 28.h),
 
-          // ── Submit ────────────────────────────────────────
+          // ── Submit ───────────────────────────────────────
           BlocBuilder<RegisterCubit, RegisterState>(
             buildWhen: (_, s) =>
             s is RegisterLoading ||

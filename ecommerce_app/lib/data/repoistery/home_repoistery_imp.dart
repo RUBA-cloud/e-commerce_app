@@ -10,6 +10,7 @@ import 'package:ecommerce_app/data/model/request/update_car_request.dart';
 import 'package:ecommerce_app/data/model/response/brand_entity.dart';
 import 'package:ecommerce_app/data/model/response/carts/carts_entity.dart';
 import 'package:ecommerce_app/data/model/response/carts/categories_entity.dart';
+import 'package:ecommerce_app/data/model/response/category_entity.dart';
 import 'package:ecommerce_app/data/model/response/filter_option_entity.dart' show FilterOptionEntity;
 
 
@@ -30,7 +31,7 @@ class HomeRepositoryImpl implements HomeRepoistory {
 
 
   @override
-  Future<ApiResult<CategoriesEntity>> fetchCategories()async {
+  Future<ApiResult<CategoryEntity>> fetchCategories()async {
     try {
       final res = await _apiService.getCategories();
       return Success(data: res);
@@ -61,7 +62,6 @@ class HomeRepositoryImpl implements HomeRepoistory {
     }
   }
 
-  @override
   Future<ApiResult<CartsEntity>> addToCart({required AddToCartRequest request})async {
     try {
       final res = await _apiService.addToCarts(request);
@@ -76,7 +76,6 @@ class HomeRepositoryImpl implements HomeRepoistory {
     }
   }
 
-  @override
   Future<ApiResult<CartsEntity>> getCart() async{
       try {
         final res = await _apiService.getCart();
@@ -107,7 +106,6 @@ class HomeRepositoryImpl implements HomeRepoistory {
     }
   }
 
-  @override
   Future<ApiResult<CartsEntity>> deleteCartItem({required int cartItemId}) async {
     try {
       final res = await _apiService.deleteCartItem(cartItemId);

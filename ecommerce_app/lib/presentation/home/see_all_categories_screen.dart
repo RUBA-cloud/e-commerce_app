@@ -1,6 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/constant/app_theme.dart';
-import 'package:ecommerce_app/data/model/response/carts/categories_entity.dart';
+import 'package:ecommerce_app/data/model/response/category_entity.dart';
 import 'package:ecommerce_app/presentation/home/see_all_products_screen.dart';
 import 'package:ecommerce_app/presentation/home/widgets/home_shared.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +13,7 @@ class SeeAllCategoriesScreen extends StatefulWidget {
     required this.selectedIndex,
   });
 
-  final List<CategoriesDataDataEntity> categories;
+  final List<CategoryDataDataEntity> categories;
   final int selectedIndex;
 
   @override
@@ -22,26 +22,20 @@ class SeeAllCategoriesScreen extends StatefulWidget {
 }
 
 class _SeeAllCategoriesScreenState extends State<SeeAllCategoriesScreen> {
-  late String _query;
+  String _query = '';
 
-  @override
-  void initState() {
-    super.initState();
-    _query = '';
-  }
-
-  List<CategoriesDataDataEntity> get _filtered {
+  List<CategoryDataDataEntity> get _filtered {
     if (_query.isEmpty) return widget.categories;
     final q = _query.toLowerCase();
     return widget.categories.where((c) {
-      return (c.nameEn.toLowerCase().contains(q)) ||
-          (c.nameAr.toLowerCase().contains(q));
+      return c.nameEn.toLowerCase().contains(q) ||
+          c.nameAr.toLowerCase().contains(q);
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final c = Theme.of(context).appColors;
+    final c        = Theme.of(context).appColors;
     final filtered = _filtered;
 
     return Scaffold(
@@ -49,7 +43,8 @@ class _SeeAllCategoriesScreenState extends State<SeeAllCategoriesScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ── Top bar ──────────────────────────────────────────
+
+            // ── Top bar ──────────────────────────────────────────────
             Padding(
               padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 0),
               child: Row(
@@ -60,26 +55,27 @@ class _SeeAllCategoriesScreenState extends State<SeeAllCategoriesScreen> {
                     child: Text(
                       'categories'.tr(),
                       style: TextStyle(
-                        fontSize: 16.sp,
+                        fontSize:   16.sp,
                         fontWeight: FontWeight.w700,
-                        color: c.bodyText,
+                        color:      c.bodyText,
                       ),
                     ),
                   ),
-                  // total count pill
                   Container(
                     padding: EdgeInsets.symmetric(
-                        horizontal: 12.w, vertical: 4.h),
+                      horizontal: 12.w,
+                      vertical:   4.h,
+                    ),
                     decoration: BoxDecoration(
-                      color: c.card,
+                      color:        c.card,
                       borderRadius: BorderRadius.circular(20.r),
                       border: Border.all(
-                          color: c.hint.withOpacity(0.18)),
+                        color: c.hint.withOpacity(0.18),
+                      ),
                     ),
                     child: Text(
                       '${widget.categories.length} ${'total'.tr()}',
-                      style: TextStyle(
-                          fontSize: 11.sp, color: c.hint),
+                      style: TextStyle(fontSize: 11.sp, color: c.hint),
                     ),
                   ),
                 ],
@@ -88,35 +84,38 @@ class _SeeAllCategoriesScreenState extends State<SeeAllCategoriesScreen> {
 
             SizedBox(height: 12.h),
 
-            // ── Search bar ───────────────────────────────────────
+            // ── Search bar ───────────────────────────────────────────
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.w),
               child: Container(
                 decoration: BoxDecoration(
-                  color: c.card,
+                  color:        c.card,
                   borderRadius: BorderRadius.circular(14.r),
-                  border: Border.all(
-                      color: c.hint.withOpacity(0.14)),
+                  border: Border.all(color: c.hint.withOpacity(0.14)),
                 ),
                 child: TextField(
                   onChanged: (v) => setState(() => _query = v),
                   style: TextStyle(fontSize: 13.sp, color: c.bodyText),
                   decoration: InputDecoration(
-                    hintText: 'search_categories'.tr(),
-                    hintStyle:
-                    TextStyle(fontSize: 13.sp, color: c.hint),
-                    prefixIcon: Icon(Icons.search_rounded,
-                        size: 20.r, color: c.hint),
+                    hintText:  'search_categories'.tr(),
+                    hintStyle: TextStyle(fontSize: 13.sp, color: c.hint),
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      size:  20.r,
+                      color: c.hint,
+                    ),
                     suffixIcon: _query.isNotEmpty
                         ? GestureDetector(
                       onTap: () => setState(() => _query = ''),
-                      child: Icon(Icons.close_rounded,
-                          size: 18.r, color: c.hint),
+                      child: Icon(
+                        Icons.close_rounded,
+                        size:  18.r,
+                        color: c.hint,
+                      ),
                     )
                         : null,
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                        vertical: 12.h),
+                    border:         InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(vertical: 12.h),
                   ),
                 ),
               ),
@@ -124,49 +123,44 @@ class _SeeAllCategoriesScreenState extends State<SeeAllCategoriesScreen> {
 
             SizedBox(height: 12.h),
 
-            // ── Grid ─────────────────────────────────────────────
+            // ── Grid ─────────────────────────────────────────────────
             Expanded(
               child: filtered.isEmpty
                   ? Center(
                 child: Text(
                   'no_results'.tr(),
-                  style: TextStyle(
-                      fontSize: 14.sp, color: c.hint),
+                  style: TextStyle(fontSize: 14.sp, color: c.hint),
                 ),
               )
                   : GridView.builder(
-                padding: EdgeInsets.fromLTRB(
-                    16.w, 0, 16.w, 24.h),
-                gridDelegate:
-                SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 14.h,
+                padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount:   3,
+                  mainAxisSpacing:  14.h,
                   crossAxisSpacing: 10.w,
                   childAspectRatio: 0.76,
                 ),
-                itemCount: filtered.length,
+                itemCount:   filtered.length,
                 itemBuilder: (_, i) {
-                  final cat = filtered[i];
-                  // match against original index for selected state
-                  final originalIndex =
-                  widget.categories.indexOf(cat);
-                  final selected =
-                      widget.selectedIndex == originalIndex;
-                  final name = localizedEnAr(
+                  final cat           = filtered[i];
+                  final originalIndex = widget.categories.indexOf(cat);
+                  final selected      = widget.selectedIndex == originalIndex;
+                  final name          = localizedEnAr(
                     context: context,
-                    nameEn: cat.nameEn,
-                    nameAr: cat.nameAr,
+                    nameEn:  cat.nameEn,
+                    nameAr:  cat.nameAr,
                   );
+
                   return _CategoryTile(
-                    cat: cat,
-                    name: name,
+                    cat:      cat,
+                    name:     name,
                     selected: selected,
-                    c: c,
+                    c:        c,
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => SeeAllProductsScreen(
-                          categories: widget.categories,
+                          categories:          widget.categories,
                           initialCategoryIndex: originalIndex,
                         ),
                       ),
@@ -193,25 +187,29 @@ class _CategoryTile extends StatelessWidget {
     required this.onTap,
   });
 
-  final CategoriesDataDataEntity cat;
-  final String                   name;
-  final bool                     selected;
-  final AppColors                c;
-  final VoidCallback             onTap;
+  final CategoryDataDataEntity cat;
+  final String                  name;
+  final bool                    selected;
+  final AppColors               c;
+  final VoidCallback            onTap;
 
   @override
   Widget build(BuildContext context) {
+    // ✅ products is non-nullable — no ! needed
+    final productCount = cat.products.length;
+
     return GestureDetector(
       onTap: onTap,
       child: Column(
         children: [
-          // ── Image box ──────────────────────────────────────────
+
+          // ── Image box ──────────────────────────────────────────────
           Expanded(
             child: Stack(
               children: [
                 AnimatedContainer(
-                  duration: const Duration(milliseconds: 220),
-                  width: double.infinity,
+                  duration:     const Duration(milliseconds: 220),
+                  width:        double.infinity,
                   decoration: BoxDecoration(
                     color: selected
                         ? c.main.withOpacity(0.10)
@@ -225,21 +223,24 @@ class _CategoryTile extends StatelessWidget {
                     ),
                   ),
                   clipBehavior: Clip.antiAlias,
-                  // child: cat.image != null
-                  //     ? AppNetworkImage(
-                  //   url: cat.image.toString(),
-                  //   fit: BoxFit.cover,
-                  //   placeholder: _placeholder(c, selected),
-                  // )
-                  //     : _placeholder(c, selected),
+                  child: cat.image != null
+                      ? Image.network(
+                    cat.image.toString(),
+                    fit:         BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _placeholder(c, selected),
+                  )
+                      : _placeholder(c, selected),
                 ),
-                // item count badge
+
+                // ── Product count badge ─────────────────────────────
                 Positioned(
                   bottom: 6,
-                  right: 6,
+                  right:  6,
                   child: Container(
                     padding: EdgeInsets.symmetric(
-                        horizontal: 6.w, vertical: 2.h),
+                      horizontal: 6.w,
+                      vertical:   2.h,
+                    ),
                     decoration: BoxDecoration(
                       color: selected
                           ? c.main.withOpacity(0.15)
@@ -253,11 +254,11 @@ class _CategoryTile extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      '${cat.products.length}',
+                      '$productCount',
                       style: TextStyle(
-                        fontSize: 9.sp,
+                        fontSize:   9.sp,
                         fontWeight: FontWeight.w600,
-                        color: selected ? c.main : c.hint,
+                        color:      selected ? c.main : c.hint,
                       ),
                     ),
                   ),
@@ -268,27 +269,26 @@ class _CategoryTile extends StatelessWidget {
 
           SizedBox(height: 7.h),
 
-          // ── Name ───────────────────────────────────────────────
+          // ── Name ───────────────────────────────────────────────────
           Text(
             name,
             textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+            maxLines:  2,
+            overflow:  TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 11.sp,
-              fontWeight:
-              selected ? FontWeight.w600 : FontWeight.w400,
-              color: selected ? c.main : c.bodyText,
-              height: 1.3,
+              fontSize:   11.sp,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              color:      selected ? c.main : c.bodyText,
+              height:     1.3,
             ),
           ),
 
-          // ── Selected dot ───────────────────────────────────────
+          // ── Selected dot ───────────────────────────────────────────
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            margin: EdgeInsets.only(top: 4.h),
-            width: selected ? 5.r : 0,
-            height: selected ? 5.r : 0,
+            margin:   EdgeInsets.only(top: 4.h),
+            width:    selected ? 5.r : 0,
+            height:   selected ? 5.r : 0,
             decoration: BoxDecoration(
               color: c.main,
               shape: BoxShape.circle,
@@ -303,7 +303,7 @@ class _CategoryTile extends StatelessWidget {
     return Center(
       child: Icon(
         Icons.category_outlined,
-        size: 28.r,
+        size:  28.r,
         color: selected ? c.main : c.hint,
       ),
     );
@@ -321,16 +321,16 @@ class _BackButton extends StatelessWidget {
     return GestureDetector(
       onTap: () => Navigator.pop(context),
       child: Container(
-        width: 36.r,
+        width:  36.r,
         height: 36.r,
         decoration: BoxDecoration(
-          color: c.card,
+          color:        c.card,
           borderRadius: BorderRadius.circular(10.r),
           border: Border.all(color: c.hint.withOpacity(0.18)),
         ),
         child: Icon(
           Icons.arrow_back_ios_new_rounded,
-          size: 16.r,
+          size:  16.r,
           color: c.bodyText,
         ),
       ),

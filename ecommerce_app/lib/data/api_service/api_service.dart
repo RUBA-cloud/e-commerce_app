@@ -14,6 +14,7 @@ import 'package:ecommerce_app/data/model/response/brand_entity.dart';
 import 'package:ecommerce_app/data/model/response/carts/carts_entity.dart';
 import 'package:ecommerce_app/data/model/response/carts/categories_entity.dart';
 import 'package:ecommerce_app/data/model/response/carts/company_branch_entity.dart';
+import 'package:ecommerce_app/data/model/response/category_entity.dart';
 import 'package:ecommerce_app/data/model/response/checkout/order_entity.dart';
 import 'package:ecommerce_app/data/model/response/company_info_entity.dart';
 import 'package:ecommerce_app/data/model/response/email_entity.dart';
@@ -21,16 +22,23 @@ import 'package:ecommerce_app/data/model/response/email_verified_entity.dart';
 import 'package:ecommerce_app/data/model/response/filter_option_entity.dart';
 import 'package:ecommerce_app/data/model/response/filter_result_entity.dart';
 import 'package:ecommerce_app/data/model/response/login_user_entity.dart';
+import 'package:ecommerce_app/data/model/response/profile/payment_entity.dart';
 import 'package:ecommerce_app/data/model/response/profile/profile_entity.dart';
 import 'package:ecommerce_app/data/model/response/register_entity.dart';
 import 'package:ecommerce_app/data/model/response/similar_product_entity_entity.dart';
 import 'package:ecommerce_app/data/model/request/filter_request.dart';
+import 'package:ecommerce_app/data/model/response/user_payment_entity.dart';
+import 'package:injectable/injectable.dart';
 import 'package:retrofit/retrofit.dart';
+
+import '../model/request/update_payment_request.dart';
 
 part 'api_service.g.dart';
 
+@singleton                       // ✅ ADDED — registers ApiService in GetIt
 @RestApi()
 abstract class ApiService {
+  @factoryMethod                 // ✅ ADDED — tells GetIt to use this factory
   factory ApiService(Dio dio) = _ApiService;
 
   @GET('/company-info')
@@ -59,7 +67,7 @@ abstract class ApiService {
       @Query('refresh_token') String refreshToken);
 
   @GET('/categories')
-  Future<CategoriesEntity> getCategories();
+  Future<CategoryEntity> getCategories();
 
   @GET('/similar_product/{id}')
   Future<SimilarProductEntityEntity> getSimilarProducts(@Path('id') int id);
@@ -94,7 +102,15 @@ abstract class ApiService {
   @POST('/user/profile')
   Future<ProfileEntity> updateProfile(@Body() UpdateProfileRequest update);
 
-  @POST('/change_password')
-  Future<HttpResponse<bool>> changePassword(
+  @POST('/change-password')
+  Future<HttpResponse<void>> changePassword(
       @Body() ChangePasswordRequest changePasswordRequest);
+
+  @GET('/payment')
+  Future<PaymentEntity> getPaymentOptions();
+
+  @GET('/user_payment_selected_option')
+  Future<UserPaymentEntity>getSelectUserPaymentOption();
+  @POST('/payment_submit')
+  Future<UserPaymentEntity> submitPaymentOption(UpdatePaymentRequest $request);
 }

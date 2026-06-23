@@ -1,6 +1,6 @@
 class AddToCartRequest {
   final String productId;
-  final String color;
+  final String? color;
   final int quantity;
   final int sizeId;
 

@@ -5,8 +5,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
 import 'package:ecommerce_app/data/model/response/company_info_entity.dart';
-import 'package:ecommerce_app/services/company_info/company_info_cubit.dart';
-import 'package:ecommerce_app/services/company_info/company_info_state.dart';
+import 'package:ecommerce_app/services/company_info/app_main_cubit.dart';
+import 'package:ecommerce_app/services/company_info/app_main_state.dart';
 import 'package:ecommerce_app/services/profile/profile_cubit.dart';
 import 'package:ecommerce_app/services/profile/profile_state.dart';
 import 'package:flutter/material.dart';
@@ -93,35 +93,37 @@ class _AboutUsScreenState extends State<AboutUsScreen>
           style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700),
         ),
       ),
-      body: BlocBuilder<ProfileCubit, ProfileState>(
-        builder: (ctx, state) {
-          if (state is ProfileLoadingState) {
-            return const Center(child: CircularProgressIndicator.adaptive());
-          }
+      body: Container(color: Theme.of(context).colorScheme.surface,
+        child: BlocBuilder<ProfileCubit, ProfileState>(
+          builder: (ctx, state) {
+            if (state is ProfileLoadingState) {
+              return const Center(child: CircularProgressIndicator.adaptive());
+            }
 
-          if (state is ProfileLoadFailedState) {
-            return getErrorView(           // ← FIXED: was missing return
-              context: context,
-              message: state.message ?? 'something_went_wrong'.tr(),
-              onRetry: () => _profileCubit.loadCompanyInfo(),
-            );
-          }
+            if (state is ProfileLoadFailedState) {
+              return getErrorView(           // ← FIXED: was missing return
+                context: context,
+                message: state.message ?? 'something_went_wrong'.tr(),
+                onRetry: () => _profileCubit.loadCompanyInfo(),
+              );
+            }
 
-          if (state is ProfileLoadedState) {
-            return FadeTransition(
-              opacity: _fadeAnim,
-              child: SlideTransition(
-                position: _slideAnim,
-                child: _AboutUsBody(
-                  company: state.company,
-                  isAr:    isAr,
+            if (state is ProfileLoadedState) {
+              return FadeTransition(
+                opacity: _fadeAnim,
+                child: SlideTransition(
+                  position: _slideAnim,
+                  child: _AboutUsBody(
+                    company: state.company,
+                    isAr:    isAr,
+                  ),
                 ),
-              ),
-            );
-          }
+              );
+            }
 
-          return const Center(child: CircularProgressIndicator.adaptive());
-        },
+            return const Center(child: CircularProgressIndicator.adaptive());
+          },
+        ),
       ),
     );
   }
@@ -155,6 +157,7 @@ class _AboutUsBody extends StatelessWidget {
     final imageUrl = company?.image;
 
     return SingleChildScrollView(
+
       physics: const BouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

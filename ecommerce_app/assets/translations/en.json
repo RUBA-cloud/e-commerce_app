@@ -227,6 +227,40 @@
   "profile_updated": "Profile updated successfully",
   "field_required": "This field is required",
   "invalid_email": "Invalid email address",
-  "invalid_phone": "Invalid phone number"
+  "invalid_phone": "Invalid phone number",
+
+  "current_password":         "Current Password",
+  "new_password":             "New Password",
+  "confirm_password":         "Confirm New Password",
+  "update_your_password":     "Update Your Password",
+  "password_tip":             "Use a strong, unique password you don't use anywhere else.",
+  "password_strength":        "Password Strength",
+  "weak":                     "Weak",
+  "fair":                     "Fair",
+  "good":                     "Good",
+  "strong":                   "Strong",
+  "password_min_length":      "Password must be at least 8 characters",
+  "password_same_as_current": "New password must differ from your current password",
+  "passwords_do_not_match":   "Passwords do not match",
+  "password_changed":         "Password updated successfully",
+  "update_password":          "Update Password",
+  "choose_image_source":"Choose Image Source",
+  "gallery": "Choose Image Gallery",
+  "camera": "Choose  from Camera",
+  "enter_name": "enter name",
+  "enter_phone": "enter phone",
+  "reset_hint_link": "reset link password",
+  "check_spam_hint": "please check your email, and check spam",
+  "resend_email": "resend email",
+  "have_account": "Have Account",
+  "avaliable_payments_method": "Available payment Method",
+  "no_avaliable_payment": " No Available  Payment Method",
+  "confirm_payment_method": "Confirm Payment Method",
+  "payment": "Payment",
+  "available_payment_methods": "Available Payment Methods",
+"new_arrival": "New Arrival",
+  "payment_tip": "Payment Tip"
+
+
 
 }

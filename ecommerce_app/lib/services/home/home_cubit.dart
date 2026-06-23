@@ -2,23 +2,19 @@
 
 import 'package:ecommerce_app/core/di/api_result.dart';
 import 'package:ecommerce_app/core/di/configure_dependency.dart';
-import 'package:ecommerce_app/data/model/request/brand_request.dart';
 import 'package:ecommerce_app/data/model/request/filter_request.dart';
-import 'package:ecommerce_app/data/model/response/brand_entity.dart';
-import 'package:ecommerce_app/data/model/response/carts/categories_entity.dart';
+import 'package:ecommerce_app/data/model/response/category_entity.dart';
 import 'package:ecommerce_app/data/model/response/filter_option_entity.dart';
-
 import 'package:ecommerce_app/data/model/response/filter_result_entity.dart';
-
 import 'package:ecommerce_app/domain/usecases/get_categories_use_case.dart';
 import 'package:ecommerce_app/domain/usecases/get_fliter_options.dart';
-import 'package:ecommerce_app/domain/usecases/get_top_brands_use_case.dart';
 import 'package:ecommerce_app/domain/usecases/submit_filter_use_case.dart';
 import 'package:ecommerce_app/services/home/home_state.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-// ── Local UI filter model ────────────────────────────────────────────────────
+// ── Filter options model ──────────────────────────────────────
 
 class FilterOptions {
   final double       minPrice;
@@ -31,8 +27,6 @@ class FilterOptions {
   final List<String> selectedColors;
   final String?      sortBy;
   final String       sortOrder;
-
-
 
   const FilterOptions({
     this.minPrice           = 0,
@@ -88,7 +82,6 @@ class FilterOptions {
         sortOrder:          sortOrder ?? this.sortOrder,
       );
 
-  /// Convert to the Dart request model sent to the API.
   FilterRequest toRequest() => FilterRequest(
     categoryId: selectedCategoryId,
     sizeId:     selectedSizeId,
@@ -96,186 +89,197 @@ class FilterOptions {
     color:      selectedColors.isNotEmpty ? selectedColors.first : null,
     priceFrom:  minPrice > 0     ? minPrice : null,
     priceTo:    maxPrice < 10000 ? maxPrice : null,
-
   );
 }
 
-// ── Cubit ────────────────────────────────────────────────────────────────────
+// ── Cubit ─────────────────────────────────────────────────────
 
 class HomeCubit extends Cubit<HomeState> {
   HomeCubit() : super(HomeInitial());
 
   static HomeCubit get(BuildContext context) => BlocProvider.of(context);
 
-  final GetCategoryUseCase      _categoryUseCase      = getIt<GetCategoryUseCase>();
-  final GetTopBrandsUseCase     _getTopBrands         = getIt<GetTopBrandsUseCase>();
-  final  GetFilterOptionsUseCse _filterOptionsUseCase = getIt< GetFilterOptionsUseCse>();
-  final SubmitFilterUseCase     _submitFilterUseCase  = getIt<SubmitFilterUseCase>();
+  final GetCategoryUseCase     _categoryUseCase      = getIt<GetCategoryUseCase>();
+  final GetFilterOptionsUseCse _filterOptionsUseCase = getIt<GetFilterOptionsUseCse>();
+  final SubmitFilterUseCase    _submitFilterUseCase  = getIt<SubmitFilterUseCase>();
 
-  // ── Navigation tab ───────────────────────────────────────────────────────
+  // ── Navigation ────────────────────────────────────────────
   int selectedTab = 0;
 
   void homeTabChange(int index) {
     selectedTab = index;
-   // _emitLoaded();
+    _emitLoaded();
   }
-  FilterOptions? current;
-  void reset() { current = const FilterOptions();}
 
   void goToCart() => homeTabChange(1);
 
-  // ── Home data ────────────────────────────────────────────────────────────
-  int                   selectedCategoryIndex = 0;
-  CategoriesEntity?     categoriesEntity;
-  BrandEntity?          brandEntity;
-  FilterOptionEntity?  filterOptionsEntity;   // options loaded from API
-  FilterResultEntity?   filterResultEntity;    // products returned by filter API
+  // ── Data ──────────────────────────────────────────────────
+  int                  selectedCategoryIndex = 0;
+  CategoryEntity?      categoriesEntity;
+  FilterOptionEntity?  filterOptionsEntity;
+  FilterResultEntity?  filterResultEntity;
 
-  // ── Filter state ─────────────────────────────────────────────────────────
+  // ── Filter ────────────────────────────────────────────────
   FilterOptions _activeFilter = const FilterOptions();
   FilterOptions get activeFilter => _activeFilter;
 
-  // ── Products (local filter applied to cached data) ───────────────────────
-  List<CategoriesDataDataProductsEntity> get selectedProducts {
-    // If the API returned filtered products, use those instead.
+  // ── Derived: selected category ────────────────────────────
+
+  CategoryDataDataEntity? get selectedCategory {
+    final cats = categoriesEntity?.data.data;
+    if (cats == null || cats.isEmpty) return null;
+    return cats[selectedCategoryIndex.clamp(0, cats.length - 1)];
+  }
+
+  // ── Derived: brands of selected category ─────────────────
+
+  List<CategoryDataDataProductsBrandsEntity> get selectedCategoryBrands {
+    return selectedCategory?.brands ?? [];
+  }
+
+  // ── Derived: products of selected category ───────────────
+
+  List<CategoryDataDataProductsEntity> get selectedProducts {
     if (filterResultEntity != null && _activeFilter.isActive) {
       final cats = filterResultEntity!.data.categories;
       if (cats.isEmpty) return [];
-      // flatten all products from every category returned
       return cats
           .expand((c) => c.products)
-          .whereType<CategoriesDataDataProductsEntity>()
+          .whereType<CategoryDataDataProductsEntity>()
           .toList();
     }
-
-    // Otherwise fall back to local price filter on cached data.
-    final cats = categoriesEntity?.data.data;
-    if (cats == null || cats.isEmpty) return [];
-    final idx      = selectedCategoryIndex.clamp(0, cats.length - 1);
-    final products = cats[idx].products;
+    final products = selectedCategory?.products;
+    if (products == null || products.isEmpty) return [];
     return _applyLocalFilter(products);
   }
 
-  List<CategoriesDataDataProductsEntity> _applyLocalFilter(
-      List<CategoriesDataDataProductsEntity> products,
+  // ── Derived: products filtered by selected brand ──────────
+
+  List<CategoryDataDataProductsEntity> get selectedBrandProducts {
+    final brandId = _activeFilter.selectedBrandId;
+    if (brandId == null) return selectedProducts;
+    return selectedProducts
+        .where((p) => p.brands.any((b) => b.id == brandId))
+        .toList();
+  }
+
+  List<CategoryDataDataProductsEntity> _applyLocalFilter(
+      List<CategoryDataDataProductsEntity> products,
       ) {
+    if (!_activeFilter.isActive) return products;
     return products.where((p) {
-      final price = double.tryParse(p.price.toString()) ?? 0;
-      if (price < _activeFilter.minPrice || price > _activeFilter.maxPrice) {
-        return false;
-      }
-      // if (_activeFilter.selectedBrandId != null &&
-      //     p.brandId != _activeFilter.selectedBrandId) {
-      //   return false;
-      // }false
-      return true;
+      final price   = double.tryParse(p.price) ?? 0.0;
+      final inPrice = price >= _activeFilter.minPrice &&
+          price <= _activeFilter.maxPrice;
+      return inPrice;
     }).toList();
   }
 
-  // ── Apply / clear filter ─────────────────────────────────────────────────
+  // ── Apply / clear filter ──────────────────────────────────
 
-  /// Called from FilterDialog "Apply" button.
   Future<void> applyFilter(FilterOptions options) async {
-    _activeFilter     = options;
-    filterResultEntity = null;          // clear stale results
+    if (isClosed) return; // ✅ guard
+    _activeFilter      = options;
+    filterResultEntity = null;
     _emitLoaded();
 
-    if (!options.isActive) return;      // nothing to send to server
+    if (!options.isActive) return;
 
+    if (isClosed) return; // ✅ guard before async emit
     emit(HomeFilterLoading());
+
     try {
       final result = await _submitFilterUseCase.execute(options.toRequest());
+      if (isClosed) return; // ✅ guard after await
       switch (result) {
         case Success(:final data):
           filterResultEntity = data;
           _emitLoaded();
         case Failure(:final error):
-          emit(HomeFailed(error));
-          _emitLoaded();               // restore previous loaded state
+          emit(HomeFailed(error.toString()));
+          _emitLoaded();
       }
     } catch (e) {
+      if (isClosed) return; // ✅ guard in catch
       emit(HomeFailed(e.toString()));
       _emitLoaded();
     }
   }
 
   void clearFilter() {
+    if (isClosed) return; // ✅ guard
     _activeFilter      = const FilterOptions();
     filterResultEntity = null;
     _emitLoaded();
   }
 
-  // ── Load filter options from API ─────────────────────────────────────────
+  // ── Load filter options ───────────────────────────────────
+
   Future<void> loadFilterOptions() async {
     try {
       final result = await _filterOptionsUseCase.execute();
+      if (isClosed) return; // ✅ guard after await
       switch (result) {
         case Success(:final data):
           filterOptionsEntity = data;
           _emitLoaded();
         case Failure(:final error):
-        // non-fatal: filter dialog still works with static data
           debugPrint('loadFilterOptions failed: $error');
       }
     } catch (e) {
+      if (isClosed) return; // ✅ guard in catch
       debugPrint('loadFilterOptions error: $e');
     }
   }
 
-  // ── Load ─────────────────────────────────────────────────────────────────
+  // ── Load home ─────────────────────────────────────────────
+
   Future<void> loadHome() async {
+    if (isClosed) return; // ✅ guard
     emit(HomeLoading());
-    await fetchCategories(silent: true);
-    unawaited(loadFilterOptions());       // fire-and-forget; don't block UI
-    if (categoriesEntity != null) _emitLoaded();
+
+    final ok = await _fetchCategories();
+
+    if (isClosed) return; // ✅ guard AFTER await — this is what caused the crash
+    if (ok) _emitLoaded();
   }
 
-  Future<void> fetchCategories({bool silent = false}) async {
-    if (!silent) emit(HomeLoading());
+  Future<bool> _fetchCategories() async {
     try {
       final result = await _categoryUseCase.execute();
+      if (isClosed) return false; // ✅ guard after await
       switch (result) {
-        case Success<CategoriesEntity>():
+        case Success<CategoryEntity>():
           categoriesEntity = result.data;
-          await fetchTopBrands(silent: true);
-          if (!silent) _emitLoaded();
-        case Failure<CategoriesEntity>():
-          emit(HomeFailed(result.message));
+          return true;
+        case Failure<CategoryEntity>():
+          if (!isClosed) emit(HomeFailed(result.message)); // ✅ guard
+          return false;
       }
     } catch (e) {
-      emit(HomeFailed(e.toString()));
+      if (!isClosed) emit(HomeFailed(e.toString())); // ✅ guard
+      return false;
     }
   }
 
-  Future<void> fetchTopBrands({bool silent = false}) async {
-    try {
-      final result = await _getTopBrands.execute(
-        request: BrandRequest(categoryId: selectedCategoryIndex),
-      );
-      switch (result) {
-        case Success<BrandEntity>():
-          brandEntity = result.data;
-        case Failure<BrandEntity>():
-          if (!silent) emit(HomeFailed(result.error.toString()));
-      }
-    } catch (e) {
-      if (!silent) emit(HomeFailed(e.toString()));
-    }
-  }
+  // ── Category selection ────────────────────────────────────
 
   void selectCategory(int index) {
+    if (isClosed) return; // ✅ guard
     selectedCategoryIndex = index;
-    filterResultEntity    = null;   // reset filter results when category changes
-    fetchTopBrands(silent: false);
+    filterResultEntity    = null;
+    _activeFilter         = const FilterOptions();
     _emitLoaded();
   }
 
-  // ── Emit ─────────────────────────────────────────────────────────────────
+  // ── Emit ──────────────────────────────────────────────────
+ bool  loggedIn =false;
   void _emitLoaded() {
+    if (isClosed) return;              // ✅ guard — prevents the crash
     if (categoriesEntity == null) return;
     emit(HomeLoaded(
       categoriesEntity:      categoriesEntity!,
-      brandEntity:           brandEntity,
+      brandEntity:           null,
       filterOptionsEntity:   filterOptionsEntity,
       selectedCategoryIndex: selectedCategoryIndex,
       selectedTab:           selectedTab,
@@ -284,5 +288,4 @@ class HomeCubit extends Cubit<HomeState> {
   }
 }
 
-// Dart doesn't have a built-in unawaited; import or inline it:
 void unawaited(Future<void> future) {}

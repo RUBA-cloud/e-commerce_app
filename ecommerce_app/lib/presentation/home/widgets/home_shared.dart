@@ -17,10 +17,10 @@ String localizedEnAr({
   return nameEn;
 }
 
-Widget brandNetworkImage(BrandDataDataEntity brand, AppColors c) {
+Widget brandNetworkImage(String imageUrl,AppColors c) {
   final url = brandImageUrl(
-    imageUrl: brand.imageUrl,
-    image: brand.image,
+    imageUrl: imageUrl,
+    image: imageUrl,
 
   );
   return SizedBox();

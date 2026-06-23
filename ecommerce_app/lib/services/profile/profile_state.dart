@@ -1,3 +1,5 @@
+// lib/services/profile/profile_state.dart
+
 import 'package:ecommerce_app/data/model/response/carts/company_branch_entity.dart';
 import 'package:ecommerce_app/data/model/response/company_info_entity.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +15,8 @@ class GoToAboutUs               extends ProfileState {}
 class GoToHelpAndSupport        extends ProfileState {}
 class GoToCompanyBranches       extends ProfileState {}
 class GoToEditProfile           extends ProfileState {}
-class GoToChangePassword          extends ProfileState {}
+class GoToChangePassword        extends ProfileState {}
+class GoToPayment               extends ProfileState {}
 
 // ── Profile loaded ────────────────────────────────────────────
 class ProfileLoadedState extends ProfileState {
@@ -69,12 +72,76 @@ class ProfileBranchFailed extends ProfileState {
 
 // ── Update profile ────────────────────────────────────────────
 class ProfileUpdateLoading extends ProfileState {}
-
 class ProfileUpdateSuccess extends ProfileState {}
 
 class ProfileUpdateFailed extends ProfileState {
   final String? message;
   ProfileUpdateFailed({this.message});
 }
-class ChangePasswordUpdateFailedState extends ProfileState{}
-class ChangePasswordUpdateSuccessState extends ProfileState{}
+
+// ── Change password ───────────────────────────────────────────
+class ChangePasswordLoadingState       extends ProfileState {}
+class ChangePasswordUpdateSuccessState extends ProfileState {}
+
+class ChangePasswordUpdateFailedState extends ProfileState {
+  final String? message;
+  ChangePasswordUpdateFailedState({this.message});
+}
+
+// ── Password visibility toggles ───────────────────────────────
+class ChangePasswordVisibilityState extends ProfileState {
+  final bool showCurrent;
+  final bool showNew;
+  final bool showConfirm;
+
+  ChangePasswordVisibilityState({
+    required this.showCurrent,
+    required this.showNew,
+    required this.showConfirm,
+  });
+}
+
+// ── Password strength ─────────────────────────────────────────
+class ChangePasswordStrengthState extends ProfileState {
+  final double strength;
+  final String label;
+  final Color  color;
+  final String password;
+
+  ChangePasswordStrengthState({
+    required this.strength,
+    required this.label,
+    required this.color,
+    required this.password,
+  });
+}
+
+// ── Payment — load ────────────────────────────────────────────
+class PaymentLoadingState extends ProfileState {}
+
+class PaymentLoadedState extends ProfileState {
+  final List<dynamic> payments; // List<PaymentDataEntity>
+  final int?          selectedId;
+
+  PaymentLoadedState({required this.payments, this.selectedId});
+}
+
+class PaymentLoadFailedState extends ProfileState {
+  final String? message;
+  PaymentLoadFailedState({this.message});
+}
+
+class PaymentSelectedState extends ProfileState {
+  final int selectedId;
+  PaymentSelectedState(this.selectedId);
+}
+
+// ── Payment — submit ✅ NEW ───────────────────────────────────
+class PaymentSubmitLoadingState extends ProfileState {}
+
+class PaymentSubmitSuccessState extends ProfileState {}
+
+class PaymentSubmitFailedState extends ProfileState {
+  final String? message;
+  PaymentSubmitFailedState({this.message});
+}

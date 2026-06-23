@@ -21,36 +21,10 @@ class FilterDialog extends StatefulWidget {
 
 class _FilterDialogState extends State<FilterDialog> {
   late FilterOptions _current;
-  late HomeCubit cubit;
+  late HomeCubit     cubit;
 
-  // ── Static fallback colors (labels are translation keys) ──
-  static const List<_ColorOption> _staticColors = [
-    _ColorOption(labelKey: 'red',    hex: '#F44336', color: Color(0xFFF44336)),
-    _ColorOption(labelKey: 'blue',   hex: '#2196F3', color: Color(0xFF2196F3)),
-    _ColorOption(labelKey: 'green',  hex: '#4CAF50', color: Color(0xFF4CAF50)),
-    _ColorOption(labelKey: 'yellow', hex: '#FFEB3B', color: Color(0xFFFFEB3B)),
-    _ColorOption(labelKey: 'black',  hex: '#212121', color: Color(0xFF212121)),
-    _ColorOption(labelKey: 'white',  hex: '#FAFAFA', color: Color(0xFFFAFAFA)),
-    _ColorOption(labelKey: 'pink',   hex: '#E91E63', color: Color(0xFFE91E63)),
-    _ColorOption(labelKey: 'purple', hex: '#9C27B0', color: Color(0xFF9C27B0)),
-  ];
-
-  // ── Anchor colors used to give API hex values a readable,
-  //    localized name (nearest-color match) ─────────────────
-  static const Map<String, Color> _namedAnchors = {
-    'red':    Color(0xFFF44336),
-    'orange': Color(0xFFFF9800),
-    'yellow': Color(0xFFFFEB3B),
-    'green':  Color(0xFF4CAF50),
-    'blue':   Color(0xFF2196F3),
-    'purple': Color(0xFF9C27B0),
-    'pink':   Color(0xFFE91E63),
-    'brown':  Color(0xFF795548),
-    'maroon': Color(0xFF800000),
-    'grey':   Color(0xFF9E9E9E),
-    'black':  Color(0xFF212121),
-    'white':  Color(0xFFFAFAFA),
-  };
+  // ✅ removed _staticColors entirely
+  // ✅ removed _namedAnchors — no longer needed for matching
 
   static const List<String> _sortOptions = [
     'price_low_high',
@@ -60,16 +34,16 @@ class _FilterDialogState extends State<FilterDialog> {
   ];
 
   static const Map<String, (String, String)> _sortMap = {
-    'price_low_high': ('price', 'asc'),
-    'price_high_low': ('price', 'desc'),
+    'price_low_high': ('price',      'asc'),
+    'price_high_low': ('price',      'desc'),
     'newest':         ('created_at', 'desc'),
-    'rating':         ('rating', 'desc'),
+    'rating':         ('rating',     'desc'),
   };
 
   @override
   void initState() {
     super.initState();
-    cubit = HomeCubit.get(context);
+    cubit    = HomeCubit.get(context);
     _current = cubit.activeFilter;
     cubit.loadFilterOptions();
   }
@@ -79,42 +53,60 @@ class _FilterDialogState extends State<FilterDialog> {
     cubit.clearFilter();
   }
 
-  // ── Resolve API options ───────────────────────────────
-  List<FilterOptionSizesEntity> get _apiSizes =>
-      cubit.filterOptionsEntity?.sizes ?? [];
+  // ── API options ───────────────────────────────────────
+  List<FilterOptionSizesEntity>      get _apiSizes      => cubit.filterOptionsEntity?.sizes      ?? [];
+  List<FilterOptionCategoriesEntity> get _apiCategories => cubit.filterOptionsEntity?.categories ?? [];
+  List<FilterOptionBrandsEntity>     get _apiBrands     => cubit.filterOptionsEntity?.brands     ?? [];
+  List<FilterOptionTypesEntity>      get _apiTypes      => cubit.filterOptionsEntity?.types      ?? [];
 
-  List<String> get _apiColors =>
-      cubit.filterOptionsEntity?.colors ?? [];
+  // ✅ Product colors — extracted from the selected category's products
+  // Each product has a List<String> colors field (hex strings from the API)
+  // We deduplicate them and show only real product colors.
+  List<String> get _productColors {
+    // Priority 1: API filter options colors (if available)
+    final apiColors = cubit.filterOptionsEntity?.colors ?? [];
+    if (apiColors.isNotEmpty) return apiColors;
 
-  List<FilterOptionCategoriesEntity> get _apiCategories =>
-      cubit.filterOptionsEntity?.categories ?? [];
+    // Priority 2: extract from products of the selected category
+    final products = cubit.selectedProducts;
+    if (products.isEmpty) return [];
 
-  List<FilterOptionBrandsEntity> get _apiBrands =>
-      cubit.filterOptionsEntity?.brands ?? [];
+    final seen  = <String>{};
+    final hexes = <String>[];
 
-  List<FilterOptionTypesEntity> get _apiTypes =>
-      cubit.filterOptionsEntity?.types ?? [];
+    for (final product in products) {
+      for (final colorHex in product.colors) {
+        final normalized = colorHex.trim().toLowerCase();
+        if (normalized.isNotEmpty && seen.add(normalized)) {
+          hexes.add(normalized);
+        }
+      }
+    }
+    return hexes;
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = _Palette.of(context);
 
     return BlocBuilder<HomeCubit, HomeState>(
-      bloc: cubit,
+      bloc:      cubit,
       buildWhen: (_, s) =>
-      s is HomeLoaded || s is HomeFilterLoading || s is HomeFailed,
+      s is HomeLoaded       ||
+          s is HomeFilterLoading ||
+          s is HomeFailed,
       builder: (context, state) {
         return Dialog(
           backgroundColor: c.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24.r),
           ),
-          insetPadding:
-          EdgeInsets.symmetric(horizontal: 12.w, vertical: 32.h),
+          insetPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 32.h),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ── Sticky header ───────────────────────────
+
+              // ── Sticky header ────────────────────────────
               Padding(
                 padding: EdgeInsets.fromLTRB(20.w, 20.h, 12.w, 0),
                 child: Row(
@@ -150,22 +142,25 @@ class _FilterDialogState extends State<FilterDialog> {
               ),
               Divider(color: c.hint.withOpacity(0.15), height: 1),
 
-              // ── Scrollable body ─────────────────────────
+              // ── Scrollable body ──────────────────────────
               Flexible(
                 child: SingleChildScrollView(
                   padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 20.h),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ── Price Range ────────────────────
-                      _SectionLabel(label:"price_range".tr(), c: c),
+
+                      // ── Price Range ──────────────────────
+                      _SectionLabel(label: 'price_range'.tr(), c: c),
                       SizedBox(height: 4.h),
                       _PriceRangeRow(current: _current, c: c),
                       RangeSlider(
                         activeColor:   c.main,
                         inactiveColor: c.hint.withOpacity(0.2),
-                        values:
-                        RangeValues(_current.minPrice, _current.maxPrice),
+                        values: RangeValues(
+                          _current.minPrice,
+                          _current.maxPrice,
+                        ),
                         min:       0,
                         max:       10000,
                         divisions: 200,
@@ -202,8 +197,7 @@ class _FilterDialogState extends State<FilterDialog> {
                               c:     c,
                               onChanged: (v) => setState(
                                     () => _current = _current.copyWith(
-                                  maxPrice:
-                                  v.clamp(_current.minPrice, 10000),
+                                  maxPrice: v.clamp(_current.minPrice, 10000),
                                 ),
                               ),
                             ),
@@ -212,7 +206,7 @@ class _FilterDialogState extends State<FilterDialog> {
                       ),
                       SizedBox(height: 20.h),
 
-                      // ── Category (API-sourced) ─────────
+                      // ── Category (API-sourced) ────────────
                       if (_apiCategories.isNotEmpty) ...[
                         _SectionLabel(label: 'category'.tr(), c: c),
                         SizedBox(height: 10.h),
@@ -232,8 +226,7 @@ class _FilterDialogState extends State<FilterDialog> {
                             ..._apiCategories.map(
                                   (cat) => _Chip(
                                 label:    cat.nameEn,
-                                selected:
-                                _current.selectedCategoryId == cat.id,
+                                selected: _current.selectedCategoryId == cat.id,
                                 c:        c,
                                 onTap: () => setState(
                                       () => _current = _current.copyWith(
@@ -247,7 +240,7 @@ class _FilterDialogState extends State<FilterDialog> {
                         SizedBox(height: 20.h),
                       ],
 
-                      // ── Brands (API-sourced) ───────────
+                      // ── Brands (API-sourced) ──────────────
                       if (_apiBrands.isNotEmpty) ...[
                         _SectionLabel(label: 'brand'.tr(), c: c),
                         SizedBox(height: 10.h),
@@ -267,8 +260,7 @@ class _FilterDialogState extends State<FilterDialog> {
                             ..._apiBrands.map(
                                   (brand) => _Chip(
                                 label:    brand.nameEn,
-                                selected:
-                                _current.selectedBrandId == brand.id,
+                                selected: _current.selectedBrandId == brand.id,
                                 c:        c,
                                 onTap: () => setState(
                                       () => _current = _current.copyWith(
@@ -282,7 +274,7 @@ class _FilterDialogState extends State<FilterDialog> {
                         SizedBox(height: 20.h),
                       ],
 
-                      // ── Types (API-sourced) ────────────
+                      // ── Types (API-sourced) ───────────────
                       if (_apiTypes.isNotEmpty) ...[
                         _SectionLabel(label: 'type'.tr(), c: c),
                         SizedBox(height: 10.h),
@@ -316,7 +308,7 @@ class _FilterDialogState extends State<FilterDialog> {
                         SizedBox(height: 20.h),
                       ],
 
-                      // ── Sizes (API-sourced) ────────────
+                      // ── Sizes (API-sourced) ───────────────
                       if (_apiSizes.isNotEmpty) ...[
                         _SectionLabel(label: 'size'.tr(), c: c),
                         SizedBox(height: 10.h),
@@ -325,26 +317,22 @@ class _FilterDialogState extends State<FilterDialog> {
                           runSpacing: 8.h,
                           children: _apiSizes.map((size) {
                             final label    = size.nameEn;
-                            final selected =
-                                _current.selectedSizeId == size.id;
+                            final selected = _current.selectedSizeId == size.id;
                             return GestureDetector(
                               onTap: () => setState(() {
                                 _current = selected
                                     ? _current.copyWith(clearSize: true)
-                                    : _current.copyWith(
-                                    selectedSizeId: size.id);
+                                    : _current.copyWith(selectedSizeId: size.id);
                               }),
                               child: AnimatedContainer(
-                                duration:
-                                const Duration(milliseconds: 200),
+                                duration: const Duration(milliseconds: 200),
                                 width:  48.r,
                                 height: 48.r,
                                 decoration: BoxDecoration(
                                   color: selected
                                       ? c.main
                                       : Colors.transparent,
-                                  borderRadius:
-                                  BorderRadius.circular(12.r),
+                                  borderRadius: BorderRadius.circular(12.r),
                                   border: Border.all(
                                     color: selected
                                         ? c.main
@@ -371,19 +359,43 @@ class _FilterDialogState extends State<FilterDialog> {
                         SizedBox(height: 20.h),
                       ],
 
-                      // ── Colors (API-sourced, from FilterOptionEntity) ──
-                      if (_apiColors.isNotEmpty || _staticColors.isNotEmpty) ...[
+                      // ── Colors — from products only ───────
+                      // ✅ only shown when products actually have colors
+                      // ✅ no static fallback — if no product has a color
+                      //    field, the section is hidden entirely
+                      if (_productColors.isNotEmpty) ...[
                         _SectionLabel(label: 'color'.tr(), c: c),
                         SizedBox(height: 10.h),
                         Wrap(
                           spacing:    10.w,
                           runSpacing: 10.h,
-                          children: _buildColorSwatches(c),
+                          children: _productColors.map((hexStr) {
+                            final color    = _parseHex(hexStr);
+                            final selected =
+                            _current.selectedColors.contains(hexStr);
+                            return _ColorSwatch(
+                              // ✅ show the hex string as the label
+                              //    (or replace with a name if you add a map)
+                              label:    hexStr,
+                              color:    color,
+                              selected: selected,
+                              c:        c,
+                              onTap: () => setState(() {
+                                final updated = List<String>.from(
+                                    _current.selectedColors);
+                                selected
+                                    ? updated.remove(hexStr)
+                                    : updated.add(hexStr);
+                                _current = _current.copyWith(
+                                    selectedColors: updated);
+                              }),
+                            );
+                          }).toList(),
                         ),
                         SizedBox(height: 20.h),
                       ],
 
-                      // ── Sort By ────────────────────────
+                      // ── Sort By ───────────────────────────
                       _SectionLabel(label: 'sort_by'.tr(), c: c),
                       SizedBox(height: 10.h),
                       Column(
@@ -399,8 +411,9 @@ class _FilterDialogState extends State<FilterDialog> {
                           ),
                           ..._sortOptions.map((key) {
                             final (sortBy, sortOrder) = _sortMap[key]!;
-                            final selected = _current.sortBy == sortBy &&
-                                _current.sortOrder == sortOrder;
+                            final selected =
+                                _current.sortBy == sortBy &&
+                                    _current.sortOrder == sortOrder;
                             return _SortTile(
                               label:    key.tr(),
                               selected: selected,
@@ -421,7 +434,7 @@ class _FilterDialogState extends State<FilterDialog> {
                 ),
               ),
 
-              // ── Sticky footer ───────────────────────────
+              // ── Sticky footer ────────────────────────────
               Divider(color: c.hint.withOpacity(0.15), height: 1),
 
               if (state is HomeFilterLoading)
@@ -438,17 +451,19 @@ class _FilterDialogState extends State<FilterDialog> {
                     Expanded(
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: c.hint.withOpacity(0.3)),
+                          side: BorderSide(
+                              color: c.hint.withOpacity(0.3)),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14.r),
                           ),
-                          padding: EdgeInsets.symmetric(vertical: 14.h),
+                          padding:
+                          EdgeInsets.symmetric(vertical: 14.h),
                         ),
                         onPressed: () => Navigator.pop(context),
                         child: Text(
                           'cancel'.tr(),
-                          style:
-                          TextStyle(color: c.bodyText, fontSize: 14.sp),
+                          style: TextStyle(
+                              color: c.bodyText, fontSize: 14.sp),
                         ),
                       ),
                     ),
@@ -462,7 +477,8 @@ class _FilterDialogState extends State<FilterDialog> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14.r),
                           ),
-                          padding: EdgeInsets.symmetric(vertical: 14.h),
+                          padding:
+                          EdgeInsets.symmetric(vertical: 14.h),
                         ),
                         onPressed: () {
                           cubit.applyFilter(_current);
@@ -487,67 +503,7 @@ class _FilterDialogState extends State<FilterDialog> {
     );
   }
 
-  // ── Color swatches ──────────────────────────────────────
-  // API colors come from FilterOptionEntity.colors as hex strings
-  // ("#ff0000"). We keep the hex as the VALUE (what gets sent to the
-  // backend in FilterRequest.color) but display a localized readable
-  // NAME (red / أحمر) as the label.
-  List<Widget> _buildColorSwatches(_Palette c) {
-    if (_apiColors.isNotEmpty) {
-      return _apiColors.map((hexStr) {
-        final color    = _parseHex(hexStr);
-        final selected = _current.selectedColors.contains(hexStr);
-        return _ColorSwatch(
-          label:    _colorLabel(color),
-          color:    color,
-          selected: selected,
-          c:        c,
-          onTap: () => setState(() {
-            final updated = List<String>.from(_current.selectedColors);
-            selected ? updated.remove(hexStr) : updated.add(hexStr);
-            _current = _current.copyWith(selectedColors: updated);
-          }),
-        );
-      }).toList();
-    }
-
-    // Static fallback (only shows if the API returned no colors)
-    return _staticColors.map((opt) {
-      final selected = _current.selectedColors.contains(opt.hex);
-      return _ColorSwatch(
-        label:    opt.labelKey.tr(),
-        color:    opt.color,
-        selected: selected,
-        c:        c,
-        onTap: () => setState(() {
-          final updated = List<String>.from(_current.selectedColors);
-          selected ? updated.remove(opt.hex) : updated.add(opt.hex);
-          _current = _current.copyWith(selectedColors: updated);
-        }),
-      );
-    }).toList();
-  }
-
-  /// Find the nearest named color and return its localized name.
-  /// "#ff0000" → 'red'.tr() → "Red" / "أحمر"
-  String _colorLabel(Color color) {
-    String bestKey   = 'grey';
-    double bestScore = double.infinity;
-    for (final entry in _namedAnchors.entries) {
-      final a  = entry.value;
-      final dr = (color.red   - a.red).toDouble();
-      final dg = (color.green - a.green).toDouble();
-      final db = (color.blue  - a.blue).toDouble();
-      // weighted RGB distance (human eyes weigh green most)
-      final score = 0.30 * dr * dr + 0.59 * dg * dg + 0.11 * db * db;
-      if (score < bestScore) {
-        bestScore = score;
-        bestKey   = entry.key;
-      }
-    }
-    return bestKey.tr();
-  }
-
+  // ✅ parse hex string to Color — used for product colors
   Color _parseHex(String hex) {
     try {
       final clean  = hex.replaceAll('#', '');
@@ -560,7 +516,7 @@ class _FilterDialogState extends State<FilterDialog> {
 }
 
 // ═══════════════════════════════════════════════════════
-// _Palette — colors for this dialog, derived from Theme
+// _Palette
 // ═══════════════════════════════════════════════════════
 
 class _Palette {
@@ -649,6 +605,7 @@ class _ColorSwatch extends StatelessWidget {
                 : null,
           ),
           SizedBox(height: 4.h),
+          // ✅ show the hex value as a small label under the swatch
           Text(
             label,
             style: TextStyle(
@@ -931,20 +888,4 @@ class _SortTile extends StatelessWidget {
       ),
     );
   }
-}
-
-// ═══════════════════════════════════════════════════════
-// _ColorOption  — static fallback data class
-// ═══════════════════════════════════════════════════════
-
-class _ColorOption {
-  const _ColorOption({
-    required this.labelKey,
-    required this.hex,
-    required this.color,
-  });
-
-  final String labelKey; // translation key, e.g. 'red'
-  final String hex;
-  final Color  color;
 }

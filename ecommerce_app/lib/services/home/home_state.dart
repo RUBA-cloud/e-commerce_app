@@ -1,6 +1,7 @@
 // lib/services/home/home_state.dart
 import 'package:ecommerce_app/data/model/response/brand_entity.dart';
 import 'package:ecommerce_app/data/model/response/carts/categories_entity.dart';
+import 'package:ecommerce_app/data/model/response/category_entity.dart';
 import 'package:ecommerce_app/data/model/response/filter_option_entity.dart';
 import 'package:ecommerce_app/services/home/home_cubit.dart';
 
@@ -15,7 +16,7 @@ class HomeLoading extends HomeState {}
 class HomeFilterLoading extends HomeState {}
 
 class HomeLoaded extends HomeState {
-  final CategoriesEntity      categoriesEntity;
+  final CategoryEntity      categoriesEntity;
   final BrandEntity?          brandEntity;
   final FilterOptionEntity?  filterOptionsEntity;   // API-sourced filter options
   final int                   selectedCategoryIndex;

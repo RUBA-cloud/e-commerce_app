@@ -40,17 +40,20 @@ class _ButtonHomeNavigationScreenState
   @override
   void initState() {
     super.initState();
-    homeCubit = HomeCubit()..loadHome();
+    homeCubit = HomeCubit.get(context);
 
     _screens = [
+
       BlocProvider.value(
         value: homeCubit,
         child: const HomeScreen(),
       ),
+
       BlocProvider(
         create: (_) => CartCubit(),
         child: const CartScreen(),
       ),
+
       const ChatScreen(),
       BlocProvider(
         create: (_) => ProfileCubit(),

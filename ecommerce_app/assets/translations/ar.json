@@ -207,7 +207,47 @@
   "full_name": "الاسم الكامل",
   "street": "الشارع",
   "profile_updated": "تم تحديث الملف الشخصي بنجاح",
-  "field_required": "هذا الحقل مطلوب",
   "invalid_email": "البريد الإلكتروني غير صالح",
-  "invalid_phone": "رقم الهاتف غير صالح"
+  "invalid_phone": "رقم الهاتف غير صالح",
+  "current_password":         "كلمة المرور الحالية",
+  "new_password":             "كلمة المرور الجديدة",
+  "confirm_password":         "تأكيد كلمة المرور الجديدة",
+  "update_your_password":     "تحديث كلمة المرور",
+  "password_tip":             "استخدم كلمة مرور قوية وفريدة لا تستخدمها في أي مكان آخر.",
+  "password_strength":        "قوة كلمة المرور",
+  "weak":                     "ضعيفة",
+  "fair":                     "مقبولة",
+  "good":                     "جيدة",
+  "strong":                   "قوية",
+  "field_required":           "هذا الحقل مطلوب",
+  "password_min_length":      "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل",
+  "password_same_as_current": "يجب أن تختلف كلمة المرور الجديدة عن الحالية",
+  "passwords_do_not_match":   "كلمتا المرور غير متطابقتين",
+  "password_changed":         "تم تحديث كلمة المرور بنجاح",
+  "update_password":          "تحديث كلمة المرور",
+  "choose_image_source": "اختر مصدر الصورة",
+  "gallery": "معرض الصور",
+  "camera": "الكاميرا",
+  "reset_hint_link": "رابط إعادة تعيين كلمة المرور",
+  "check_spam_hint": "يرجى التحقق من بريدك الإلكتروني، والتحقق من مجلد البريد العشوائي",
+  "resend_email": "إعادة إرسال البريد الإلكتروني",
+  "have_account": "لدي حساب",
+  "avaliable_payments_method": "طرق الدفع المتاحة",
+  "no_avaliable_payment": "لا توجد طرق دفع متاحة",
+  "confirm_payment_method": "تأكيد طريقة الدفع",
+  "available_payment_methods":" طرق الدفع المتاحة",
+  "new_arrival": "وصل حديثاً",
+
+
+  "notifications_on":   "مفعّلة",
+  "notifications_off":  "معطّلة",
+  "dark_mode":          "الوضع الداكن",
+  "dark_mode_on":       "مفعّل",
+  "dark_mode_off":      "معطّل",
+
+  "payment":            "الدفع",
+  "payment_tip": "طرق الدفع"
+
 }
+
+

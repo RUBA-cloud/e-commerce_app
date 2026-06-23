@@ -4,8 +4,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:ecommerce_app/core/utility/ui_utility.dart';
 import 'package:ecommerce_app/presentation/home/home_buttom_navigation.dart';
 
-import 'package:ecommerce_app/services/company_info/company_info_cubit.dart';
-import 'package:ecommerce_app/services/company_info/company_info_state.dart';
+import 'package:ecommerce_app/services/company_info/app_main_cubit.dart';
+import 'package:ecommerce_app/services/company_info/app_main_state.dart';
 import 'package:ecommerce_app/services/home/home_cubit.dart';
 import 'package:ecommerce_app/services/register/register_cubit.dart';
 
@@ -88,7 +88,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
       buildWhen: (p, c) =>
       c is CompanyInfoLoaded || c is CompanyInfoUpdated,
       builder: (context, companyState) {
-        final c = companyColors(companyState);
+        final c = companyColors(companyState,context);
 
         return BlocListener<RegisterCubit, RegisterState>(
           listener: (context, state) {
